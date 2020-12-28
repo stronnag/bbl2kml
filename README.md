@@ -28,7 +28,7 @@ Craft    :  on 2020-11-08T14:08:22.500+00:00
 Fireware : INAV 2.3.0 (063ba5a) MATEKF722 of Jan 19 2020 20:20:56
 Size     : 13.50 MB
 Altitude : 553.3 m at 26:12
-Speed    : 1631.1 m/s at 57:24
+Speed    : 23.7 m/s at 57:24
 Range    : 22735 m at 27:58
 Current  : 16.2 A at 00:10
 Distance : 51899 m
@@ -37,7 +37,6 @@ Disarm   : NONE
 
 results in the KMZ file "LOG00022.1.kmz"
 ```
-
 
 ## Output
 
@@ -50,6 +49,7 @@ Track in Google Earth. Can be animated with the time slider. Track is colour-cod
 * Purple : Cruise
 * Cyan : Piloted
 * Lighter cyan : Launch
+* Red : Failsafe
 
 ![Example 1](https://github.com/stronnag/mwptools/wiki/images/bbl2kml-1.png)
 

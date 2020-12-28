@@ -58,6 +58,7 @@ type BBLRec struct {
 	rssi    uint8
 	fmtext  string
 	utc     string
+	fs      bool
 }
 
 var hdrs map[string]int
@@ -114,49 +115,47 @@ func get_bbl_line(r []string) BBLRec {
 	}
 
 	md := uint8(0)
-	s, ok = get_rec_value(r, "failsafePhase (flags)")
+	s0, ok := get_rec_value(r, "flightModeFlags (flags)")
+	s, ok = get_rec_value(r, "navState")
 	if ok {
-		if !strings.Contains(s, "IDLE") {
-			md = FM_FS
+		i64, _ := strconv.ParseInt(s, 10, 64)
+		switch i64 {
+		case 29, 30, 31:
+			md = FM_CRUISE2D
+		case 32, 33, 34:
+			md = FM_CRUISE3D
+		case 8, 9, 10, 11, 12, 13, 14, 36:
+			md = FM_RTH
+		case 15, 16, 17, 18, 19, 20, 21, 35, 37:
+			md = FM_WP
+		case 25, 26, 28:
+			md = FM_LAUNCH
+		case 6, 7:
+			md = FM_PH
+		case 2, 3:
+			md = FM_AH
+		default:
+			if strings.Contains(s0, "MANUAL") {
+				md = FM_MANUAL
+			}
+			if strings.Contains(s0, "ANGLE") {
+				md = FM_ANGLE
+			}
+			if strings.Contains(s0, "HORIZON") {
+				md = FM_HORIZON
+			}
 		}
-	} else {
-		s0, ok := get_rec_value(r, "flightModeFlags (flags)")
-		s, ok = get_rec_value(r, "navState")
-		if ok {
-			i64, _ := strconv.ParseInt(s, 10, 64)
-			switch i64 {
-			case 29, 30, 31:
-				md = FM_CRUISE2D
-			case 32, 33, 34:
-				md = FM_CRUISE3D
-			case 8, 9, 10, 11, 12, 13, 14, 36:
-				md = FM_RTH
-			case 15, 16, 17, 18, 19, 20, 21, 35, 37:
-				md = FM_WP
-			case 25, 26, 28:
-				md = FM_LAUNCH
-			case 6, 7:
-				md = FM_PH
-			case 2, 3:
-				md = FM_AH
-			default:
-				if strings.Contains(s0, "MANUAL") {
-					md = FM_MANUAL
-				}
-				if strings.Contains(s0, "ANGLE") {
-					md = FM_ANGLE
-				}
-				if strings.Contains(s0, "HORIZON") {
-					md = FM_HORIZON
-				}
-			}
-			if strings.Contains(s0, "NAVRTH") {
-				md = FM_RTH
-			}
+		if strings.Contains(s0, "NAVRTH") {
+			md = FM_RTH
 		}
 	}
 	b.fmode = md
 	b.fmtext = mNames[md]
+
+	s, ok = get_rec_value(r, "failsafePhase (flags)")
+	if ok {
+		b.fs = !strings.Contains(s, "IDLE")
+	}
 
 	b.bearing = -1
 	b.vrange = -1
@@ -321,7 +320,7 @@ func bblreader(bbfile string, idx int, intvl int, dump bool, compress bool) {
 				bblsmry.max_alt_time = us - st
 			}
 
-			if br.spd > bblsmry.max_speed {
+			if br.spd < 400 && br.spd > bblsmry.max_speed {
 				bblsmry.max_speed = br.spd
 				bblsmry.max_speed_time = us - st
 			}

@@ -30,16 +30,19 @@ func getflightColour(mode uint8) color.Color {
 	case FM_AH:
 		c = color.RGBA{R: 0x3, G: 0xc0, B: 0xf0, A: 0xa0}
 	case FM_FS:
-		c = color.RGBA{R: 0xff, G: 0, B: 0, A: 0}
+		c = color.RGBA{R: 0xff, G: 0, B: 0, A: 0xa0}
 	default:
 		c = color.RGBA{R: 0, G: 0xff, B: 0xff, A: 0xa0}
 	}
 	return c
 }
 
-func getStyleURL(mode uint8) string {
+func getStyleURL(r BBLRec) string {
 	var s string
-	switch mode {
+	if r.fs {
+		return "#styleFS"
+	}
+	switch r.fmode {
 	case FM_LAUNCH:
 		s = "#styleLaunch"
 	case FM_RTH:
@@ -50,10 +53,6 @@ func getStyleURL(mode uint8) string {
 		s = "#styleCRS"
 	case FM_PH:
 		s = "#stylePH"
-	case FM_AH:
-		s = "#styleAH"
-	case FM_FS:
-		s = "#styleFS"
 	default:
 		s = "#styleNormal"
 	}
@@ -65,11 +64,15 @@ func getPoints(recs []BBLRec) []kml.Element {
 	for _, r := range recs {
 		ts,_ := time.Parse(time.RFC3339Nano,r.utc)
 		tfmt := ts.Format("2006-01-02T15:04:05.99MST")
-		str := fmt.Sprintf("Time: %s<br/>Position: %.7f %.7f %.0fm<br/>Course: %d°<br/>Speed: %.1fm/s<br/>Satellites: %d<br/>Range: %.0fm<br/>Bearing: %d°<br/>RSSI: %d%%<br/>Mode: %s<br/>Distance: %.0fm<br/>", tfmt, r.lat, r.lon, r.alt, r.cse, r.spd, r.numsat, r.vrange, r.bearing, r.rssi, r.fmtext, r.tdist);
+		fmtxt :=  r.fmtext
+		if r.fs {
+			fmtxt = fmtxt + " FAILSAFE"
+		}
+		str := fmt.Sprintf("Time: %s<br/>Position: %.7f %.7f %.0fm<br/>Course: %d°<br/>Speed: %.1fm/s<br/>Satellites: %d<br/>Range: %.0fm<br/>Bearing: %d°<br/>RSSI: %d%%<br/>Mode: %s<br/>Distance: %.0fm<br/>", tfmt, r.lat, r.lon, r.alt, r.cse, r.spd, r.numsat, r.vrange, r.bearing, r.rssi, fmtxt, r.tdist);
 		k := kml.Placemark(
 			kml.Description(str),
 			kml.TimeStamp(kml.When(ts)),
-			kml.StyleURL(getStyleURL(r.fmode)),
+			kml.StyleURL(getStyleURL(r)),
 			kml.Point(
 				kml.AltitudeMode("relativeToGround"),
 				kml.Coordinates(kml.Coordinate{Lon: r.lon, Lat: r.lat, Alt: r.alt}),
@@ -129,8 +132,9 @@ func openStdoutOrFile(path string) (io.WriteCloser, error) {
 }
 
 func GenerateKML(hpos []float64, recs []BBLRec, outfn string) {
+
 	a1 := getHomes(hpos)
-	a1 = append(a1,getPoints(recs)...)
+	a1 = append(a1, getPoints(recs)...)
 
 	f:= kml.Folder(
 			append([]kml.Element{
