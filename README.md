@@ -53,7 +53,7 @@ Track in Google Earth. Can be animated with the time slider. Track is colour-cod
 
 ![Example 1](https://github.com/stronnag/mwptools/wiki/images/bbl2kml-1.png)
 
-![Example 2]((https://github.com/stronnag/mwptools/wiki/images/bbl2kml-2.png)
+![Example 2](https://github.com/stronnag/mwptools/wiki/images/bbl2kml-2.png)
 
 ## Building
 
