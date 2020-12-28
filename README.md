@@ -35,12 +35,29 @@ Distance : 51899 m
 Duration : 49:33
 Disarm   : NONE
 
+results in the KMZ file "LOG00022.1.kmz"
 ```
-gives the KMZ file `LOG00022.1.kmz`
+
+
+## Output
+
+Track in Google Earth. Can be animated with the time slider. Track is colour-coded according to the flight mode.
+
+* White : WP Mission
+* Yellow : RTH
+* Green : Pos Hold
+* Lighter Green : Alt Hold
+* Purple : Cruise
+* Cyan : Piloted
+* Lighter cyan : Launch
+
+![Example 1](https://github.com/stronnag/mwptools/wiki/images/bbl2kml-1.png)
+
+![Example 2]((https://github.com/stronnag/mwptools/wiki/images/bbl2kml-2.png)
 
 ## Building
 
-Compiled with
+Compiled with:
 
 ```
 $ go build
@@ -53,4 +70,6 @@ make
 ```
 
 bbl2kml may be build for all OS for which Golang is available. It also requires inav's
-[blackbox_decode](https://github.com/iNavFlight/blackbox-tools). For Windows' users it is probablly easier to copy blackbox_decode.exe into the same directory as bbl2kml.exe.
+[blackbox_decode](https://github.com/iNavFlight/blackbox-tools). For Windows' users it is probably easier to copy `blackbox_decode.exe` into the same directory as `bbl2kml.exe`.
+
+Binaries are provided for common operating systems.
