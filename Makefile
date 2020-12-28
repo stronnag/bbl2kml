@@ -1,5 +1,6 @@
-
 APP = bbl2kml
+
+prefix?=$(DESTDIR)/usr
 
 APP:
 	go build -ldflags "-w -s"

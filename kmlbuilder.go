@@ -29,6 +29,8 @@ func getflightColour(mode uint8) color.Color {
 		c = color.RGBA{R: 0xce, G: 0xff, B: 0x9d, A: 0xa0}
 	case FM_AH:
 		c = color.RGBA{R: 0x3, G: 0xc0, B: 0xf0, A: 0xa0}
+	case FM_FS:
+		c = color.RGBA{R: 0xff, G: 0, B: 0, A: 0}
 	default:
 		c = color.RGBA{R: 0, G: 0xff, B: 0xff, A: 0xa0}
 	}
@@ -50,6 +52,8 @@ func getStyleURL(mode uint8) string {
 		s = "#stylePH"
 	case FM_AH:
 		s = "#styleAH"
+	case FM_FS:
+		s = "#styleFS"
 	default:
 		s = "#styleNormal"
 	}
@@ -196,6 +200,16 @@ func GenerateKML(hpos []float64, recs []BBLRec, outfn string) {
 					kml.IconStyle(
 						kml.Scale(0.5),
 						kml.Color(getflightColour(FM_AH)),
+						kml.Icon(
+							kml.Href(icon.PaletteHref(2, 18)),
+						),
+					),
+				),
+				kml.SharedStyle(
+					"styleFS",
+					kml.IconStyle(
+						kml.Scale(0.5),
+						kml.Color(getflightColour(FM_FS)),
 						kml.Icon(
 							kml.Href(icon.PaletteHref(2, 18)),
 						),
