@@ -133,9 +133,7 @@ func openStdoutOrFile(path string) (io.WriteCloser, error) {
 
 func GenerateKML(hpos []float64, recs []BBLRec, outfn string) {
 
-	a1 := getHomes(hpos)
-	a1 = append(a1, getPoints(recs)...)
-
+	//	a1 := append(getHomes(hpos), getPoints(recs)...)
 	f:= kml.Folder(
 			append([]kml.Element{
 				kml.Name("inav flight"),
@@ -220,7 +218,7 @@ func GenerateKML(hpos []float64, recs []BBLRec, outfn string) {
 					),
 				),
 			},
-				a1...,
+				append(getHomes(hpos), getPoints(recs)...)...,
 			)...,
 	)
 	var err error
