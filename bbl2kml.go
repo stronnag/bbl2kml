@@ -44,7 +44,7 @@ func main() {
 
 	flag.IntVar(&idx, "index", 0, "Log index")
 	flag.IntVar(&intvl, "interval", 0, "Sampling Interval (ms), default 100")
-	flag.BoolVar(&compress, "kmz", false, "Gnerate KMZ (vice KML)")
+	flag.BoolVar(&compress, "kmz", false, "Generate KMZ (vice KML)")
 	flag.BoolVar(&dump, "dump", false, "Dump headers and exit")
 	flag.Parse()
 
