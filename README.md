@@ -14,7 +14,7 @@ Usage of bbl2kml [options] file...
   -interval int
     	Sampling Interval (ms), default 100
   -kmz
-    	Gnerate KMZ (vice KML)
+    	Generate KMZ (vice KML)
 ```
 
 Multiple logs (with multiple indices) may be given. A KML/Z will be generated for each file / index.
