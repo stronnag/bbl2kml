@@ -192,10 +192,10 @@ func get_bbl_line(r []string) BBLRec {
 		b.tdist = -1
 	}
 
-	s, ok = get_rec_value(r, "rssi (%)")
+	s, ok = get_rec_value(r, "rssi")
 	if ok {
 		i64, _ := strconv.Atoi(s)
-		b.rssi = uint8(i64)
+		b.rssi = uint8(i64 * 100 / 1023)
 	}
 
 	s, ok = get_rec_value(r, "dateTime")
@@ -231,8 +231,8 @@ func dump_headers(m map[string]int) {
 	}
 }
 
-func bblreader(bbfile string, idx int, intvl int, dump bool, compress bool) {
-	cmd := exec.Command("blackbox_decode", "--datetime", "--merge-gps", "--stdout", "--index",
+func bblreader(bbfile string, idx int, intvl int, dump bool, compress bool, colrssi bool) {
+	cmd := exec.Command(BlackboxDecode, "--datetime", "--merge-gps", "--stdout", "--index",
 		strconv.Itoa(idx), bbfile)
 	out, err := cmd.StdoutPipe()
 	defer cmd.Wait()
@@ -358,7 +358,7 @@ func bblreader(bbfile string, idx int, intvl int, dump bool, compress bool) {
 		ext = fmt.Sprintf(".%d.kml", idx)
 	}
 	outfn = outfn + ext
-	GenerateKML(homes, recs, outfn)
+	GenerateKML(homes, recs, outfn, colrssi)
 }
 
 func show_time(t uint64) string {

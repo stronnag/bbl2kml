@@ -9,6 +9,7 @@ import (
 
 var GitCommit = "local"
 var GitTag = "0.0.0"
+var BlackboxDecode = "blackbox_decode"
 
 func GetVersion() string {
 	return fmt.Sprintf("bbl2kml %s, commit: %s", GitTag, GitCommit)
@@ -36,17 +37,23 @@ func main() {
 		fmt.Fprintln(os.Stderr, GetVersion())
 	}
 
-	var dump bool
-	var compress bool
-	var idx int
-	var intvl int
-	intvl = 100
+	dump := false
+	compress := false
+	colrssi := false
+	intvl := 100
+	idx := 0
 
 	flag.IntVar(&idx, "index", 0, "Log index")
 	flag.IntVar(&intvl, "interval", 0, "Sampling Interval (ms), default 100")
 	flag.BoolVar(&compress, "kmz", false, "Generate KMZ (vice KML)")
+	flag.BoolVar(&colrssi, "rssi", false, "Shade according to RSSI%")
 	flag.BoolVar(&dump, "dump", false, "Dump headers and exit")
 	flag.Parse()
+
+	decoder := os.Getenv("BLACKBOX_DECODE")
+	if len(decoder) > 0 {
+		BlackboxDecode = decoder
+	}
 
 	files := flag.Args()
 	if len(files) == 0 {
@@ -55,7 +62,7 @@ func main() {
 	}
 
 	if dump {
-		bblreader(files[0], 1, 0, true, false)
+		bblreader(files[0], 1, 0, true, false, false)
 		os.Exit(1)
 	}
 
@@ -68,7 +75,7 @@ func main() {
 					fmt.Printf("Craft    : %s on %s\n", b.craft, b.cdate)
 					fmt.Printf("Firmware : %s of %s\n", b.firmware, b.fwdate)
 					fmt.Printf("Size     : %s\n", show_size(b.size))
-					bblreader(fn, b.index, intvl, false, compress)
+					bblreader(fn, b.index, intvl, false, compress, colrssi)
 					fmt.Printf("Disarm   : %s\n\n", b.disarm)
 				}
 			}

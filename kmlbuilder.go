@@ -13,9 +13,8 @@ import (
 	"strings"
 )
 
-
 func getflightColour(mode uint8) color.Color {
-	var c color.Color;
+	var c color.Color
 	switch mode {
 	case FM_LAUNCH:
 		c = color.RGBA{R: 0, G: 160, B: 160, A: 0xa0}
@@ -37,8 +36,11 @@ func getflightColour(mode uint8) color.Color {
 	return c
 }
 
-func getStyleURL(r BBLRec) string {
+func getStyleURL(r BBLRec, colmode uint8) string {
 	var s string
+	if colmode == 1 {
+		return fmt.Sprintf("#styleRSSI%03d", 10*(r.rssi/10))
+	}
 	if r.fs {
 		return "#styleFS"
 	}
@@ -59,20 +61,20 @@ func getStyleURL(r BBLRec) string {
 	return s
 }
 
-func getPoints(recs []BBLRec) []kml.Element {
+func getPoints(recs []BBLRec, colmode uint8) []kml.Element {
 	var pt []kml.Element
 	for _, r := range recs {
-		ts,_ := time.Parse(time.RFC3339Nano,r.utc)
+		ts, _ := time.Parse(time.RFC3339Nano, r.utc)
 		tfmt := ts.Format("2006-01-02T15:04:05.99MST")
-		fmtxt :=  r.fmtext
+		fmtxt := r.fmtext
 		if r.fs {
 			fmtxt = fmtxt + " FAILSAFE"
 		}
-		str := fmt.Sprintf("Time: %s<br/>Position: %.7f %.7f %.0fm<br/>Course: %d°<br/>Speed: %.1fm/s<br/>Satellites: %d<br/>Range: %.0fm<br/>Bearing: %d°<br/>RSSI: %d%%<br/>Mode: %s<br/>Distance: %.0fm<br/>", tfmt, r.lat, r.lon, r.alt, r.cse, r.spd, r.numsat, r.vrange, r.bearing, r.rssi, fmtxt, r.tdist);
+		str := fmt.Sprintf("Time: %s<br/>Position: %.7f %.7f %.0fm<br/>Course: %d°<br/>Speed: %.1fm/s<br/>Satellites: %d<br/>Range: %.0fm<br/>Bearing: %d°<br/>RSSI: %d%%<br/>Mode: %s<br/>Distance: %.0fm<br/>", tfmt, r.lat, r.lon, r.alt, r.cse, r.spd, r.numsat, r.vrange, r.bearing, r.rssi, fmtxt, r.tdist)
 		k := kml.Placemark(
 			kml.Description(str),
 			kml.TimeStamp(kml.When(ts)),
-			kml.StyleURL(getStyleURL(r)),
+			kml.StyleURL(getStyleURL(r, colmode)),
 			kml.Point(
 				kml.AltitudeMode("relativeToGround"),
 				kml.Coordinates(kml.Coordinate{Lon: r.lon, Lat: r.lat, Alt: r.alt}),
@@ -80,7 +82,7 @@ func getPoints(recs []BBLRec) []kml.Element {
 		)
 		pt = append(pt, k)
 	}
-	return pt;
+	return pt
 }
 
 
@@ -94,7 +96,7 @@ func getHomes(hpos []float64) []kml.Element {
 		kml.Style(
 			kml.IconStyle(
 				kml.Icon(
-					kml.Href(icon.PaletteHref(4,29)),
+					kml.Href(icon.PaletteHref(4, 29)),
 				),
 			),
 		),
@@ -131,106 +133,140 @@ func openStdoutOrFile(path string) (io.WriteCloser, error) {
 	return w, err
 }
 
-func GenerateKML(hpos []float64, recs []BBLRec, outfn string) {
+func generate_shared_styles(style uint8) []kml.Element {
+	switch style {
+	default:
+		return []kml.Element{
+			kml.SharedStyle(
+				"styleNormal",
+				kml.IconStyle(
+					kml.Scale(0.5),
+					kml.Color(getflightColour(FM_ACRO)),
+					kml.Icon(
+						kml.Href(icon.PaletteHref(2, 18)),
+					),
+				),
+			),
+			kml.SharedStyle(
+				"styleLaunch",
+				kml.IconStyle(
+					kml.Scale(0.5),
+					kml.Color(getflightColour(FM_LAUNCH)),
+					kml.Icon(
+						kml.Href(icon.PaletteHref(2, 18)),
+					),
+				),
+			),
+			kml.SharedStyle(
+				"styleWP",
+				kml.IconStyle(
+					kml.Scale(0.5),
+					kml.Color(getflightColour(FM_WP)),
+					kml.Icon(
+						kml.Href(icon.PaletteHref(2, 18)),
+					),
+				),
+			),
+			kml.SharedStyle(
+				"styleRTH",
+				kml.IconStyle(
+					kml.Scale(0.5),
+					kml.Color(getflightColour(FM_RTH)),
+					kml.Icon(
+						kml.Href(icon.PaletteHref(2, 18)),
+					),
+				),
+			),
+			kml.SharedStyle(
+				"styleCRS",
+				kml.IconStyle(
+					kml.Scale(0.5),
+					kml.Color(getflightColour(FM_CRUISE3D)),
+					kml.Icon(
+						kml.Href(icon.PaletteHref(2, 18)),
+					),
+				),
+			),
+			kml.SharedStyle(
+				"stylePH",
+				kml.IconStyle(
+					kml.Scale(0.5),
+					kml.Color(getflightColour(FM_PH)),
+					kml.Icon(
+						kml.Href(icon.PaletteHref(2, 18)),
+					),
+				),
+			),
+			kml.SharedStyle(
+				"styleAH",
+				kml.IconStyle(
+					kml.Scale(0.5),
+					kml.Color(getflightColour(FM_AH)),
+					kml.Icon(
+						kml.Href(icon.PaletteHref(2, 18)),
+					),
+				),
+			),
+			kml.SharedStyle(
+				"styleFS",
+				kml.IconStyle(
+					kml.Scale(0.5),
+					kml.Color(getflightColour(FM_FS)),
+					kml.Icon(
+						kml.Href(icon.PaletteHref(2, 18)),
+					),
+				),
+			),
+		}
+	case 1:
+		{
+			icons := []kml.Element{}
+			for j := 0; j < 11; j++ {
+				sname := fmt.Sprintf("styleRSSI%03d", j*10)
+				col := uint8((10-j)*255/10)
+				el := kml.SharedStyle(
+					sname,
+					kml.IconStyle(
+						kml.Scale(0.5),
+						kml.Color(color.RGBA{R: 0xff, G: col, B: 0, A: 0xa0}),
+						kml.Icon(
+							kml.Href(icon.PaletteHref(2, 18)),
+						),
+					),
+				)
+				icons = append(icons, el)
+			}
+			return icons
+		}
+	}
+}
 
-	//	a1 := append(getHomes(hpos), getPoints(recs)...)
-	f:= kml.Folder(
-			append([]kml.Element{
-				kml.Name("inav flight"),
-				kml.SharedStyle(
-					"styleNormal",
-					kml.IconStyle(
-						kml.Scale(0.5),
-						kml.Color(getflightColour(FM_ACRO)),
-						kml.Icon(
-							kml.Href(icon.PaletteHref(2, 18)),
-						),
-					),
-				),
-				kml.SharedStyle(
-					"styleLaunch",
-					kml.IconStyle(
-						kml.Scale(0.5),
-						kml.Color(getflightColour(FM_LAUNCH)),
-						kml.Icon(
-							kml.Href(icon.PaletteHref(2, 18)),
-						),
-					),
-				),
-				kml.SharedStyle(
-					"styleWP",
-					kml.IconStyle(
-						kml.Scale(0.5),
-						kml.Color(getflightColour(FM_WP)),
-						kml.Icon(
-							kml.Href(icon.PaletteHref(2, 18)),
-						),
-					),
-				),
-				kml.SharedStyle(
-					"styleRTH",
-					kml.IconStyle(
-						kml.Scale(0.5),
-						kml.Color(getflightColour(FM_RTH)),
-						kml.Icon(
-							kml.Href(icon.PaletteHref(2, 18)),
-						),
-					),
-				),
-				kml.SharedStyle(
-					"styleCRS",
-					kml.IconStyle(
-						kml.Scale(0.5),
-						kml.Color(getflightColour(FM_CRUISE3D)),
-						kml.Icon(
-							kml.Href(icon.PaletteHref(2, 18)),
-						),
-					),
-				),
-				kml.SharedStyle(
-					"stylePH",
-					kml.IconStyle(
-						kml.Scale(0.5),
-						kml.Color(getflightColour(FM_PH)),
-						kml.Icon(
-							kml.Href(icon.PaletteHref(2, 18)),
-						),
-					),
-				),
-				kml.SharedStyle(
-					"styleAH",
-					kml.IconStyle(
-						kml.Scale(0.5),
-						kml.Color(getflightColour(FM_AH)),
-						kml.Icon(
-							kml.Href(icon.PaletteHref(2, 18)),
-						),
-					),
-				),
-				kml.SharedStyle(
-					"styleFS",
-					kml.IconStyle(
-						kml.Scale(0.5),
-						kml.Color(getflightColour(FM_FS)),
-						kml.Icon(
-							kml.Href(icon.PaletteHref(2, 18)),
-						),
-					),
-				),
-			},
-				append(getHomes(hpos), getPoints(recs)...)...,
-			)...,
-	)
+func GenerateKML(hpos []float64, recs []BBLRec, outfn string, colrssi bool) {
+
+	var colmode uint8 = 0
+	if colrssi {
+		colmode = 1
+	}
+	f := kml.Folder(
+		append(
+			append(
+				append(
+					[]kml.Element{kml.Name("inav flight")},
+					generate_shared_styles(colmode)...),
+				getHomes(hpos)...),
+			getPoints(recs,colmode)...)...
+		)
+
 	var err error
 	if strings.HasSuffix(outfn, ".kmz") {
 		z := kmz.NewKMZ(f)
-		w,err := os.Create(outfn)
+		w, err := os.Create(outfn)
 		if err == nil {
 			err = z.WriteIndent(w, "", "  ")
 		}
 	} else {
 		k := kml.KML(f)
-		output,err := openStdoutOrFile(outfn)
+		output, err := openStdoutOrFile(outfn)
 		if err == nil {
 			err = k.WriteIndent(output, "", "  ")
 		}
