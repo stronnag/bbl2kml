@@ -70,7 +70,11 @@ func get_rec_value(r []string, key string) (string, bool) {
 	var s string
 	i, ok := hdrs[key]
 	if ok {
-		s = r[i]
+		if i < len(r) {
+			s = r[i]
+		} else {
+			return "", false
+		}
 	}
 	return s, ok
 }

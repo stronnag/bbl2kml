@@ -9,7 +9,6 @@ import (
 	kmz "github.com/twpayne/go-kmz"
 	"time"
 	"fmt"
-	"io"
 	"strings"
 )
 
@@ -118,18 +117,6 @@ func getHomes(hpos []float64) []kml.Element {
 		hp = append(hp, k)
 	}
 	return hp
-}
-
-func openStdoutOrFile(path string) (io.WriteCloser, error) {
-	var err error
-	var w io.WriteCloser
-
-	if len(path) == 0 || path == "-" {
-		w = os.Stdout
-	} else {
-		w, err = os.Create(path)
-	}
-	return w, err
 }
 
 func generate_shared_styles(style uint8) []kml.Element {
@@ -265,7 +252,7 @@ func GenerateKML(hpos []float64, recs []BBLRec, outfn string) {
 		}
 	} else {
 		k := kml.KML(f)
-		output, err := openStdoutOrFile(outfn)
+		output, err := os.Create(outfn)
 		if err == nil {
 			err = k.WriteIndent(output, "", "  ")
 		}
