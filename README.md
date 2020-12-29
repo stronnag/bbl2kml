@@ -7,6 +7,8 @@ Generate annotated KML/KMZ files from inav blackbox logs
 ```
 $ ./bbl2kml --help
 Usage of bbl2kml [options] file...
+  -dms
+    	Show positions as DMS (vice decimal degrees)
   -dump
     	Dump headers and exit
   -index int
@@ -58,6 +60,8 @@ Track in Google Earth. Can be animated with the time slider. The track is colour
 ### RSSI Colours
 
 * RSSI shading; range from red (100%) to yellow (0%), 10 step gradient
+
+### Examples
 
 ![Example 1](https://github.com/stronnag/mwptools/wiki/images/bbl2kml-1.png)
 
