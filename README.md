@@ -25,7 +25,7 @@ The output file is named from the base name of the Blackbox log file, appended w
 bbl2kml -kmz -interval 1000 /tmp/LOG00022.TXT
 Log      : LOG00022.TXT / 1
 Craft    :  on 2020-11-08T14:08:22.500+00:00
-Fireware : INAV 2.3.0 (063ba5a) MATEKF722 of Jan 19 2020 20:20:56
+Firmware : INAV 2.3.0 (063ba5a) MATEKF722 of Jan 19 2020 20:20:56
 Size     : 13.50 MB
 Altitude : 553.3 m at 26:12
 Speed    : 23.7 m/s at 57:24
