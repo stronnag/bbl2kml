@@ -15,6 +15,8 @@ Usage of bbl2kml [options] file...
     	Sampling Interval (ms), default 100
   -kmz
     	Generate KMZ (vice KML)
+  -rssi
+    	Shade according to RSSI%
 ```
 
 Multiple logs (with multiple indices) may be given. A KML/Z will be generated for each file / index.
@@ -40,7 +42,9 @@ results in the KMZ file "LOG00022.1.kmz"
 
 ## Output
 
-Track in Google Earth. Can be animated with the time slider. Track is colour-coded according to the flight mode.
+Track in Google Earth. Can be animated with the time slider. The track is colour-coded according to the flight mode; with the `-rssi` option, colour coding is by RSSI%.
+
+### Flight Mode Colours
 
 * White : WP Mission
 * Yellow : RTH
@@ -50,6 +54,10 @@ Track in Google Earth. Can be animated with the time slider. Track is colour-cod
 * Cyan : Piloted
 * Lighter cyan : Launch
 * Red : Failsafe
+
+### RSSI Colours
+
+* RSSI shading; range from red (100%) to yellow (0%), 10 step gradient
 
 ![Example 1](https://github.com/stronnag/mwptools/wiki/images/bbl2kml-1.png)
 
