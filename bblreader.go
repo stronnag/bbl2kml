@@ -288,11 +288,14 @@ func bblreader(bbfile string, idx int, intvl int, dump bool, compress bool, colr
 			}
 		} else {
 			us := br.stamp
+			var d float64
+			var c float64
 			// Do the plot every 100ms
 			if (us - dt) > 1000*uint64(intvl) {
-				var d float64
 				if br.bearing == -1 {
-					_, d = Csedist(home_lat, home_lon, br.lat, br.lon)
+					c, d = Csedist(home_lat, home_lon, br.lat, br.lon)
+					br.bearing = int32(c)
+					br.vrange = d * 1852.0
 				} else {
 					d = br.vrange / 1852.0
 				}
@@ -303,8 +306,9 @@ func bblreader(bbfile string, idx int, intvl int, dump bool, compress bool, colr
 
 				if br.tdist == -1 {
 					if llat != br.lat && llon != br.lon {
-						_, d := Csedist(llat, llon, br.lat, br.lon)
+						_, d = Csedist(llat, llon, br.lat, br.lon)
 						bblsmry.distance += d
+						br.tdist = (bblsmry.distance * 1852.0)
 					}
 				} else {
 					bblsmry.distance = br.tdist / 1852.0
