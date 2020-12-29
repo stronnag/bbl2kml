@@ -70,7 +70,7 @@ func getPoints(recs []BBLRec, colmode uint8) []kml.Element {
 		if r.fs {
 			fmtxt = fmtxt + " FAILSAFE"
 		}
-		str := fmt.Sprintf("Time: %s<br/>Position: %.7f %.7f %.0fm<br/>Course: %d°<br/>Speed: %.1fm/s<br/>Satellites: %d<br/>Range: %.0fm<br/>Bearing: %d°<br/>RSSI: %d%%<br/>Mode: %s<br/>Distance: %.0fm<br/>", tfmt, r.lat, r.lon, r.alt, r.cse, r.spd, r.numsat, r.vrange, r.bearing, r.rssi, fmtxt, r.tdist)
+		str := fmt.Sprintf("Time: %s<br/>Position: %s %.0fm<br/>Course: %d°<br/>Speed: %.1fm/s<br/>Satellites: %d<br/>Range: %.0fm<br/>Bearing: %d°<br/>RSSI: %d%%<br/>Mode: %s<br/>Distance: %.0fm<br/>", tfmt, PositionFormat(r.lat, r.lon, Options.dms), r.alt, r.cse, r.spd, r.numsat, r.vrange, r.bearing, r.rssi, fmtxt, r.tdist)
 		k := kml.Placemark(
 			kml.Description(str),
 			kml.TimeStamp(kml.When(ts)),
@@ -84,7 +84,6 @@ func getPoints(recs []BBLRec, colmode uint8) []kml.Element {
 	}
 	return pt
 }
-
 
 func getHomes(hpos []float64) []kml.Element {
 	var hp []kml.Element
@@ -241,10 +240,10 @@ func generate_shared_styles(style uint8) []kml.Element {
 	}
 }
 
-func GenerateKML(hpos []float64, recs []BBLRec, outfn string, colrssi bool) {
+func GenerateKML(hpos []float64, recs []BBLRec, outfn string) {
 
 	var colmode uint8 = 0
-	if colrssi {
+	if Options.colrssi {
 		colmode = 1
 	}
 	f := kml.Folder(

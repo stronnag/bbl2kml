@@ -75,7 +75,7 @@ func get_rec_value(r []string, key string) (string, bool) {
 	return s, ok
 }
 
-func get_bbl_line(r []string) BBLRec {
+func get_bbl_line(r []string, have_origin bool) BBLRec {
 	b := BBLRec{}
 	s, ok := get_rec_value(r, "amperage (A)")
 	if ok {
@@ -157,25 +157,26 @@ func get_bbl_line(r []string) BBLRec {
 		b.fs = !strings.Contains(s, "IDLE")
 	}
 
-	b.bearing = -1
-	b.vrange = -1
-
-	s, ok = get_rec_value(r, "homeDirection")
-	if ok {
-		i64, _ := strconv.Atoi(s)
-		b.bearing = int32(i64)
-	} else {
-		s, ok = get_rec_value(r, "Azimuth")
+	if !have_origin {
+		b.bearing = -1
+		b.vrange = -1
+		s, ok = get_rec_value(r, "homeDirection")
 		if ok {
 			i64, _ := strconv.Atoi(s)
-			b.bearing = int32((i64 + 180) % 360)
+			b.bearing = int32(i64)
+		} else {
+			s, ok = get_rec_value(r, "Azimuth")
+			if ok {
+				i64, _ := strconv.Atoi(s)
+				b.bearing = int32((i64 + 180) % 360)
+			}
 		}
-	}
 
-	if b.bearing != -1 {
-		s, ok = get_rec_value(r, "Distance (m)")
-		if ok {
-			b.vrange, _ = strconv.ParseFloat(s, 64)
+		if b.bearing != -1 {
+			s, ok = get_rec_value(r, "Distance (m)")
+			if ok {
+				b.vrange, _ = strconv.ParseFloat(s, 64)
+			}
 		}
 	}
 
@@ -183,13 +184,6 @@ func get_bbl_line(r []string) BBLRec {
 	if ok {
 		i64, _ := strconv.Atoi(s)
 		b.cse = uint32(i64 / 10)
-	}
-
-	s, ok = get_rec_value(r, "cumulativeTripDistance")
-	if ok {
-		b.tdist, _ = strconv.ParseFloat(s, 64)
-	} else {
-		b.tdist = -1
 	}
 
 	s, ok = get_rec_value(r, "rssi")
@@ -231,7 +225,7 @@ func dump_headers(m map[string]int) {
 	}
 }
 
-func bblreader(bbfile string, idx int, intvl int, dump bool, compress bool, colrssi bool) {
+func bblreader(bbfile string, idx int) {
 	cmd := exec.Command(BlackboxDecode, "--datetime", "--merge-gps", "--stdout", "--index",
 		strconv.Itoa(idx), bbfile)
 	out, err := cmd.StdoutPipe()
@@ -263,13 +257,13 @@ func bblreader(bbfile string, idx int, intvl int, dump bool, compress bool, colr
 		}
 		if i == 0 {
 			hdrs = get_headers(record)
-			if dump {
+			if Options.dump {
 				dump_headers(hdrs)
 				return
 			}
 		}
 
-		br := get_bbl_line(record)
+		br := get_bbl_line(record, have_origin)
 
 		if !have_origin {
 			if br.fix > 1 && br.numsat > 5 {
@@ -291,28 +285,22 @@ func bblreader(bbfile string, idx int, intvl int, dump bool, compress bool, colr
 			var d float64
 			var c float64
 			// Do the plot every 100ms
-			if (us - dt) > 1000*uint64(intvl) {
-				if br.bearing == -1 {
-					c, d = Csedist(home_lat, home_lon, br.lat, br.lon)
-					br.bearing = int32(c)
-					br.vrange = d * 1852.0
-				} else {
-					d = br.vrange / 1852.0
-				}
+			if (us - dt) > 1000*uint64(Options.intvl) {
+				c, d = Csedist(home_lat, home_lon, br.lat, br.lon)
+				br.bearing = int32(c)
+				br.vrange = d * 1852.0
+
 				if d > bblsmry.max_range {
 					bblsmry.max_range = d
 					bblsmry.max_range_time = us - st
 				}
 
-				if br.tdist == -1 {
-					if llat != br.lat && llon != br.lon {
-						_, d = Csedist(llat, llon, br.lat, br.lon)
-						bblsmry.distance += d
-						br.tdist = (bblsmry.distance * 1852.0)
-					}
-				} else {
-					bblsmry.distance = br.tdist / 1852.0
+				if llat != br.lat && llon != br.lon {
+					_, d = Csedist(llat, llon, br.lat, br.lon)
+					bblsmry.distance += d
+					br.tdist = (bblsmry.distance * 1852.0)
 				}
+
 				llat = br.lat
 				llon = br.lon
 				dt = us
@@ -356,13 +344,13 @@ func bblreader(bbfile string, idx int, intvl int, dump bool, compress bool, colr
 	if len(ext) < len(outfn) {
 		outfn = outfn[0 : len(outfn)-len(ext)]
 	}
-	if compress {
+	if Options.compress {
 		ext = fmt.Sprintf(".%d.kmz", idx)
 	} else {
 		ext = fmt.Sprintf(".%d.kml", idx)
 	}
 	outfn = outfn + ext
-	GenerateKML(homes, recs, outfn, colrssi)
+	GenerateKML(homes, recs, outfn)
 }
 
 func show_time(t uint64) string {
