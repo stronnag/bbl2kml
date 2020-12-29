@@ -40,11 +40,11 @@ func main() {
 	dump := false
 	compress := false
 	colrssi := false
-	intvl := 100
+	intvl := 1000
 	idx := 0
 
 	flag.IntVar(&idx, "index", 0, "Log index")
-	flag.IntVar(&intvl, "interval", 0, "Sampling Interval (ms), default 100")
+	flag.IntVar(&intvl, "interval", 1000, "Sampling Interval (ms)")
 	flag.BoolVar(&compress, "kmz", false, "Generate KMZ (vice KML)")
 	flag.BoolVar(&colrssi, "rssi", false, "Shade according to RSSI%")
 	flag.BoolVar(&dump, "dump", false, "Dump headers and exit")
