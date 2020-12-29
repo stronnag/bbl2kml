@@ -72,6 +72,6 @@ make
 ```
 
 bbl2kml may be build for all OS for which Golang is available. It also requires inav's
-[blackbox_decode](https://github.com/iNavFlight/blackbox-tools); 0.4.5 (including RCs) or later is recommended. For Windows' users it is probably easier to copy `blackbox_decode.exe` into the same directory as `bbl2kml.exe`.
+[blackbox_decode](https://github.com/iNavFlight/blackbox-tools); 0.4.5 (including RCs) or later is recommended; the minimum `blackbox_decode` version is 0.4.4. For Windows' users it is probably easier to copy `blackbox_decode.exe` into the same directory as `bbl2kml.exe`.
 
 [Binaries are provided for common operating systems.](https://github.com/stronnag/bbl2kml/releases)
