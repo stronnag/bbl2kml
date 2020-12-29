@@ -66,7 +66,7 @@ func main() {
 				if (idx == 0 || idx == b.index) && b.size > 4096 {
 					fmt.Printf("Log      : %s / %d\n", b.logname, b.index)
 					fmt.Printf("Craft    : %s on %s\n", b.craft, b.cdate)
-					fmt.Printf("Fireware : %s of %s\n", b.firmware, b.fwdate)
+					fmt.Printf("Firmware : %s of %s\n", b.firmware, b.fwdate)
 					fmt.Printf("Size     : %s\n", show_size(b.size))
 					bblreader(fn, b.index, intvl, false, compress)
 					fmt.Printf("Disarm   : %s\n\n", b.disarm)
