@@ -226,7 +226,8 @@ func dump_headers(m map[string]int) {
 }
 
 func bblreader(bbfile string, idx int) {
-	cmd := exec.Command(BlackboxDecode, "--datetime", "--merge-gps", "--stdout", "--index",
+	cmd := exec.Command(Options.blackbox_decode,
+		"--datetime", "--merge-gps", "--stdout", "--index",
 		strconv.Itoa(idx), bbfile)
 	out, err := cmd.StdoutPipe()
 	defer cmd.Wait()

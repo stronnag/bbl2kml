@@ -9,16 +9,16 @@ import (
 
 var GitCommit = "local"
 var GitTag = "0.0.0"
-var BlackboxDecode = "blackbox_decode"
 
 var Options = struct {
-	dms      bool
-	dump     bool
-	compress bool
-	colrssi  bool
-	intvl    int
-	idx      int
-}{false, false, false, false, 1000, 0}
+	dms             bool
+	dump            bool
+	compress        bool
+	colrssi         bool
+	intvl           int
+	idx             int
+	blackbox_decode string
+}{false, false, false, false, 1000, 0, "blackbox_decode"}
 
 
 func GetVersion() string {
@@ -57,7 +57,7 @@ func main() {
 
 	decoder := os.Getenv("BLACKBOX_DECODE")
 	if len(decoder) > 0 {
-		BlackboxDecode = decoder
+		Options.blackbox_decode = decoder
 	}
 
 	files := flag.Args()
