@@ -26,7 +26,7 @@ Multiple logs (with multiple indices) may be given. A KML/Z will be generated fo
 The output file is named from the base name of the Blackbox log file, appended with the index number and `.kml` or `.kmz` as appropriate. For example:
 
 ```
-bbl2kml -kmz -interval 1000 /tmp/LOG00022.TXT
+bbl2kml /tmp/LOG00022.TXT
 Log      : LOG00022.TXT / 1
 Craft    :  on 2020-11-08T14:08:22.500+00:00
 Firmware : INAV 2.3.0 (063ba5a) MATEKF722 of Jan 19 2020 20:20:56
@@ -59,7 +59,7 @@ Both Flight Mode and RSSI tracks are generated; the default for display is Fligh
 * Lighter cyan : Launch
 * Red : Failsafe
 
-### RSSI Colours
+### RSSI Track
 
 * RSSI shading; range from red (100%) to yellow (0%), 10 step gradient
 
