@@ -14,11 +14,11 @@ Usage of bbl2kml [options] file...
   -index int
     	Log index
   -interval int
-    	Sampling Interval (ms), default 100
-  -kmz
-    	Generate KMZ (vice KML)
+    	Sampling Interval (ms) (default 1000)
+  -kml
+    	Generate KML (vice KMZ)
   -rssi
-    	Shade according to RSSI%
+    	Set RSSI view as default
 ```
 
 Multiple logs (with multiple indices) may be given. A KML/Z will be generated for each file / index.
