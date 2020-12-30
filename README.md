@@ -65,11 +65,17 @@ Both Flight Mode and RSSI tracks are generated; the default for display is Fligh
 
 ### Examples
 
+#### Flight Modes
+
 ![Example 1](https://github.com/stronnag/mwptools/wiki/images/bbl2kml-1.png)
 
 ![Example 2](https://github.com/stronnag/mwptools/wiki/images/bbl2kml-2.png)
 
 ![Example 3](https://github.com/stronnag/mwptools/wiki/images/bbl2kml-3.png)
+
+#### RSSI
+
+![Example 4](https://github.com/stronnag/mwptools/wiki/images/inav-tracer-rssi.jpg)
 
 ## Building
 
