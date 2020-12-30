@@ -52,13 +52,15 @@ type BBLRec struct {
 	fix     uint8
 	numsat  uint8
 	fmode   uint8
-	vrange  float64
-	bearing int32 // -1 => not defined
-	tdist   float64
 	rssi    uint8
 	fmtext  string
 	utc     string
 	fs      bool
+	hlat    float64
+	hlon    float64
+	vrange  float64
+	bearing int32 // -ve => not defined
+	tdist   float64
 }
 
 var hdrs map[string]int
@@ -162,24 +164,35 @@ func get_bbl_line(r []string, have_origin bool) BBLRec {
 	}
 
 	if !have_origin {
-		b.bearing = -1
+		b.hlat = 0
+		b.hlon = 0
 		b.vrange = -1
-		s, ok = get_rec_value(r, "homeDirection")
+		s, ok = get_rec_value(r, "GPS_home_lat")
 		if ok {
-			i64, _ := strconv.Atoi(s)
-			b.bearing = int32(i64)
+			b.hlat, _ = strconv.ParseFloat(s, 64)
+		}
+		s, ok = get_rec_value(r, "GPS_home_lon")
+		if ok {
+			b.hlon, _ = strconv.ParseFloat(s, 64)
+			b.bearing = -2
 		} else {
-			s, ok = get_rec_value(r, "Azimuth")
+			s, ok = get_rec_value(r, "homeDirection")
 			if ok {
 				i64, _ := strconv.Atoi(s)
-				b.bearing = int32((i64 + 180) % 360)
+				b.bearing = int32(i64)
+			} else {
+				s, ok = get_rec_value(r, "Azimuth")
+				if ok {
+					i64, _ := strconv.Atoi(s)
+					b.bearing = int32((i64 + 180) % 360)
+				}
 			}
-		}
 
-		if b.bearing != -1 {
-			s, ok = get_rec_value(r, "Distance (m)")
-			if ok {
-				b.vrange, _ = strconv.ParseFloat(s, 64)
+			if b.bearing != -1 {
+				s, ok = get_rec_value(r, "Distance (m)")
+				if ok {
+					b.vrange, _ = strconv.ParseFloat(s, 64)
+				}
 			}
 		}
 	}
@@ -281,6 +294,10 @@ func bblreader(bbfile string, meta BBLSummary) {
 				if br.bearing == -1 {
 					home_lat = br.lat
 					home_lon = br.lon
+				} else if br.bearing == -2 {
+					home_lat = br.hlat
+					home_lon = br.hlon
+					homes = append(homes, home_lat, home_lon)
 				} else {
 					home_lat, home_lon = Posit(br.lat, br.lon, float64(br.bearing), br.vrange/1852.0, true)
 					homes = append(homes, home_lat, home_lon)
