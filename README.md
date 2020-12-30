@@ -44,9 +44,11 @@ results in the KMZ file "LOG00022.1.kmz"
 
 ## Output
 
-Track in Google Earth. Can be animated with the time slider. The track is colour-coded according to the flight mode; with the `-rssi` option, colour coding is by RSSI%.
+KML/Z file defining tracks whch may be displayed Google Earth. Tracks can be animated with the time slider.
 
-### Flight Mode Colours
+Both Flight Mode and RSSI tracks are generated; the default for display is Flight Mode, unless `-rssi` is specified (and RSSI data is available in the log). The log summary is displayed by double clicking on the `inav flight` folder in Google Earth.
+
+### Flight Mode Track
 
 * White : WP Mission
 * Yellow : RTH
