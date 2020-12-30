@@ -60,7 +60,7 @@ func getStyleURL(r BBLRec, colmode uint8) string {
 	return s
 }
 
-func getPoints(recs []BBLRec, colmode uint8) []kml.Element {
+func getPoints(recs []BBLRec, colmode uint8, viz bool) []kml.Element {
 	var pt []kml.Element
 	for _, r := range recs {
 		ts, _ := time.Parse(time.RFC3339Nano, r.utc)
@@ -71,6 +71,7 @@ func getPoints(recs []BBLRec, colmode uint8) []kml.Element {
 		}
 		str := fmt.Sprintf("Time: %s<br/>Position: %s %.0fm<br/>Course: %d°<br/>Speed: %.1fm/s<br/>Satellites: %d<br/>Range: %.0fm<br/>Bearing: %d°<br/>RSSI: %d%%<br/>Mode: %s<br/>Distance: %.0fm<br/>", tfmt, PositionFormat(r.lat, r.lon, Options.dms), r.alt, r.cse, r.spd, r.numsat, r.vrange, r.bearing, r.rssi, fmtxt, r.tdist)
 		k := kml.Placemark(
+			kml.Visibility(viz),
 			kml.Description(str),
 			kml.TimeStamp(kml.When(ts)),
 			kml.StyleURL(getStyleURL(r, colmode)),
@@ -227,31 +228,54 @@ func generate_shared_styles(style uint8) []kml.Element {
 	}
 }
 
-func GenerateKML(hpos []float64, recs []BBLRec, outfn string) {
+func GenerateKML(hpos []float64, recs []BBLRec, outfn string, meta BBLSummary, stats BBLStats) {
 
-	var colmode uint8 = 0
-	if Options.colrssi {
-		colmode = 1
+	defviz := !(Options.rssi && recs[0].rssi > 0)
+
+	f0 := kml.Folder(kml.Name("Flight modes")).Add(kml.Visibility(defviz)).
+		Add(generate_shared_styles(0)...).
+		Add(getPoints(recs,0,defviz)...)
+
+	ts0, _ := time.Parse(time.RFC3339Nano, recs[0].utc)
+	ts1, _ := time.Parse(time.RFC3339Nano, recs[len(recs)-1].utc)
+
+	d := kml.Folder(kml.Name("inav flight")).Add(kml.Open(true))
+	e := kml.ExtendedData(
+		kml.Data(kml.Name("Log"), kml.Value(fmt.Sprintf("%s / %d", meta.logname, meta.index))),
+		kml.Data(kml.Name("Craft"), kml.Value(fmt.Sprintf("%s / %s", meta.craft, meta.cdate))),
+		kml.Data(kml.Name("Firmware"), kml.Value(fmt.Sprintf("%s of %s", meta.firmware, meta.fwdate))),
+		kml.Data(kml.Name("Log size"), kml.Value(fmt.Sprintf("%s", Show_size(meta.size)))),
+		kml.Data(kml.Name("Altitude"), kml.Value(fmt.Sprintf("%.1fm at %s", stats.max_alt, Show_time(stats.max_alt_time)))),
+		kml.Data(kml.Name("Speed"), kml.Value(fmt.Sprintf("%.1fm/s at %s", stats.max_speed, Show_time(stats.max_speed_time)))),
+		kml.Data(kml.Name("Range"), kml.Value(fmt.Sprintf("%.0fm at %s", stats.max_range, Show_time(stats.max_range_time)))),
+	)
+
+	if stats.max_current > 0 {
+		e.Add(kml.Data(kml.Name("Current"), kml.Value(fmt.Sprintf("%.1fA at %s", stats.max_current, Show_time(stats.max_current_time)))))
 	}
-	f := kml.Folder(
-		append(
-			append(
-				append(
-					[]kml.Element{kml.Name("inav flight")},
-					generate_shared_styles(colmode)...),
-				getHomes(hpos)...),
-			getPoints(recs,colmode)...)...
-		)
+	e.Add(kml.Data(kml.Name("Distance"), kml.Value(fmt.Sprintf("%.0fm", stats.distance))),
+		kml.Data(kml.Name("Duration"), kml.Value(Show_time(stats.duration))),
+		kml.Data(kml.Name("Disarm"), kml.Value(meta.disarm)))
+	d.Add(e)
+	d.Add(kml.TimeSpan(kml.Begin(ts0), kml.End(ts1)))
+	d.Add(getHomes(hpos)...)
+	d.Add(f0)
+	if recs[0].rssi > 0 {
+		f1 := kml.Folder(kml.Name("RSSI")).Add(kml.Visibility(!defviz)).
+			Add(generate_shared_styles(1)...).
+			Add(getPoints(recs,1,!defviz)...)
+		d.Add(f1)
+	}
 
 	var err error
 	if strings.HasSuffix(outfn, ".kmz") {
-		z := kmz.NewKMZ(f)
+		z := kmz.NewKMZ(d)
 		w, err := os.Create(outfn)
 		if err == nil {
 			err = z.WriteIndent(w, "", "  ")
 		}
 	} else {
-		k := kml.KML(f)
+		k := kml.KML(d)
 		output, err := os.Create(outfn)
 		if err == nil {
 			err = k.WriteIndent(output, "", "  ")

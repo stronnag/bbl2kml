@@ -229,7 +229,8 @@ func dump_headers(m map[string]int) {
 	}
 }
 
-func bblreader(bbfile string, idx int) {
+func bblreader(bbfile string, meta BBLSummary) {
+	idx := meta.index
 	cmd := exec.Command(Options.blackbox_decode,
 		"--datetime", "--merge-gps", "--stdout", "--index",
 		strconv.Itoa(idx), bbfile)
@@ -335,30 +336,30 @@ func bblreader(bbfile string, idx int) {
 	bblsmry.duration = lt - st
 	bblsmry.max_range *= 1852.0
 	bblsmry.distance *= 1852.0
-	fmt.Printf("Altitude : %.1f m at %s\n", bblsmry.max_alt, show_time(bblsmry.max_alt_time))
-	fmt.Printf("Speed    : %.1f m/s at %s\n", bblsmry.max_speed, show_time(bblsmry.max_speed_time))
-	fmt.Printf("Range    : %.0f m at %s\n", bblsmry.max_range, show_time(bblsmry.max_range_time))
+	fmt.Printf("Altitude : %.1f m at %s\n", bblsmry.max_alt, Show_time(bblsmry.max_alt_time))
+	fmt.Printf("Speed    : %.1f m/s at %s\n", bblsmry.max_speed, Show_time(bblsmry.max_speed_time))
+	fmt.Printf("Range    : %.0f m at %s\n", bblsmry.max_range, Show_time(bblsmry.max_range_time))
 	if bblsmry.max_current > 0 {
-		fmt.Printf("Current  : %.1f A at %s\n", bblsmry.max_current, show_time(bblsmry.max_current_time))
+		fmt.Printf("Current  : %.1f A at %s\n", bblsmry.max_current, Show_time(bblsmry.max_current_time))
 	}
 	fmt.Printf("Distance : %.0f m\n", bblsmry.distance)
-	fmt.Printf("Duration : %s\n", show_time(bblsmry.duration))
+	fmt.Printf("Duration : %s\n", Show_time(bblsmry.duration))
 
 	outfn := filepath.Base(bbfile)
 	ext := filepath.Ext(outfn)
 	if len(ext) < len(outfn) {
 		outfn = outfn[0 : len(outfn)-len(ext)]
 	}
-	if Options.compress {
-		ext = fmt.Sprintf(".%d.kmz", idx)
-	} else {
+	if Options.kml {
 		ext = fmt.Sprintf(".%d.kml", idx)
+	} else {
+		ext = fmt.Sprintf(".%d.kmz", idx)
 	}
 	outfn = outfn + ext
-	GenerateKML(homes, recs, outfn)
+	GenerateKML(homes, recs, outfn, meta, bblsmry)
 }
 
-func show_time(t uint64) string {
+func Show_time(t uint64) string {
 	secs := t / 1000000
 	m := secs / 60
 	s := secs % 60
