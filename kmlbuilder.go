@@ -7,7 +7,6 @@ import (
 	kml "github.com/twpayne/go-kml"
 	"github.com/twpayne/go-kml/icon"
 	kmz "github.com/twpayne/go-kmz"
-	"time"
 	"fmt"
 	"strings"
 )
@@ -63,8 +62,7 @@ func getStyleURL(r BBLRec, colmode uint8) string {
 func getPoints(recs []BBLRec, colmode uint8, viz bool) []kml.Element {
 	var pt []kml.Element
 	for _, r := range recs {
-		ts, _ := time.Parse(time.RFC3339Nano, r.utc)
-		tfmt := ts.Format("2006-01-02T15:04:05.99MST")
+		tfmt := r.utc.Format("2006-01-02T15:04:05.99MST")
 		fmtxt := r.fmtext
 		if r.fs {
 			fmtxt = fmtxt + " FAILSAFE"
@@ -73,7 +71,7 @@ func getPoints(recs []BBLRec, colmode uint8, viz bool) []kml.Element {
 		k := kml.Placemark(
 			kml.Visibility(viz),
 			kml.Description(str),
-			kml.TimeStamp(kml.When(ts)),
+			kml.TimeStamp(kml.When(r.utc)),
 			kml.StyleURL(getStyleURL(r, colmode)),
 			kml.Point(
 				kml.AltitudeMode("relativeToGround"),
@@ -231,13 +229,12 @@ func generate_shared_styles(style uint8) []kml.Element {
 func GenerateKML(hpos []float64, recs []BBLRec, outfn string, meta BBLSummary, stats BBLStats) {
 
 	defviz := !(Options.rssi && recs[0].rssi > 0)
+	ts0 := recs[0].utc
+	ts1 := recs[len(recs)-1].utc
 
 	f0 := kml.Folder(kml.Name("Flight modes")).Add(kml.Visibility(defviz)).
 		Add(generate_shared_styles(0)...).
 		Add(getPoints(recs,0,defviz)...)
-
-	ts0, _ := time.Parse(time.RFC3339Nano, recs[0].utc)
-	ts1, _ := time.Parse(time.RFC3339Nano, recs[len(recs)-1].utc)
 
 	d := kml.Folder(kml.Name("inav flight")).Add(kml.Open(true))
 	e := kml.ExtendedData(
@@ -266,8 +263,8 @@ func GenerateKML(hpos []float64, recs []BBLRec, outfn string, meta BBLSummary, s
 			Add(getPoints(recs,1,!defviz)...)
 		d.Add(f1)
 	}
-
 	var err error
+
 	if strings.HasSuffix(outfn, ".kmz") {
 		z := kmz.NewKMZ(d)
 		w, err := os.Create(outfn)

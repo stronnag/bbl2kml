@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"path/filepath"
+	"time"
 )
 
 type BBLStats struct {
@@ -54,7 +55,7 @@ type BBLRec struct {
 	fmode   uint8
 	rssi    uint8
 	fmtext  string
-	utc     string
+	utc     time.Time
 	fs      bool
 	hlat    float64
 	hlon    float64
@@ -167,6 +168,7 @@ func get_bbl_line(r []string, have_origin bool) BBLRec {
 		b.hlat = 0
 		b.hlon = 0
 		b.vrange = -1
+		b.bearing = -1
 		s, ok = get_rec_value(r, "GPS_home_lat")
 		if ok {
 			b.hlat, _ = strconv.ParseFloat(s, 64)
@@ -211,9 +213,8 @@ func get_bbl_line(r []string, have_origin bool) BBLRec {
 
 	s, ok = get_rec_value(r, "dateTime")
 	if ok {
-		b.utc = s
+		b.utc, _ = time.Parse(time.RFC3339Nano, s)
 	}
-
 	return b
 }
 
@@ -242,7 +243,7 @@ func dump_headers(m map[string]int) {
 	}
 }
 
-func bblreader(bbfile string, meta BBLSummary) {
+func bblreader(bbfile string, meta BBLSummary) bool {
 	idx := meta.index
 	cmd := exec.Command(Options.blackbox_decode,
 		"--datetime", "--merge-gps", "--stdout", "--index",
@@ -266,7 +267,7 @@ func bblreader(bbfile string, meta BBLSummary) {
 
 	var home_lat, home_lon, llat, llon float64
 	var dt, st, lt uint64
-
+	var basetime time.Time
 	have_origin := false
 
 	for i := 0; ; i++ {
@@ -278,7 +279,7 @@ func bblreader(bbfile string, meta BBLSummary) {
 			hdrs = get_headers(record)
 			if Options.dump {
 				dump_headers(hdrs)
-				return
+				return true
 			}
 		}
 
@@ -303,12 +304,19 @@ func bblreader(bbfile string, meta BBLSummary) {
 					homes = append(homes, home_lat, home_lon)
 				}
 			}
+			if br.utc.IsZero() {
+				basetime, _ = time.Parse("Jan 2 2006 15:04:05", meta.fwdate)
+			}
+
 		} else {
 			us := br.stamp
 			var d float64
 			var c float64
 			// Do the plot every 100ms
 			if (us - dt) > 1000*uint64(Options.intvl) {
+				if br.utc.IsZero() {
+					br.utc = basetime.Add(time.Duration(us) * time.Microsecond)
+				}
 				c, d = Csedist(home_lat, home_lon, br.lat, br.lon)
 				br.bearing = int32(c)
 				br.vrange = d * 1852.0
@@ -373,7 +381,11 @@ func bblreader(bbfile string, meta BBLSummary) {
 		ext = fmt.Sprintf(".%d.kmz", idx)
 	}
 	outfn = outfn + ext
-	GenerateKML(homes, recs, outfn, meta, bblsmry)
+	if len(homes) > 0 && len(recs) > 0 {
+		GenerateKML(homes, recs, outfn, meta, bblsmry)
+		return true
+	}
+	return false
 }
 
 func Show_time(t uint64) string {
