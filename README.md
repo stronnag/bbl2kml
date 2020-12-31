@@ -100,11 +100,10 @@ Binaries are provided for common operating systems in the [Release folder](https
 
 ## Limitations, Bugs, Bug Reporting
 
-`bbl2kml` aims to support as wide a range of inav firmware and log decoders as possible. During its development, inav has changed both the data logged and in some cases, the meaning of logged items; thus for versions of inav prior to 2.0, the reported flight mode may not be accurate. This may be improved in future releases, following the techniques used by `mwp`'s BBL replay tool.
-`bbl2kml` is known to work with logs from 2015-10-30 (pre inav 1.0)
+`bbl2kml` aims to support as wide a range of inav firmware and log decoders as possible. During its development, inav has changed both the data logged and in some cases, the meaning of logged items; thus for versions of inav prior to 2.0, the reported flight mode may not be completely accurate. `bbl2kml` is known to work with logs from 2015-10-30 (i.e. pre inav 1.0)
 
 Due to the range of `inav` versions, `blackbox_decode` versions and supported operating systems, when reporting bugs, please include the following information in the Github issue:
 
 * The version of `bbl2kml` and `blackbox_decode`. Both applications have a `--help` option that should give the version numbers.
 * The host operating system and version (e.g. "Debian Sid", "Windows 10", "MacOS 10.15").
-* Provide the blackbox log that illustrates the problem. If you don't want to post this into an essentially public forum (the Github issue), then please propose a private delivery channel.
+* Provide the blackbox log that illustrates the problem. If you don't want to post the log into an essentially public forum (the Github issue), then please propose a private delivery channel.
