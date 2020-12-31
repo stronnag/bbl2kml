@@ -270,15 +270,6 @@ func bblreader(bbfile string, meta BBLSummary) bool {
 	var basetime time.Time
 	have_origin := false
 
-	nodates := false
-	fwvers := strings.Split(meta.firmware, " ")
-	if len(fwvers) > 1 {
-		fwparts := strings.Split(fwvers[1], ".")
-		nodates = (fwparts[0] == "1" && fwparts[1] < "8")
-		if nodates {
-			basetime, _ = time.Parse("Jan 2 2006 15:04:05", meta.fwdate)
-		}
-	}
 	for i := 0; ; i++ {
 		record, err := r.Read()
 		if err == io.EOF {
@@ -313,13 +304,17 @@ func bblreader(bbfile string, meta BBLSummary) bool {
 					homes = append(homes, home_lat, home_lon)
 				}
 			}
+			if br.utc.IsZero() {
+				basetime, _ = time.Parse("Jan 2 2006 15:04:05", meta.fwdate)
+			}
+
 		} else {
 			us := br.stamp
 			var d float64
 			var c float64
 			// Do the plot every 100ms
 			if (us - dt) > 1000*uint64(Options.intvl) {
-				if nodates {
+				if br.utc.IsZero() {
 					br.utc = basetime.Add(time.Duration(us) * time.Microsecond)
 				}
 				c, d = Csedist(home_lat, home_lon, br.lat, br.lon)
