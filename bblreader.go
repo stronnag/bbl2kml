@@ -93,17 +93,25 @@ func get_bbl_line(r []string, have_origin bool) BBLRec {
 		b.alt, _ = strconv.ParseFloat(s, 64)
 		b.alt = b.alt / 100.0
 	}
+
+	s, ok = get_rec_value(r, "GPS_numSat")
+	if ok {
+		i64, _ := strconv.Atoi(s)
+		b.numsat = uint8(i64)
+	}
+
 	s, ok = get_rec_value(r, "GPS_fixType")
 	if ok {
 		i64, _ := strconv.Atoi(s)
 		b.fix = uint8(i64)
 	} else {
-		b.fix = 2
-	}
-	s, ok = get_rec_value(r, "GPS_numSat")
-	if ok {
-		i64, _ := strconv.Atoi(s)
-		b.numsat = uint8(i64)
+		if b.numsat > 5 {
+			b.fix = 2
+		} else if b.numsat > 0 {
+			b.fix = 1
+		} else {
+			b.fix = 0
+		}
 	}
 	s, ok = get_rec_value(r, "GPS_coord[0]")
 	if ok {
