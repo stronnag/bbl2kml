@@ -231,13 +231,15 @@ func generate_shared_styles(style uint8) []kml.Element {
 func GenerateKML(hpos []float64, recs []BBLRec, outfn string, meta BBLSummary, stats BBLStats) {
 
 	defviz := !(Options.rssi && recs[0].rssi > 0)
+	ts0, err := time.Parse(time.RFC3339Nano, recs[0].utc)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+	ts1, _ := time.Parse(time.RFC3339Nano, recs[len(recs)-1].utc)
 
 	f0 := kml.Folder(kml.Name("Flight modes")).Add(kml.Visibility(defviz)).
 		Add(generate_shared_styles(0)...).
 		Add(getPoints(recs,0,defviz)...)
-
-	ts0, _ := time.Parse(time.RFC3339Nano, recs[0].utc)
-	ts1, _ := time.Parse(time.RFC3339Nano, recs[len(recs)-1].utc)
 
 	d := kml.Folder(kml.Name("inav flight")).Add(kml.Open(true))
 	e := kml.ExtendedData(
@@ -267,7 +269,6 @@ func GenerateKML(hpos []float64, recs []BBLRec, outfn string, meta BBLSummary, s
 		d.Add(f1)
 	}
 
-	var err error
 	if strings.HasSuffix(outfn, ".kmz") {
 		z := kmz.NewKMZ(d)
 		w, err := os.Create(outfn)

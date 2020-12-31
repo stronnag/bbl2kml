@@ -242,7 +242,7 @@ func dump_headers(m map[string]int) {
 	}
 }
 
-func bblreader(bbfile string, meta BBLSummary) {
+func bblreader(bbfile string, meta BBLSummary) bool {
 	idx := meta.index
 	cmd := exec.Command(Options.blackbox_decode,
 		"--datetime", "--merge-gps", "--stdout", "--index",
@@ -278,7 +278,7 @@ func bblreader(bbfile string, meta BBLSummary) {
 			hdrs = get_headers(record)
 			if Options.dump {
 				dump_headers(hdrs)
-				return
+				return true
 			}
 		}
 
@@ -373,7 +373,11 @@ func bblreader(bbfile string, meta BBLSummary) {
 		ext = fmt.Sprintf(".%d.kmz", idx)
 	}
 	outfn = outfn + ext
-	GenerateKML(homes, recs, outfn, meta, bblsmry)
+	if len(homes) > 0 && len(recs) > 0 {
+		GenerateKML(homes, recs, outfn, meta, bblsmry)
+		return true
+	}
+	return false
 }
 
 func Show_time(t uint64) string {

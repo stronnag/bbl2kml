@@ -80,8 +80,12 @@ func main() {
 					fmt.Printf("Craft    : %s on %s\n", b.craft, b.cdate)
 					fmt.Printf("Firmware : %s of %s\n", b.firmware, b.fwdate)
 					fmt.Printf("Size     : %s\n", Show_size(b.size))
-					bblreader(fn, b)
-					fmt.Printf("Disarm   : %s\n\n", b.disarm)
+					res := bblreader(fn, b)
+					fmt.Printf("Disarm   : %s\n", b.disarm)
+					if !res {
+						fmt.Fprintf(os.Stderr, "*** skipping KML/Z for log  with no valid geospatial data\n")
+					}
+					fmt.Println()
 				}
 			}
 		} else {
