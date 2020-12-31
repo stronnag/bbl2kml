@@ -167,6 +167,7 @@ func get_bbl_line(r []string, have_origin bool) BBLRec {
 		b.hlat = 0
 		b.hlon = 0
 		b.vrange = -1
+		b.bearing = -1
 		s, ok = get_rec_value(r, "GPS_home_lat")
 		if ok {
 			b.hlat, _ = strconv.ParseFloat(s, 64)
