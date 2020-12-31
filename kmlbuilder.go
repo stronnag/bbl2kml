@@ -28,6 +28,8 @@ func getflightColour(mode uint8) color.Color {
 		c = color.RGBA{R: 0x3, G: 0xc0, B: 0xf0, A: 0xa0}
 	case FM_FS:
 		c = color.RGBA{R: 0xff, G: 0, B: 0, A: 0xa0}
+	case FM_EMERG:
+		c = color.RGBA{R: 0xff, G: 0x80, B: 0, A: 0xa0}
 	default:
 		c = color.RGBA{R: 0, G: 0xff, B: 0xff, A: 0xa0}
 	}
@@ -53,6 +55,8 @@ func getStyleURL(r BBLRec, colmode uint8) string {
 		s = "#styleCRS"
 	case FM_PH:
 		s = "#stylePH"
+	case FM_EMERG:
+		s = "#styleEMERG"
 	default:
 		s = "#styleNormal"
 	}
@@ -202,6 +206,16 @@ func generate_shared_styles(style uint8) []kml.Element {
 					),
 				),
 			),
+			kml.SharedStyle(
+				"styleEMERG",
+				kml.IconStyle(
+					kml.Scale(0.5),
+					kml.Color(getflightColour(FM_EMERG)),
+					kml.Icon(
+						kml.Href(icon.PaletteHref(2, 18)),
+					),
+				),
+			),
 		}
 	case 1:
 		{
@@ -242,13 +256,13 @@ func GenerateKML(hpos []float64, recs []BBLRec, outfn string, meta BBLSummary, s
 		kml.Data(kml.Name("Craft"), kml.Value(fmt.Sprintf("%s / %s", meta.craft, meta.cdate))),
 		kml.Data(kml.Name("Firmware"), kml.Value(fmt.Sprintf("%s of %s", meta.firmware, meta.fwdate))),
 		kml.Data(kml.Name("Log size"), kml.Value(fmt.Sprintf("%s", Show_size(meta.size)))),
-		kml.Data(kml.Name("Altitude"), kml.Value(fmt.Sprintf("%.1fm at %s", stats.max_alt, Show_time(stats.max_alt_time)))),
-		kml.Data(kml.Name("Speed"), kml.Value(fmt.Sprintf("%.1fm/s at %s", stats.max_speed, Show_time(stats.max_speed_time)))),
-		kml.Data(kml.Name("Range"), kml.Value(fmt.Sprintf("%.0fm at %s", stats.max_range, Show_time(stats.max_range_time)))),
+		kml.Data(kml.Name("Max. Altitude"), kml.Value(fmt.Sprintf("%.1fm at %s", stats.max_alt, Show_time(stats.max_alt_time)))),
+		kml.Data(kml.Name("Max. Speed"), kml.Value(fmt.Sprintf("%.1fm/s at %s", stats.max_speed, Show_time(stats.max_speed_time)))),
+		kml.Data(kml.Name("Max. Range"), kml.Value(fmt.Sprintf("%.0fm at %s", stats.max_range, Show_time(stats.max_range_time)))),
 	)
 
 	if stats.max_current > 0 {
-		e.Add(kml.Data(kml.Name("Current"), kml.Value(fmt.Sprintf("%.1fA at %s", stats.max_current, Show_time(stats.max_current_time)))))
+		e.Add(kml.Data(kml.Name("Max. Current"), kml.Value(fmt.Sprintf("%.1fA at %s", stats.max_current, Show_time(stats.max_current_time)))))
 	}
 	e.Add(kml.Data(kml.Name("Distance"), kml.Value(fmt.Sprintf("%.0fm", stats.distance))),
 		kml.Data(kml.Name("Duration"), kml.Value(Show_time(stats.duration))),
