@@ -39,6 +39,7 @@ const (
 	FM_CRUISE2D
 	FM_PH
 	FM_AH
+	FM_EMERG
 	FM_FS
 )
 
@@ -67,7 +68,9 @@ type BBLRec struct {
 var hdrs map[string]int
 
 var mNames = []string{"Acro", "Manual", "Horizon", "Angle", "Launch", "RTH", "WP",
-	"3CRS", "CRS", "PH", "AH", "F/S"}
+	"3CRS", "CRS", "PH", "AH", "EMERG", "F/S"}
+
+var INAV_vers int
 
 func get_rec_value(r []string, key string) (string, bool) {
 	var s string
@@ -136,29 +139,29 @@ func get_bbl_line(r []string, have_origin bool) BBLRec {
 	s, ok = get_rec_value(r, "navState")
 	if ok {
 		i64, _ := strconv.ParseInt(s, 10, 64)
-		switch i64 {
-		case 29, 30, 31:
+		switch {
+		case IsCruise2d(INAV_vers, int(i64)):
 			md = FM_CRUISE2D
-		case 32, 33, 34:
+		case IsCruise3d(INAV_vers, int(i64)):
 			md = FM_CRUISE3D
-		case 8, 9, 10, 11, 12, 13, 14, 36:
+		case IsRTH(INAV_vers, int(i64)):
 			md = FM_RTH
-		case 15, 16, 17, 18, 19, 20, 21, 35, 37:
+		case IsWP(INAV_vers, int(i64)):
 			md = FM_WP
-		case 25, 26, 28:
+		case IsLaunch(INAV_vers, int(i64)):
 			md = FM_LAUNCH
-		case 6, 7:
+		case IsPH(INAV_vers, int(i64)):
 			md = FM_PH
-		case 2, 3:
+		case IsAH(INAV_vers, int(i64)):
 			md = FM_AH
+		case IsEmerg(INAV_vers, int(i64)):
+			md = FM_EMERG
 		default:
 			if strings.Contains(s0, "MANUAL") {
 				md = FM_MANUAL
-			}
-			if strings.Contains(s0, "ANGLE") {
+			} else if strings.Contains(s0, "ANGLE") {
 				md = FM_ANGLE
-			}
-			if strings.Contains(s0, "HORIZON") {
+			} else if strings.Contains(s0, "HORIZON") {
 				md = FM_HORIZON
 			}
 		}
@@ -280,6 +283,20 @@ func bblreader(bbfile string, meta BBLSummary) bool {
 	var basetime time.Time
 	have_origin := false
 
+	INAV_vers := 0
+	fwvers := strings.Split(meta.firmware, " ")
+	if len(fwvers) == 4 {
+		parts := strings.Split(fwvers[1], ".")
+		if len(parts) == 3 {
+			mask := (1 << 16)
+			for _, p := range parts {
+				v, _ := strconv.Atoi(p)
+				INAV_vers |= (v * mask)
+				mask = mask >> 8
+			}
+		}
+	}
+
 	for i := 0; ; i++ {
 		record, err := r.Read()
 		if err == io.EOF {
@@ -317,7 +334,6 @@ func bblreader(bbfile string, meta BBLSummary) bool {
 			if br.utc.IsZero() {
 				basetime, _ = time.Parse("Jan 2 2006 15:04:05", meta.fwdate)
 			}
-
 		} else {
 			us := br.stamp
 			var d float64
