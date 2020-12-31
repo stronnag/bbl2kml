@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"path/filepath"
+	"time"
 )
 
 type BBLStats struct {
@@ -54,7 +55,7 @@ type BBLRec struct {
 	fmode   uint8
 	rssi    uint8
 	fmtext  string
-	utc     string
+	utc     time.Time
 	fs      bool
 	hlat    float64
 	hlon    float64
@@ -212,9 +213,8 @@ func get_bbl_line(r []string, have_origin bool) BBLRec {
 
 	s, ok = get_rec_value(r, "dateTime")
 	if ok {
-		b.utc = s
+		b.utc, _ = time.Parse(time.RFC3339Nano, s)
 	}
-
 	return b
 }
 
@@ -267,9 +267,18 @@ func bblreader(bbfile string, meta BBLSummary) bool {
 
 	var home_lat, home_lon, llat, llon float64
 	var dt, st, lt uint64
-
+	var basetime time.Time
 	have_origin := false
 
+	nodates := false
+	fwvers := strings.Split(meta.firmware, " ")
+	if len(fwvers) > 1 {
+		fwparts := strings.Split(fwvers[1], ".")
+		nodates = (fwparts[0] == "1" && fwparts[1] < "8")
+		if nodates {
+			basetime, _ = time.Parse("Jan 2 2006 15:04:05", meta.fwdate)
+		}
+	}
 	for i := 0; ; i++ {
 		record, err := r.Read()
 		if err == io.EOF {
@@ -310,6 +319,9 @@ func bblreader(bbfile string, meta BBLSummary) bool {
 			var c float64
 			// Do the plot every 100ms
 			if (us - dt) > 1000*uint64(Options.intvl) {
+				if nodates {
+					br.utc = basetime.Add(time.Duration(us) * time.Microsecond)
+				}
 				c, d = Csedist(home_lat, home_lon, br.lat, br.lon)
 				br.bearing = int32(c)
 				br.vrange = d * 1852.0

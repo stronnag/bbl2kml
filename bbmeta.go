@@ -72,7 +72,8 @@ func GetBBLMeta(fn string) ([]BBLSummary, error) {
 				nbes = len(bes) - 1
 				bes[nbes].logname = base
 				bes[nbes].index = nbes + 1
-
+				bes[nbes].cdate = "<no date>"
+				bes[nbes].craft = "<unknown>"
 			case strings.HasPrefix(string(l), "H Firmware revision:"):
 				if n := strings.Index(string(l), ":"); n != -1 {
 					fw := string(l)[n+1:]
