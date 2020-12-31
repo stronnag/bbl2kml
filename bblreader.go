@@ -97,6 +97,8 @@ func get_bbl_line(r []string, have_origin bool) BBLRec {
 	if ok {
 		i64, _ := strconv.Atoi(s)
 		b.fix = uint8(i64)
+	} else {
+		b.fix = 2
 	}
 	s, ok = get_rec_value(r, "GPS_numSat")
 	if ok {
