@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 	"log"
-	"strconv"
 	mission "github.com/stronnag/bbl2kml/pkg/mission"
 )
 
