@@ -127,23 +127,33 @@ func (m *Mission) is_valid() bool {
 }
 
 func (m *Mission) Dump(dms bool) {
-  k := kml.KML(m.To_kml(dms))
+  k := kml.KML(m.To_kml(dms, 0.0, 0.0))
 	k.WriteIndent(os.Stdout, "", "  ")
 }
 
-func (m *Mission) To_kml(dms bool) kml.Element {
-
+func (m *Mission) To_kml(dms bool, hlat float64, hlon float64) kml.Element {
 	var points []kml.Coordinate
 	var wps  []kml.Element
 	llat := 0.0
 	llon := 0.0
 	lalt := int32(0)
+	var gelev []GeoItem
+	have_elev := false
+
+	if hlat != 0 && hlon != 0 {
+		var err error
+		gelev, err =  Elevation_for_Mission(m, hlat, hlon)
+		have_elev = (err == nil)
+	}
 
 	for _, mi := range m.MissionItems {
 		if mi.Action != "RTH" {
 			lat := mi.Lat
 			lon := mi.Lon
 			alt := mi.Alt
+			if have_elev {
+				alt = gelev[mi.No].elev
+			}
 			if  mi.Action == "JUMP" || mi.Action == "SET_HEAD" {
 				lat = llat
 				lon = llon
