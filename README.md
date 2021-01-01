@@ -17,6 +17,8 @@ Usage of bbl2kml [options] file...
     	Sampling Interval (ms) (default 1000)
   -kml
     	Generate KML (vice KMZ)
+  -mission string
+    	Mission file name
   -rssi
     	Set RSSI view as default
 ```
@@ -42,6 +44,16 @@ Disarm   : NONE
 results in the KMZ file "LOG00022.1.kmz"
 ```
 
+Where `-mission <file>` is given, the given waypoint `<mission file>` will be included in the generated KML/Z; mission files may be one of the following formats as supported by [impload](https://github.com/stronnag/impload):
+
+* MultiWii / XML mission files (MW-XML) ([mwp](https://github.com/stronnag/mwptools/), [inav-configurator](https://github.com/iNavFlight/inav-configurator), [ezgui](https://play.google.com/store/apps/details?id=com.ezio.multiwii&hl=en_GB), [mission planner for inav](https://play.google.com/store/apps/details?id=com.eziosoft.ezgui.inav&hl=en), drone-helper).
+* [mwp JSON files](https://github.com/stronnag/mwptools/)
+* [apmplanner2](https://ardupilot.org/planner2/) "QGC WPL 110" text files
+* [qgroundcontrol](http://qgroundcontrol.com/) JSON plan files
+* GPX and CSV (as described in the [impload user guide](https://github.com/stronnag/impload/wiki/impload-User-Guide))
+
+If you use a format other than MW-XML or mwp JSON, it is recommended that you review any relevant format constraints as described in the [impload user guide](https://github.com/stronnag/impload/wiki/impload-User-Guide).
+
 ## Output
 
 KML/Z file defining tracks whch may be displayed Google Earth. Tracks can be animated with the time slider.
@@ -58,6 +70,7 @@ Both Flight Mode and RSSI tracks are generated; the default for display is Fligh
 * Cyan : Piloted
 * Lighter cyan : Launch
 * Red : Failsafe
+* Orange : Emergency Landing
 
 ### RSSI Track
 
