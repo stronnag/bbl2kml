@@ -283,7 +283,7 @@ func bblreader(bbfile string, meta BBLSummary) bool {
 	var basetime time.Time
 	have_origin := false
 
-	INAV_vers := 0
+	INAV_vers = 0
 	fwvers := strings.Split(meta.firmware, " ")
 	if len(fwvers) == 4 {
 		parts := strings.Split(fwvers[1], ".")
@@ -291,7 +291,7 @@ func bblreader(bbfile string, meta BBLSummary) bool {
 			mask := (1 << 16)
 			for _, p := range parts {
 				v, _ := strconv.Atoi(p)
-				INAV_vers |= (v * mask)
+				INAV_vers = INAV_vers + (v * mask)
 				mask = mask >> 8
 			}
 		}
