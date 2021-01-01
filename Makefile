@@ -13,3 +13,5 @@ $(MAPP): $(MSRCS)
 clean:
 	@rm -f bbl2kml mission2kml
 	@go clean
+
+all: $(APP) $(MAPP)
