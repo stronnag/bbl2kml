@@ -1,4 +1,4 @@
-package main
+package mission
 
 import (
 	"bytes"
@@ -15,6 +15,7 @@ import (
 	kml "github.com/twpayne/go-kml"
 	"github.com/twpayne/go-kml/icon"
 	"image/color"
+	geo "github.com/stronnag/bbl2kml/pkg/geo"
 )
 
 type QGCrec struct {
@@ -125,12 +126,12 @@ func (m *Mission) is_valid() bool {
 	return true
 }
 
-func (m *Mission) Dump() {
-  k := kml.KML(m.To_kml())
+func (m *Mission) Dump(dms bool) {
+  k := kml.KML(m.To_kml(dms))
 	k.WriteIndent(os.Stdout, "", "  ")
 }
 
-func (m *Mission) To_kml() kml.Element {
+func (m *Mission) To_kml(dms bool) kml.Element {
 
 	var points []kml.Coordinate
 	var wps  []kml.Element
@@ -155,8 +156,8 @@ func (m *Mission) To_kml() kml.Element {
 
 			p := kml.Placemark(
 				kml.Name(fmt.Sprintf("WP %d", mi.No)),
-				kml.Description(fmt.Sprintf("Action: %s<br/>Position: %.7f %.7f %dm",
-					mi.Action, lat, lon, alt)),
+				kml.Description(fmt.Sprintf("Action: %s<br/>Position: %s %dm",
+					mi.Action, geo.PositionFormat(lat, lon, dms), alt)),
 				kml.StyleURL(fmt.Sprintf("#style%s", mi.Action)),
 				kml.Point(
 					kml.AltitudeMode("relativeToGround"),

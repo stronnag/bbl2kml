@@ -1,4 +1,4 @@
-package main
+package bbl
 
 import (
 	"fmt"
@@ -12,6 +12,9 @@ import (
 	"strings"
 	"path/filepath"
 	"time"
+	geo "github.com/stronnag/bbl2kml/pkg/geo"
+	inav "github.com/stronnag/bbl2kml/pkg/inav"
+	options "github.com/stronnag/bbl2kml/pkg/options"
 )
 
 type BBLStats struct {
@@ -140,21 +143,21 @@ func get_bbl_line(r []string, have_origin bool) BBLRec {
 	if ok {
 		i64, _ := strconv.ParseInt(s, 10, 64)
 		switch {
-		case IsCruise2d(INAV_vers, int(i64)):
+		case inav.IsCruise2d(INAV_vers, int(i64)):
 			md = FM_CRUISE2D
-		case IsCruise3d(INAV_vers, int(i64)):
+		case inav.IsCruise3d(INAV_vers, int(i64)):
 			md = FM_CRUISE3D
-		case IsRTH(INAV_vers, int(i64)):
+		case inav.IsRTH(INAV_vers, int(i64)):
 			md = FM_RTH
-		case IsWP(INAV_vers, int(i64)):
+		case inav.IsWP(INAV_vers, int(i64)):
 			md = FM_WP
-		case IsLaunch(INAV_vers, int(i64)):
+		case inav.IsLaunch(INAV_vers, int(i64)):
 			md = FM_LAUNCH
-		case IsPH(INAV_vers, int(i64)):
+		case inav.IsPH(INAV_vers, int(i64)):
 			md = FM_PH
-		case IsAH(INAV_vers, int(i64)):
+		case inav.IsAH(INAV_vers, int(i64)):
 			md = FM_AH
-		case IsEmerg(INAV_vers, int(i64)):
+		case inav.IsEmerg(INAV_vers, int(i64)):
 			md = FM_EMERG
 		default:
 			if strings.Contains(s0, "MANUAL") {
@@ -256,9 +259,9 @@ func dump_headers(m map[string]int) {
 	}
 }
 
-func bblreader(bbfile string, meta BBLSummary) bool {
-	idx := meta.index
-	cmd := exec.Command(Options.blackbox_decode,
+func Reader(bbfile string, meta BBLSummary) bool {
+	idx := meta.Index
+	cmd := exec.Command(options.Blackbox_decode,
 		"--datetime", "--merge-gps", "--stdout", "--index",
 		strconv.Itoa(idx), bbfile)
 	out, err := cmd.StdoutPipe()
@@ -284,7 +287,7 @@ func bblreader(bbfile string, meta BBLSummary) bool {
 	have_origin := false
 
 	INAV_vers = 0
-	fwvers := strings.Split(meta.firmware, " ")
+	fwvers := strings.Split(meta.Firmware, " ")
 	if len(fwvers) == 4 {
 		parts := strings.Split(fwvers[1], ".")
 		if len(parts) == 3 {
@@ -304,7 +307,7 @@ func bblreader(bbfile string, meta BBLSummary) bool {
 		}
 		if i == 0 {
 			hdrs = get_headers(record)
-			if Options.dump {
+			if options.Dump {
 				dump_headers(hdrs)
 				return true
 			}
@@ -327,23 +330,23 @@ func bblreader(bbfile string, meta BBLSummary) bool {
 					home_lon = br.hlon
 					homes = append(homes, home_lat, home_lon)
 				} else {
-					home_lat, home_lon = Posit(br.lat, br.lon, float64(br.bearing), br.vrange/1852.0, true)
+					home_lat, home_lon = geo.Posit(br.lat, br.lon, float64(br.bearing), br.vrange/1852.0, true)
 					homes = append(homes, home_lat, home_lon)
 				}
 			}
 			if br.utc.IsZero() {
-				basetime, _ = time.Parse("Jan 2 2006 15:04:05", meta.fwdate)
+				basetime, _ = time.Parse("Jan 2 2006 15:04:05", meta.Fwdate)
 			}
 		} else {
 			us := br.stamp
 			var d float64
 			var c float64
 			// Do the plot every 100ms
-			if (us - dt) > 1000*uint64(Options.intvl) {
+			if (us - dt) > 1000*uint64(options.Intvl) {
 				if br.utc.IsZero() {
 					br.utc = basetime.Add(time.Duration(us) * time.Microsecond)
 				}
-				c, d = Csedist(home_lat, home_lon, br.lat, br.lon)
+				c, d = geo.Csedist(home_lat, home_lon, br.lat, br.lon)
 				br.bearing = int32(c)
 				br.vrange = d * 1852.0
 
@@ -353,7 +356,7 @@ func bblreader(bbfile string, meta BBLSummary) bool {
 				}
 
 				if llat != br.lat && llon != br.lon {
-					_, d = Csedist(llat, llon, br.lat, br.lon)
+					_, d = geo.Csedist(llat, llon, br.lat, br.lon)
 					bblsmry.distance += d
 					br.tdist = (bblsmry.distance * 1852.0)
 				}
@@ -401,7 +404,7 @@ func bblreader(bbfile string, meta BBLSummary) bool {
 	if len(ext) < len(outfn) {
 		outfn = outfn[0 : len(outfn)-len(ext)]
 	}
-	if Options.kml {
+	if options.Kml {
 		ext = fmt.Sprintf(".%d.kml", idx)
 	} else {
 		ext = fmt.Sprintf(".%d.kmz", idx)

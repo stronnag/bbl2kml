@@ -2,8 +2,7 @@
 *~
 *.exe
 bbl2kml
-mkrel.sh
+mission2kml
+*.sh
 *.backup
-mkbuilds.sh
-README.pdf
 go.sum

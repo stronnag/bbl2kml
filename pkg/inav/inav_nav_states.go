@@ -1,5 +1,4 @@
-package main
-
+package inav
 
 func contains(arry []int, key int) bool {
 	for _, v := range arry {

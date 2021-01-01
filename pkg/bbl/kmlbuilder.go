@@ -1,4 +1,4 @@
-package main
+package bbl
 
 import (
 	"image/color"
@@ -9,6 +9,9 @@ import (
 	kmz "github.com/twpayne/go-kmz"
 	"fmt"
 	"strings"
+	geo "github.com/stronnag/bbl2kml/pkg/geo"
+	mission "github.com/stronnag/bbl2kml/pkg/mission"
+	options "github.com/stronnag/bbl2kml/pkg/options"
 )
 
 func getflightColour(mode uint8) color.Color {
@@ -71,7 +74,7 @@ func getPoints(recs []BBLRec, colmode uint8, viz bool) []kml.Element {
 		if r.fs {
 			fmtxt = fmtxt + " FAILSAFE"
 		}
-		str := fmt.Sprintf("Time: %s<br/>Position: %s %.0fm<br/>Course: %d°<br/>Speed: %.1fm/s<br/>Satellites: %d<br/>Range: %.0fm<br/>Bearing: %d°<br/>RSSI: %d%%<br/>Mode: %s<br/>Distance: %.0fm<br/>", tfmt, PositionFormat(r.lat, r.lon, Options.dms), r.alt, r.cse, r.spd, r.numsat, r.vrange, r.bearing, r.rssi, fmtxt, r.tdist)
+		str := fmt.Sprintf("Time: %s<br/>Position: %s %.0fm<br/>Course: %d°<br/>Speed: %.1fm/s<br/>Satellites: %d<br/>Range: %.0fm<br/>Bearing: %d°<br/>RSSI: %d%%<br/>Mode: %s<br/>Distance: %.0fm<br/>", tfmt, geo.PositionFormat(r.lat, r.lon, options.Dms), r.alt, r.cse, r.spd, r.numsat, r.vrange, r.bearing, r.rssi, fmtxt, r.tdist)
 		k := kml.Placemark(
 			kml.Visibility(viz),
 			kml.Description(str),
@@ -242,7 +245,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 
 func GenerateKML(hpos []float64, recs []BBLRec, outfn string, meta BBLSummary, stats BBLStats) {
 
-	defviz := !(Options.rssi && recs[0].rssi > 0)
+	defviz := !(options.Rssi && recs[0].rssi > 0)
 	ts0 := recs[0].utc
 	ts1 := recs[len(recs)-1].utc
 
@@ -251,21 +254,21 @@ func GenerateKML(hpos []float64, recs []BBLRec, outfn string, meta BBLSummary, s
 		Add(getPoints(recs,0,defviz)...)
 
 	d := kml.Folder(kml.Name("inav flight")).Add(kml.Open(true))
-	if len(Options.mission) > 0 {
-		 _, m, err := Read_Mission_File(Options.mission)
+	if len(options.Mission) > 0 {
+		 _, m, err := mission.Read_Mission_File(options.Mission)
 		if err == nil {
-			mf := m.To_kml()
+			mf := m.To_kml(options.Dms)
 			d.Add(mf)
 		} else {
-			fmt.Fprintf(os.Stderr,"* Failed to read mission file %s\n", Options.mission)
+			fmt.Fprintf(os.Stderr,"* Failed to read mission file %s\n", options.Mission)
 		}
 	}
 
 	e := kml.ExtendedData(
-		kml.Data(kml.Name("Log"), kml.Value(fmt.Sprintf("%s / %d", meta.logname, meta.index))),
-		kml.Data(kml.Name("Craft"), kml.Value(fmt.Sprintf("%s / %s", meta.craft, meta.cdate))),
-		kml.Data(kml.Name("Firmware"), kml.Value(fmt.Sprintf("%s of %s", meta.firmware, meta.fwdate))),
-		kml.Data(kml.Name("Log size"), kml.Value(fmt.Sprintf("%s", Show_size(meta.size)))),
+		kml.Data(kml.Name("Log"), kml.Value(fmt.Sprintf("%s / %d", meta.Logname, meta.Index))),
+		kml.Data(kml.Name("Craft"), kml.Value(fmt.Sprintf("%s / %s", meta.Craft, meta.Cdate))),
+		kml.Data(kml.Name("Firmware"), kml.Value(fmt.Sprintf("%s of %s", meta.Firmware, meta.Fwdate))),
+		kml.Data(kml.Name("Log size"), kml.Value(fmt.Sprintf("%s", Show_size(meta.Size)))),
 		kml.Data(kml.Name("Max. Altitude"), kml.Value(fmt.Sprintf("%.1fm at %s", stats.max_alt, Show_time(stats.max_alt_time)))),
 		kml.Data(kml.Name("Max. Speed"), kml.Value(fmt.Sprintf("%.1fm/s at %s", stats.max_speed, Show_time(stats.max_speed_time)))),
 		kml.Data(kml.Name("Max. Range"), kml.Value(fmt.Sprintf("%.0fm at %s", stats.max_range, Show_time(stats.max_range_time)))),
@@ -276,7 +279,7 @@ func GenerateKML(hpos []float64, recs []BBLRec, outfn string, meta BBLSummary, s
 	}
 	e.Add(kml.Data(kml.Name("Distance"), kml.Value(fmt.Sprintf("%.0fm", stats.distance))),
 		kml.Data(kml.Name("Duration"), kml.Value(Show_time(stats.duration))),
-		kml.Data(kml.Name("Disarm"), kml.Value(meta.disarm)))
+		kml.Data(kml.Name("Disarm"), kml.Value(meta.Disarm)))
 	d.Add(e)
 	d.Add(kml.TimeSpan(kml.Begin(ts0), kml.End(ts1)))
 	d.Add(getHomes(hpos)...)
