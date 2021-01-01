@@ -2,7 +2,7 @@ APP = bbl2kml
 
 prefix?=$(DESTDIR)/usr
 
-APP:
+$(APP):
 	go build -ldflags "-w -s"
 
 install: $(APP)
