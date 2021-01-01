@@ -251,6 +251,16 @@ func GenerateKML(hpos []float64, recs []BBLRec, outfn string, meta BBLSummary, s
 		Add(getPoints(recs,0,defviz)...)
 
 	d := kml.Folder(kml.Name("inav flight")).Add(kml.Open(true))
+	if len(Options.mission) > 0 {
+		 _, m, err := Read_Mission_File(Options.mission)
+		if err == nil {
+			mf := m.To_kml()
+			d.Add(mf)
+		} else {
+			fmt.Fprintf(os.Stderr,"* Failed to read mission file %s\n", Options.mission)
+		}
+	}
+
 	e := kml.ExtendedData(
 		kml.Data(kml.Name("Log"), kml.Value(fmt.Sprintf("%s / %d", meta.logname, meta.index))),
 		kml.Data(kml.Name("Craft"), kml.Value(fmt.Sprintf("%s / %s", meta.craft, meta.cdate))),

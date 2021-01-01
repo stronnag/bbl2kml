@@ -18,7 +18,8 @@ var Options = struct {
 	intvl           int
 	idx             int
 	blackbox_decode string
-}{false, false, false, false, 1000, 0, "blackbox_decode"}
+	mission         string
+}{false, false, false, false, 1000, 0, "blackbox_decode", ""}
 
 
 func GetVersion() string {
@@ -53,6 +54,7 @@ func main() {
 	flag.BoolVar(&Options.rssi, "rssi", false, "Set RSSI view as default")
 	flag.BoolVar(&Options.dump, "dump", false, "Dump headers and exit")
 	flag.BoolVar(&Options.dms, "dms", false, "Show positions as DMS (vice decimal degrees)")
+	flag.StringVar(&Options.mission, "mission", "", "Mission file name")
 	flag.Parse()
 
 	decoder := os.Getenv("BLACKBOX_DECODE")
