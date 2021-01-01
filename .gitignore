@@ -1,8 +1,8 @@
 /src/build
 *~
 *.exe
-bbl2kml
-mission2kml
+/bbl2kml
+/mission2kml
 *.sh
 *.backup
 go.sum
