@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"log"
+	"fmt"
 	mission "github.com/stronnag/bbl2kml/pkg/mission"
 )
 
@@ -17,5 +18,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+	} else {
+		fmt.Fprintln(os.Stderr, "usage: mission2kml mission-file [dms]")
 	}
 }

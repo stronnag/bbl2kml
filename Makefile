@@ -22,11 +22,11 @@ clean:
 install: $(APP) $(MAPP)
 	install -d $(prefix)/bin
 	install -s $(APP) $(prefix)/bin/bbl2kml
-	install -s $(MAPP) $(prefix)/bin/missoin2kml
+	install -s $(MAPP) $(prefix)/bin/mission2kml
 
 install-local: $(APP) $(MAPP)
 	install -d $(HOME)/bin
 	install -s $(APP) $(HOME)/bin/bbl2kml
-	install -s $(MAPP) $(HOME)/bin/missoin2kml
+	install -s $(MAPP) $(HOME)/bin/mission2kml
 
 all: $(APP) $(MAPP)
