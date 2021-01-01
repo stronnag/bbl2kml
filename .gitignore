@@ -1,4 +1,4 @@
-/build
+/src/build
 *~
 *.exe
 bbl2kml
