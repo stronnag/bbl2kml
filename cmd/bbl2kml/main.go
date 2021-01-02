@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"flag"
+	"strings"
 	bbl "github.com/stronnag/bbl2kml/pkg/bbl"
 	options "github.com/stronnag/bbl2kml/pkg/options"
 )
@@ -24,6 +25,12 @@ func main() {
 		fmt.Fprintf(os.Stderr, "\n")
 		fmt.Fprintln(os.Stderr, getVersion())
 	}
+
+	defs := os.Getenv("BBL2KML_OPTS")
+	options.Dms = strings.Contains(defs, "-dms")
+	options.Elev = strings.Contains(defs, "-elev")
+	options.Kml = strings.Contains(defs, "-kml")
+	options.Rssi = strings.Contains(defs, "-rssi")
 
 	flag.IntVar(&options.Idx, "index", 0, "Log index")
 	flag.IntVar(&options.Intvl, "interval", 1000, "Sampling Interval (ms)")

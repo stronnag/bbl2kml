@@ -55,8 +55,11 @@ Examples:
 		fmt.Fprintln(os.Stderr, extra)
 	}
 
-	flag.BoolVar(&dms, "dms", false, "Show positions as DMS (vice decimal degrees)")
-	flag.StringVar(&homepos, "home", "", "Use home location")
+	defs := os.Getenv("BBL2KML_OPTS")
+	dms = strings.Contains(defs, "-dms")
+
+	flag.BoolVar(&dms, "dms", dms, "Show positions as DMS (vice decimal degrees)")
+	flag.StringVar(&homepos, "home", homepos, "Use home location")
 	flag.Parse()
 	files := flag.Args()
 	if len(files) == 0 {
