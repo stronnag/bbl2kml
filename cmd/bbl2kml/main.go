@@ -8,6 +8,7 @@ import (
 	"strings"
 	bbl "github.com/stronnag/bbl2kml/pkg/bbl"
 	options "github.com/stronnag/bbl2kml/pkg/options"
+	api "github.com/stronnag/bbl2kml/pkg/api"
 )
 
 var GitCommit = "local"
@@ -54,7 +55,7 @@ func main() {
 	}
 
 	if options.Dump {
-		bbl.Reader(files[0], bbl.BBLSummary{Index: 1})
+		bbl.Reader(files[0], api.BBLSummary{Index: 1})
 		os.Exit(1)
 	}
 

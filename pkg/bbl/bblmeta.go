@@ -8,18 +8,8 @@ import (
 	"path"
 	"io"
 	"fmt"
+	api "github.com/stronnag/bbl2kml/pkg/api"
 )
-
-type BBLSummary struct {
-	Logname  string
-	Craft    string
-	Cdate    string
-	Firmware string
-	Fwdate   string
-	Disarm   string
-	Index    int
-	Size     int64
-}
 
 type reason int
 
@@ -44,8 +34,8 @@ func (r reason) String() string {
 	return reasons[r]
 }
 
-func Meta(fn string) ([]BBLSummary, error) {
-	var bes []BBLSummary
+func Meta(fn string) ([]api.BBLSummary, error) {
+	var bes []api.BBLSummary
 	r, err := os.Open(fn)
 	if err == nil {
 		var nbes int

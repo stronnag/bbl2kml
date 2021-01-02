@@ -15,58 +15,9 @@ import (
 	geo "github.com/stronnag/bbl2kml/pkg/geo"
 	inav "github.com/stronnag/bbl2kml/pkg/inav"
 	options "github.com/stronnag/bbl2kml/pkg/options"
+	kmlgen "github.com/stronnag/bbl2kml/pkg/kmlgen"
+	api "github.com/stronnag/bbl2kml/pkg/api"
 )
-
-type BBLStats struct {
-	max_alt          float64
-	max_alt_time     uint64
-	max_range        float64
-	max_range_time   uint64
-	max_speed        float64
-	max_speed_time   uint64
-	max_current      float64
-	max_current_time uint64
-	distance         float64
-	duration         uint64
-}
-
-const (
-	FM_ACRO = iota
-	FM_MANUAL
-	FM_HORIZON
-	FM_ANGLE
-	FM_LAUNCH
-	FM_RTH
-	FM_WP
-	FM_CRUISE3D
-	FM_CRUISE2D
-	FM_PH
-	FM_AH
-	FM_EMERG
-	FM_FS
-)
-
-type BBLRec struct {
-	stamp   uint64
-	lat     float64
-	lon     float64
-	alt     float64
-	cse     uint32
-	spd     float64
-	amps    float64
-	fix     uint8
-	numsat  uint8
-	fmode   uint8
-	rssi    uint8
-	fmtext  string
-	utc     time.Time
-	fs      bool
-	hlat    float64
-	hlon    float64
-	vrange  float64
-	bearing int32 // -ve => not defined
-	tdist   float64
-}
 
 var hdrs map[string]int
 
@@ -88,7 +39,7 @@ func get_rec_value(r []string, key string) (string, bool) {
 	return s, ok
 }
 
-func get_bbl_line(r []string, have_origin bool) BBLRec {
+func get_bbl_line(r []string, have_origin bool) api.BBLRec {
 	b := BBLRec{}
 	s, ok := get_rec_value(r, "amperage (A)")
 	if ok {
@@ -144,32 +95,32 @@ func get_bbl_line(r []string, have_origin bool) BBLRec {
 		i64, _ := strconv.ParseInt(s, 10, 64)
 		switch {
 		case inav.IsCruise2d(INAV_vers, int(i64)):
-			md = FM_CRUISE2D
+			md = api.FM_CRUISE2D
 		case inav.IsCruise3d(INAV_vers, int(i64)):
-			md = FM_CRUISE3D
+			md = api.FM_CRUISE3D
 		case inav.IsRTH(INAV_vers, int(i64)):
-			md = FM_RTH
+			md = api.FM_RTH
 		case inav.IsWP(INAV_vers, int(i64)):
-			md = FM_WP
+			md = api.FM_WP
 		case inav.IsLaunch(INAV_vers, int(i64)):
-			md = FM_LAUNCH
+			md = api.FM_LAUNCH
 		case inav.IsPH(INAV_vers, int(i64)):
-			md = FM_PH
+			md = api.FM_PH
 		case inav.IsAH(INAV_vers, int(i64)):
-			md = FM_AH
+			md = api.FM_AH
 		case inav.IsEmerg(INAV_vers, int(i64)):
-			md = FM_EMERG
+			md = api.FM_EMERG
 		default:
 			if strings.Contains(s0, "MANUAL") {
-				md = FM_MANUAL
+				md = api.FM_MANUAL
 			} else if strings.Contains(s0, "ANGLE") {
-				md = FM_ANGLE
+				md = api.FM_ANGLE
 			} else if strings.Contains(s0, "HORIZON") {
-				md = FM_HORIZON
+				md = api.FM_HORIZON
 			}
 		}
 		if strings.Contains(s0, "NAVRTH") {
-			md = FM_RTH
+			md = api.FM_RTH
 		}
 	}
 	b.fmode = md
@@ -413,7 +364,7 @@ func Reader(bbfile string, meta BBLSummary) bool {
 	}
 	outfn = outfn + ext
 	if len(homes) > 0 && len(recs) > 0 {
-		GenerateKML(homes, recs, outfn, meta, bblsmry)
+		kmlgen.GenerateKML(homes, recs, outfn, meta, bblsmry)
 		return true
 	}
 	return false
