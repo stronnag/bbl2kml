@@ -145,6 +145,28 @@ Examples:
 
 ```
 
+## Setting default options
+
+It is possible to define default options using the `BBL2KML_OPTS` environment variable.
+
+```
+BBL2KML_OPTS='-dms' bbl2kml somelog.TXT #
+```
+
+A permanent value can set in e.g. `.bashrc`, `.pam_environment` or Windows' equivalent.
+
+```
+export BBL2KML_OPTS='-dms -elev'
+or
+export BBL2KML_OPTS='-rssi'
+```
+
+In the permanent usage case the only way to use the dafaults is the redefine / clear the environment variable.
+
+```
+BBL2KML_OPTS= mission2kml sample.json
+```
+
 ## Limitations, Bugs, Bug Reporting
 
 `bbl2kml` aims to support as wide a range of inav firmware and log decoders as possible. During its development, inav has changed both the data logged and in some cases, the meaning of logged items; thus for versions of inav prior to 2.0, the reported flight mode might not be completely accurate. `bbl2kml` is known to work with logs from 2015-10-30 (i.e. pre inav 1.0), and if you have a Blackbox log that is not decoded / visualisated correctly, please raise a [Github issue](https://github.com/stronnag/bbl2kml/issues); this is a bug.
