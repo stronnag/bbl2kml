@@ -10,10 +10,17 @@ import (
 	mission "github.com/stronnag/bbl2kml/pkg/mission"
 )
 
+var GitCommit = "local"
+var GitTag = "0.0.0"
+
 var (
 	dms     bool
 	homepos string
 )
+
+func getVersion() string {
+	return fmt.Sprintf("mission2kml %s, commit: %s", GitTag, GitCommit)
+}
 
 func split(s string, separators []rune) []string {
 	f := func(r rune) bool {
@@ -53,6 +60,7 @@ Examples:
 		flag.PrintDefaults()
 		fmt.Fprintln(os.Stderr)
 		fmt.Fprintln(os.Stderr, extra)
+		fmt.Fprintln(os.Stderr, getVersion())
 	}
 
 	defs := os.Getenv("BBL2KML_OPTS")

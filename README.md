@@ -117,7 +117,7 @@ Binaries are provided for common operating systems in the [Release folder](https
 
 ## `mission2kml`
 
-A standalone mission file to KML/Z converter is available in the repository; it is not built by default, but may be built from the `Makefile`, `make all`
+A standalone mission file to KML/Z converter is also provided.
 
 ```
 $ mission2kml --help

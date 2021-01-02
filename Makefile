@@ -1,22 +1,31 @@
-DESTDIR ?= .
 LDFLAGS ?= -s -w
 prefix ?= /usr
 
-APP=$(DESTDIR)/bbl2kml
-MAPP=$(DESTDIR)/mission2kml
+ifndef DESTDIR
+ APP=bbl2kml
+ MAPP=mission2kml
+else
+ APP=$(DESTDIR)/bbl2kml
+ MAPP=$(DESTDIR)/mission2kml
+endif
 
+ifeq ($(GOOS),windows)
+ EXT=.exe
+else
+ EXT=
+endif
 
-SOURCES = $(wildcard cmd/$(APP)/*.go) $(wildcard pkg/*/*.go)
+SOURCES = $(wildcard cmd/bbl2kml/*.go) $(wildcard pkg/*/*.go)
 MSRCS = $(wildcard cmd/mission2kml/*.go) $(wildcard pkg/*/*.go)
 
 $(APP): $(SOURCES)
-	go build -ldflags "$(LDFLAGS)" -o $(APP) cmd/bbl2kml/main.go
+	go build -ldflags "$(LDFLAGS)" -o $(APP)$(EXT) cmd/bbl2kml/main.go
 
 $(MAPP): $(MSRCS)
-	go build -ldflags "$(LDFLAGS)" -o $(MAPP) cmd/mission2kml/main.go
+	go build -ldflags "$(LDFLAGS)" -o $(MAPP)$(EXT) cmd/mission2kml/main.go
 
 clean:
-	@rm -f $(APP) $(MAPP)
+	@rm -f $(APP)$(EXT) $(MAPP)$(EXT)
 	@go clean
 
 install: $(APP) $(MAPP)
