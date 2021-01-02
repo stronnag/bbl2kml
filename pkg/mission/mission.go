@@ -129,11 +129,11 @@ func (m *Mission) is_valid() bool {
 }
 
 func (m *Mission) Dump(dms, use_elev bool, lat, lon float64)  {
-  k := kml.KML(m.To_kml(dms, use_elev, lat, lon))
+  k := kml.KML(m.To_kml(dms, use_elev, lat, lon, true))
 	k.WriteIndent(os.Stdout, "", "  ")
 }
 
-func (m *Mission) To_kml(dms, use_elev bool, hlat float64, hlon float64) kml.Element {
+func (m *Mission) To_kml(dms, use_elev bool, hlat float64, hlon float64, fake bool) kml.Element {
 	var points []kml.Coordinate
 	var wps  []kml.Element
 	llat := 0.0
@@ -145,49 +145,95 @@ func (m *Mission) To_kml(dms, use_elev bool, hlat float64, hlon float64) kml.Ele
 	if use_elev {
 		var err error
 		gelev, err =  Elevation_for_Mission(m, hlat, hlon)
-		have_elev = (err == nil)
+		if err == nil {
+			points = append(points, kml.Coordinate{Lon: hlon, Lat: hlat,
+				Alt: float64(gelev[0].elev)})
+			have_elev = true
+		}
 	}
 
+	var lat, lon float64
+	var alt int32
+
 	for _, mi := range m.MissionItems {
-		if mi.Action != "RTH" {
-			lat := mi.Lat
-			lon := mi.Lon
-			alt := mi.Alt
+		if  mi.Action == "JUMP" || mi.Action == "SET_HEAD" || mi.Action == "RTH" {
+			lat = llat
+			lon = llon
+			alt = lalt
+		} else {
+			lat = mi.Lat
+			lon = mi.Lon
 			if have_elev {
 				alt = gelev[mi.No].elev
-			}
-			if  mi.Action == "JUMP" || mi.Action == "SET_HEAD" {
-				lat = llat
-				lon = llon
-				alt = lalt
 			} else {
-				llat = lat
-				llon = lon
-				lalt = alt
+				alt = mi.Alt
 			}
+			llat = lat
+			llon = lon
+			lalt = alt
+		}
+		//		fmt.Fprintf(os.Stderr,"wp %d %s %f %f %d\n", mi.No, mi.Action, lat, lon, alt)
 
+		var bname string
+
+		switch mi.Action {
+		case "WAYPOINT":
+			bname = "WP"
+		case "POSHOLD_UNLIM", "POSHOLD_TIME":
+			bname = "PH"
+		case "SET_POI":
+			bname = "POI"
+		case "SET_HEAD":
+			bname = "HD"
+		default:
+			bname = mi.Action
+		}
+		name:= fmt.Sprintf("%s %d", bname, mi.No)
+		p := kml.Placemark(
+			kml.Name(name),
+			kml.Description(fmt.Sprintf("Action: %s<br/>Position: %s %dm",
+				mi.Action, geo.PositionFormat(lat, lon, dms), alt)),
+			kml.StyleURL(fmt.Sprintf("#style%s", mi.Action)),
+			kml.Point(
+				kml.AltitudeMode("relativeToGround"),
+				kml.Coordinates(kml.Coordinate{Lon: lon, Lat: lat, Alt: float64(alt)}),
+			),
+		)
+		wps = append(wps, p)
+
+		if  mi.Action != "SET_POI" && mi.Action != "JUMP" && mi.Action != "SET_HEAD" &&
+			mi.Action != "RTH" {
+			pt := kml.Coordinate{
+				Lon: mi.Lon,
+				Lat: mi.Lat,
+				Alt: float64(float64(alt)),
+			}
+			points = append(points, pt)
+		}
+	}
+
+	var desc string
+	if have_elev {
+		desc = fmt.Sprintf("Created from %s with elevations adjusted for home location %s",
+			m.mission_file, geo.PositionFormat(hlat, hlon, dms))
+		points = append(points, kml.Coordinate{Lon: hlon, Lat: hlat,
+			Alt: float64(gelev[0].elev)})
+		if fake {
 			p := kml.Placemark(
-				kml.Name(fmt.Sprintf("WP %d", mi.No)),
-				kml.Description(fmt.Sprintf("Action: %s<br/>Position: %s %dm",
-					mi.Action, geo.PositionFormat(lat, lon, dms), alt)),
-				kml.StyleURL(fmt.Sprintf("#style%s", mi.Action)),
+				kml.Name("Home"),
+				kml.Description(fmt.Sprintf("Assumed Home<br/>Position: %s %dm",
+					geo.PositionFormat(hlat, hlon, dms), gelev[0].elev)),
+				kml.StyleURL("#styleFakeHome"),
 				kml.Point(
 					kml.AltitudeMode("relativeToGround"),
-					kml.Coordinates(kml.Coordinate{Lon: lon, Lat: lat, Alt: float64(alt)}),
+					kml.Coordinates(kml.Coordinate{Lon: hlon, Lat: hlat, Alt: float64(gelev[0].elev)}),
 				),
 			)
-
 			wps = append(wps, p)
-
-			if  mi.Action != "SET_POI" && mi.Action != "JUMP" && mi.Action != "SET_HEAD" {
-				pt := kml.Coordinate{
-					Lon: mi.Lon,
-					Lat: mi.Lat,
-					Alt: float64(float64(alt)),
-				}
-				points = append(points, pt)
-			}
 		}
+
+	} else {
+		desc = fmt.Sprintf("Created from %s", m.mission_file)
 	}
 
 	track := kml.Placemark(
@@ -201,14 +247,6 @@ func (m *Mission) To_kml(dms, use_elev bool, hlat float64, hlon float64) kml.Ele
 		),
 	)
 
-	var desc string
-	if have_elev {
-		desc = fmt.Sprintf("Created from %s with elevations adjusted for home location %s",
-			m.mission_file, geo.PositionFormat(hlat, hlon, dms))
-	} else {
-		desc = fmt.Sprintf("Created from %s", m.mission_file)
-	}
-
 	return kml.Folder(kml.Name("Mission File")).Add(kml.Description(desc)).
 		Add(kml.Visibility(true)).Add(mission_styles()...).Add(track).Add(wps...)
 }
@@ -221,6 +259,16 @@ func mission_styles() []kml.Element {
 				kml.Scale(0.8),
 				kml.Icon(
 					kml.Href(icon.PaddleHref("ylw-diamond"),
+					),
+				),
+			),
+		),
+		kml.SharedStyle(
+			"styleRTH",
+			kml.IconStyle(
+				kml.Scale(0.8),
+				kml.Icon(
+					kml.Href(icon.PaddleHref("red-diamond"),
 					),
 				),
 			),
@@ -256,7 +304,7 @@ func mission_styles() []kml.Element {
 			),
 		),
 		kml.SharedStyle(
-			"stylePOSHOLD_TIMED",
+			"stylePOSHOLD_TIME",
 			kml.IconStyle(
 				kml.Scale(0.8),
 				kml.Icon(
@@ -276,11 +324,21 @@ func mission_styles() []kml.Element {
 			),
 		),
 		kml.SharedStyle(
-			"stylePOSHOLD_LAND",
+			"styleLAND",
 			kml.IconStyle(
 				kml.Scale(0.8),
 				kml.Icon(
-					kml.Href(icon.PaddleHref("pink_stars"),
+					kml.Href(icon.PaddleHref("pink-stars"),
+					),
+				),
+			),
+		),
+		kml.SharedStyle(
+			"styleFakeHome",
+			kml.IconStyle(
+				kml.Scale(0.8),
+				kml.Icon(
+					kml.Href(icon.PaddleHref("orange-stars"),
 					),
 				),
 			),

@@ -257,7 +257,7 @@ func GenerateKML(hpos []float64, recs []BBLRec, outfn string, meta BBLSummary, s
 	if len(options.Mission) > 0 {
 		 _, m, err := mission.Read_Mission_File(options.Mission)
 		if err == nil {
-			mf := m.To_kml(options.Dms, options.Elev, hpos[0], hpos[1])
+			mf := m.To_kml(options.Dms, options.Elev, hpos[0], hpos[1], false)
 			d.Add(mf)
 		} else {
 			fmt.Fprintf(os.Stderr,"* Failed to read mission file %s\n", options.Mission)
