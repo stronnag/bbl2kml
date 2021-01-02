@@ -32,6 +32,7 @@ func main() {
 	flag.BoolVar(&options.Dump, "dump", false, "Dump headers and exit")
 	flag.BoolVar(&options.Dms, "dms", false, "Show positions as DMS (vice decimal degrees)")
 	flag.StringVar(&options.Mission, "mission", "", "Mission file name")
+	flag.BoolVar(&options.Elev, "elev", false, "Use online elevation service to adjust mission evelations")
 	flag.Parse()
 
 	decoder := os.Getenv("BLACKBOX_DECODE")

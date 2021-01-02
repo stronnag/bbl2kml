@@ -3,6 +3,7 @@ package options
 var (
 	Dms             bool   = false
 	Dump            bool   = false
+	Elev            bool   = false
 	Kml             bool   = false
 	Rssi            bool   = false
 	Intvl           int    = 1000

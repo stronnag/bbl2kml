@@ -108,7 +108,7 @@ func getHomes(hpos []float64) []kml.Element {
 	hp = append(hp, k)
 	if len(hpos) > 2 {
 		k = kml.Placemark(
-			kml.Name("SafeHome"),
+			kml.Name("Home"),
 			kml.Point(
 				kml.Coordinates(kml.Coordinate{Lon: hpos[3], Lat: hpos[2]}),
 			),
@@ -257,7 +257,7 @@ func GenerateKML(hpos []float64, recs []BBLRec, outfn string, meta BBLSummary, s
 	if len(options.Mission) > 0 {
 		 _, m, err := mission.Read_Mission_File(options.Mission)
 		if err == nil {
-			mf := m.To_kml(options.Dms, recs[0].lat, recs[0].lon)
+			mf := m.To_kml(options.Dms, options.Elev, hpos[0], hpos[1])
 			d.Add(mf)
 		} else {
 			fmt.Fprintf(os.Stderr,"* Failed to read mission file %s\n", options.Mission)

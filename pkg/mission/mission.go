@@ -16,6 +16,7 @@ import (
 	"github.com/twpayne/go-kml/icon"
 	"image/color"
 	geo "github.com/stronnag/bbl2kml/pkg/geo"
+	"path/filepath"
 )
 
 type QGCrec struct {
@@ -50,6 +51,7 @@ const (
 )
 
 type Mission struct {
+	mission_file string
 	Version      string
 	MissionItems []MissionItem
 }
@@ -57,7 +59,7 @@ type Mission struct {
 
 func read_gpx(dat []byte) *Mission {
 	items := []MissionItem{}
-	mission := &Mission{"0.0", items}
+	mission := &Mission{"", "0.0", items}
 	stypes := []string{"//trkpt", "//rtept", "//wpt"}
 
 	doc := etree.NewDocument()
@@ -126,12 +128,12 @@ func (m *Mission) is_valid() bool {
 	return true
 }
 
-func (m *Mission) Dump(dms bool) {
-  k := kml.KML(m.To_kml(dms, 0.0, 0.0))
+func (m *Mission) Dump(dms, use_elev bool, lat, lon float64)  {
+  k := kml.KML(m.To_kml(dms, use_elev, lat, lon))
 	k.WriteIndent(os.Stdout, "", "  ")
 }
 
-func (m *Mission) To_kml(dms bool, hlat float64, hlon float64) kml.Element {
+func (m *Mission) To_kml(dms, use_elev bool, hlat float64, hlon float64) kml.Element {
 	var points []kml.Coordinate
 	var wps  []kml.Element
 	llat := 0.0
@@ -140,7 +142,7 @@ func (m *Mission) To_kml(dms bool, hlat float64, hlon float64) kml.Element {
 	var gelev []GeoItem
 	have_elev := false
 
-	if hlat != 0 && hlon != 0 {
+	if use_elev {
 		var err error
 		gelev, err =  Elevation_for_Mission(m, hlat, hlon)
 		have_elev = (err == nil)
@@ -181,7 +183,7 @@ func (m *Mission) To_kml(dms bool, hlat float64, hlon float64) kml.Element {
 				pt := kml.Coordinate{
 					Lon: mi.Lon,
 					Lat: mi.Lat,
-					Alt: float64(mi.Alt),
+					Alt: float64(float64(alt)),
 				}
 				points = append(points, pt)
 			}
@@ -199,8 +201,16 @@ func (m *Mission) To_kml(dms bool, hlat float64, hlon float64) kml.Element {
 		),
 	)
 
-	return kml.Folder(kml.Name("Mission File")).Add(kml.Visibility(true)).
-		Add(mission_styles()...).Add(track).Add(wps...)
+	var desc string
+	if have_elev {
+		desc = fmt.Sprintf("Created from %s with elevations adjusted for home location %s",
+			m.mission_file, geo.PositionFormat(hlat, hlon, dms))
+	} else {
+		desc = fmt.Sprintf("Created from %s", m.mission_file)
+	}
+
+	return kml.Folder(kml.Name("Mission File")).Add(kml.Description(desc)).
+		Add(kml.Visibility(true)).Add(mission_styles()...).Add(track).Add(wps...)
 }
 
 func mission_styles() []kml.Element {
@@ -291,7 +301,7 @@ func read_simple(dat []byte) *Mission {
 	r := csv.NewReader(strings.NewReader(string(dat)))
 
 	items := []MissionItem{}
-	mission := &Mission{"0.0", items}
+	mission := &Mission{"", "0.0", items}
 
 	n := 1
 	has_no := false
@@ -476,7 +486,7 @@ func fixup_qgc_mission(mission *Mission, have_jump bool) (*Mission, bool) {
 func process_qgc(dat []byte, mtype string) *Mission {
 	var qs []QGCrec
 	items := []MissionItem{}
-	mission := &Mission{"0.0", items}
+	mission := &Mission{"", "0.0", items}
 
 	if mtype == "qgc-text" {
 		qs = read_qgc_text(dat)
@@ -606,7 +616,7 @@ func process_qgc(dat []byte, mtype string) *Mission {
 
 func read_xml_mission(dat []byte) *Mission {
 	items := []MissionItem{}
-	mission := &Mission{"impload", items}
+	mission := &Mission{"", "0.0", items}
 	doc := etree.NewDocument()
 	if err := doc.ReadFromBytes(dat); err == nil {
 		for _, root := range doc.ChildElements() {
@@ -641,7 +651,7 @@ func read_xml_mission(dat []byte) *Mission {
 
 func read_json(dat []byte) *Mission {
 	items := []MissionItem{}
-	mission := &Mission{"impload", items}
+	mission := &Mission{"", "0.0", items}
 	var result map[string]interface{}
 	json.Unmarshal(dat, &result)
 	mi := result["mission"].([]interface{})
@@ -667,6 +677,7 @@ func Read_Mission_File(path string) (string, *Mission, error) {
 		return "?", nil, err
 	} else {
 		mtype, m := handle_mission_data(dat, path)
+		m.mission_file = 	filepath.Base(path)
 		return mtype, m, nil
 	}
 }
