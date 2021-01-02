@@ -339,49 +339,51 @@ func Reader(bbfile string, meta BBLSummary) bool {
 			}
 		} else {
 			us := br.stamp
-			var d float64
-			var c float64
-			// Do the plot every 100ms
-			if (us - dt) > 1000*uint64(options.Intvl) {
-				if br.utc.IsZero() {
-					br.utc = basetime.Add(time.Duration(us) * time.Microsecond)
+			if us > st {
+				var d float64
+				var c float64
+				// Do the plot every 100ms
+				if (us - dt) > 1000*uint64(options.Intvl) {
+					if br.utc.IsZero() {
+						br.utc = basetime.Add(time.Duration(us) * time.Microsecond)
+					}
+					c, d = geo.Csedist(home_lat, home_lon, br.lat, br.lon)
+					br.bearing = int32(c)
+					br.vrange = d * 1852.0
+
+					if d > bblsmry.max_range {
+						bblsmry.max_range = d
+						bblsmry.max_range_time = us - st
+					}
+
+					if llat != br.lat && llon != br.lon {
+						_, d = geo.Csedist(llat, llon, br.lat, br.lon)
+						bblsmry.distance += d
+						br.tdist = (bblsmry.distance * 1852.0)
+					}
+
+					llat = br.lat
+					llon = br.lon
+					dt = us
+					recs = append(recs, br)
 				}
-				c, d = geo.Csedist(home_lat, home_lon, br.lat, br.lon)
-				br.bearing = int32(c)
-				br.vrange = d * 1852.0
 
-				if d > bblsmry.max_range {
-					bblsmry.max_range = d
-					bblsmry.max_range_time = us - st
+				if br.alt > bblsmry.max_alt {
+					bblsmry.max_alt = br.alt
+					bblsmry.max_alt_time = us - st
 				}
 
-				if llat != br.lat && llon != br.lon {
-					_, d = geo.Csedist(llat, llon, br.lat, br.lon)
-					bblsmry.distance += d
-					br.tdist = (bblsmry.distance * 1852.0)
+				if br.spd < 400 && br.spd > bblsmry.max_speed {
+					bblsmry.max_speed = br.spd
+					bblsmry.max_speed_time = us - st
 				}
 
-				llat = br.lat
-				llon = br.lon
-				dt = us
-				recs = append(recs, br)
+				if br.amps > bblsmry.max_current {
+					bblsmry.max_current = br.amps
+					bblsmry.max_current_time = us - st
+				}
+				lt = us
 			}
-
-			if br.alt > bblsmry.max_alt {
-				bblsmry.max_alt = br.alt
-				bblsmry.max_alt_time = us - st
-			}
-
-			if br.spd < 400 && br.spd > bblsmry.max_speed {
-				bblsmry.max_speed = br.spd
-				bblsmry.max_speed_time = us - st
-			}
-
-			if br.amps > bblsmry.max_current {
-				bblsmry.max_current = br.amps
-				bblsmry.max_current_time = us - st
-			}
-			lt = us
 		}
 		if err != nil {
 			log.Fatal(err)
