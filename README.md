@@ -5,12 +5,14 @@
 Generate annotated KML/KMZ files from inav blackbox logs
 
 ```
-$ ./bbl2kml --help
-Usage of bbl2kml [options] file...
+$ bbl2kml --help
+Usage of bb2kml [options] file...
   -dms
     	Show positions as DMS (vice decimal degrees)
   -dump
     	Dump headers and exit
+  -elev
+    	Use online elevation service to adjust mission evelations
   -index int
     	Log index
   -interval int
@@ -21,6 +23,8 @@ Usage of bbl2kml [options] file...
     	Mission file name
   -rssi
     	Set RSSI view as default
+
+bbl2kml 0.2.0, commit: 816eea0 / 2021-01-02
 ```
 
 Multiple logs (with multiple indices) may be given. A KML/Z will be generated for each file / index.
@@ -111,9 +115,39 @@ bbl2kml may be build for all OS for which Golang is available. It also requires 
 
 Binaries are provided for common operating systems in the [Release folder](https://github.com/stronnag/bbl2kml/releases).
 
+## `mission2kml`
+
+A standalone mission file to KML/Z converter is available in the repository; it is not built by default, but may be built from the `Makefile`, `make all`
+
+```
+$ mission2kml --help
+Usage of missionkml [options] mission_file
+  -dms
+    	Show positions as DMS (vice decimal degrees)
+  -home string
+    	Use home location
+
+The home location is given as decimal degrees latitude and
+longitude. The values should be separated by a single separator, one
+of "/:; ,". If space is used, then the values must be enclosed in
+quotes. In locales where comma is used as decimal "point", then it
+should not be used as a separator.
+
+If a syntactically valid home postion is given, an online elevation
+service is used to adjust mission elevations in the KML.
+
+Examples:
+    -home 54.353974/-4.5236
+    --home 48,9975:2,5789
+    -home 54.353974;-4.5236
+    --home "48,9975 2,5789"
+    -home 54.353974,-4.5236
+
+```
+
 ## Limitations, Bugs, Bug Reporting
 
-`bbl2kml` aims to support as wide a range of inav firmware and log decoders as possible. During its development, inav has changed both the data logged and in some cases, the meaning of logged items; thus for versions of inav prior to 2.0, the reported flight mode may not be completely accurate. `bbl2kml` is known to work with logs from 2015-10-30 (i.e. pre inav 1.0)
+`bbl2kml` aims to support as wide a range of inav firmware and log decoders as possible. During its development, inav has changed both the data logged and in some cases, the meaning of logged items; thus for versions of inav prior to 2.0, the reported flight mode might not be completely accurate. `bbl2kml` is known to work with logs from 2015-10-30 (i.e. pre inav 1.0), and if you have a Blackbox log that is not decoded / visualisated correctly, please raise a [Github issue](https://github.com/stronnag/bbl2kml/issues); this is a bug.
 
 Due to the range of `inav` versions, `blackbox_decode` versions and supported operating systems, when reporting bugs, please include the following information in the Github issue:
 
