@@ -16,6 +16,7 @@ import (
 	"github.com/twpayne/go-kml/icon"
 	"image/color"
 	geo "github.com/stronnag/bbl2kml/pkg/geo"
+	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	"path/filepath"
 )
 
@@ -128,28 +129,47 @@ func (m *Mission) is_valid() bool {
 	return true
 }
 
-func (m *Mission) Dump(dms, use_elev bool, lat, lon float64)  {
-  k := kml.KML(m.To_kml(dms, use_elev, lat, lon, true))
+func (m *Mission) Dump(dms bool, homep...float64)  {
+	var hpos types.HomeRec
+	hpos.HomeLat = homep[0]
+	hpos.HomeLon = homep[1]
+	hpos.Flags = types.HOME_ARM
+	if len(homep) > 2 {
+		hpos.HomeAlt = homep[2]
+		hpos.Flags |= types.HOME_ALT
+	}
+	k := kml.KML(m.To_kml(hpos, dms, true))
 	k.WriteIndent(os.Stdout, "", "  ")
 }
 
-func (m *Mission) To_kml(dms, use_elev bool, hlat float64, hlon float64, fake bool) kml.Element {
+func (m *Mission) To_kml(hpos types.HomeRec, dms bool, fake bool) kml.Element {
 	var points []kml.Coordinate
 	var wps  []kml.Element
 	llat := 0.0
 	llon := 0.0
 	lalt := int32(0)
-	var gelev []GeoItem
-	have_elev := false
+	var altmode kml.AltitudeModeEnum
 
-	if use_elev {
-		var err error
-		gelev, err =  Elevation_for_Mission(m, hlat, hlon)
-		if err == nil {
-			points = append(points, kml.Coordinate{Lon: hlon, Lat: hlat,
-				Alt: float64(gelev[0].elev)})
-			have_elev = true
+	addAlt := int32(0)
+
+	if (hpos.Flags & types.HOME_ARM) != 0 {
+		if (hpos.Flags & types.HOME_ALT) == types.HOME_ALT {
+			addAlt = int32(hpos.HomeAlt)
+		} else {
+			bingelev, err :=  GetElevation(hpos.HomeLat, hpos.HomeLon)
+
+			if err == nil {
+				addAlt = int32(bingelev)
+				hpos.Flags |= types.HOME_ALT
+			}
 		}
+
+		if (hpos.Flags & types.HOME_ALT) == types.HOME_ALT {
+			altmode = kml.AltitudeModeAbsolute
+		} else {
+			altmode = kml.AltitudeModeRelativeToGround
+		}
+		points = append(points, kml.Coordinate{Lon: hpos.HomeLon, Lat: hpos.HomeLat, Alt: float64(addAlt)})
 	}
 
 	var lat, lon float64
@@ -163,17 +183,11 @@ func (m *Mission) To_kml(dms, use_elev bool, hlat float64, hlon float64, fake bo
 		} else {
 			lat = mi.Lat
 			lon = mi.Lon
-			if have_elev {
-				alt = gelev[mi.No].elev
-			} else {
-				alt = mi.Alt
-			}
+			alt = mi.Alt + addAlt
 			llat = lat
 			llon = lon
 			lalt = alt
 		}
-		//		fmt.Fprintf(os.Stderr,"wp %d %s %f %f %d\n", mi.No, mi.Action, lat, lon, alt)
-
 		var bname string
 
 		switch mi.Action {
@@ -195,7 +209,7 @@ func (m *Mission) To_kml(dms, use_elev bool, hlat float64, hlon float64, fake bo
 				mi.Action, geo.PositionFormat(lat, lon, dms), alt)),
 			kml.StyleURL(fmt.Sprintf("#style%s", mi.Action)),
 			kml.Point(
-				kml.AltitudeMode("relativeToGround"),
+				kml.AltitudeMode(altmode),
 				kml.Coordinates(kml.Coordinate{Lon: lon, Lat: lat, Alt: float64(alt)}),
 			),
 		)
@@ -203,44 +217,37 @@ func (m *Mission) To_kml(dms, use_elev bool, hlat float64, hlon float64, fake bo
 
 		if  mi.Action != "SET_POI" && mi.Action != "JUMP" && mi.Action != "SET_HEAD" &&
 			mi.Action != "RTH" {
-			pt := kml.Coordinate{
-				Lon: mi.Lon,
-				Lat: mi.Lat,
-				Alt: float64(float64(alt)),
-			}
+			pt := kml.Coordinate{Lon: mi.Lon, Lat: mi.Lat, Alt: float64(alt)}
 			points = append(points, pt)
 		}
 	}
 
 	var desc string
-	if have_elev {
+	if (hpos.Flags & types.HOME_ALT) == types.HOME_ALT {
 		desc = fmt.Sprintf("Created from %s with elevations adjusted for home location %s",
-			m.mission_file, geo.PositionFormat(hlat, hlon, dms))
-		points = append(points, kml.Coordinate{Lon: hlon, Lat: hlat,
-			Alt: float64(gelev[0].elev)})
+			m.mission_file, geo.PositionFormat(hpos.HomeLat, hpos.HomeLon, dms))
+		points = append(points, kml.Coordinate{Lon: hpos.HomeLon, Lat: hpos.HomeLat,Alt: float64(addAlt)})
 		if fake {
 			p := kml.Placemark(
 				kml.Name("Home"),
 				kml.Description(fmt.Sprintf("Assumed Home<br/>Position: %s %dm",
-					geo.PositionFormat(hlat, hlon, dms), gelev[0].elev)),
+					geo.PositionFormat(hpos.HomeLat, hpos.HomeLon, dms), addAlt)),
 				kml.StyleURL("#styleFakeHome"),
 				kml.Point(
-					kml.AltitudeMode("relativeToGround"),
-					kml.Coordinates(kml.Coordinate{Lon: hlon, Lat: hlat, Alt: float64(gelev[0].elev)}),
+					kml.Coordinates(kml.Coordinate{Lon: hpos.HomeLon, Lat: hpos.HomeLat}),
 				),
 			)
 			wps = append(wps, p)
+		} else {
+			desc = fmt.Sprintf("Created from %s", m.mission_file)
 		}
-
-	} else {
-		desc = fmt.Sprintf("Created from %s", m.mission_file)
 	}
 
 	track := kml.Placemark(
 		kml.Description("inav mission"),
 		kml.StyleURL("#styleWPTrack"),
 		kml.LineString(
-			kml.AltitudeMode("relativeToGround"),
+			kml.AltitudeMode(altmode),
 			kml.Extrude(true),
 			kml.Tessellate(false),
 			kml.Coordinates(points...),

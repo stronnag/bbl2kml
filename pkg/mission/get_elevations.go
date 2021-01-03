@@ -84,3 +84,10 @@ func Elevation_for_Mission(m *Mission, hlat, hlon float64) ([]GeoItem, error) {
 	}
 	return g, err
 }
+
+func GetElevation(lat, lon float64) (float64, error) {
+	var g []GeoItem
+	g = append(g, GeoItem{0, lat, lon, 0, 0})
+	elev, err := get_elevations(g)
+	return elev[0], err
+}

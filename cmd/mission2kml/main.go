@@ -36,26 +36,24 @@ func split(s string, separators []rune) []string {
 }
 
 func main() {
-	hlat := 0.0
-	hlon := 0.0
-	use_elev := false
-
 	flag.Usage = func() {
 		extra := `The home location is given as decimal degrees latitude and
-longitude. The values should be separated by a single separator, one
-of "/:; ,". If space is used, then the values must be enclosed in
-quotes. In locales where comma is used as decimal "point", then it
-should not be used as a separator.
+longitude and optional altitude. The values should be separated by a single
+separator, one of "/:; ,". If space is used, then the values must be enclosed
+in quotes.
 
-If a syntactically valid home postion is given, an online elevation
-service is used to adjust mission elevations in the KML.
+In locales where comma is used as decimal "point", then comma should not be
+used as a separator.
+
+If a syntactically valid home postion is given, without altitude, an online
+elevation service is used to adjust mission elevations in the KML.
 
 Examples:
     -home 54.353974/-4.5236
-    --home 48,9975:2,5789
+    --home 48,9975:2,5789/104
     -home 54.353974;-4.5236
     --home "48,9975 2,5789"
-    -home 54.353974,-4.5236
+    -home 54.353974,-4.5236,24
 `
 		fmt.Fprintf(os.Stderr, "Usage of %s [options] mission_file\n", filepath.Base(os.Args[0]))
 		flag.PrintDefaults()
@@ -76,24 +74,32 @@ Examples:
 		os.Exit(-1)
 	}
 
+	var home []float64
+	var v float64
+
 	if len(homepos) > 0 {
 		parts := split(homepos, []rune{'/', ':', ';', ' ', ','})
-		if len(parts) == 2 {
+		if len(parts) >= 2 {
 			var err error
-			hlat, err = strconv.ParseFloat(parts[0], 64)
+			v, err = strconv.ParseFloat(parts[0], 64)
 			if err == nil {
-				hlon, err = strconv.ParseFloat(parts[1], 64)
-				if (hlat != 0.0 && hlon != 0.0) && hlat <= 90.0 && hlat >= -90 &&
-					hlon <= 180.0 && hlat >= -180 {
-					use_elev = true
+				home = append(home, v)
+				v, err = strconv.ParseFloat(parts[1], 64)
+				if err == nil {
+					home = append(home, v)
+					if len(parts) == 3 {
+						v, err = strconv.ParseFloat(parts[2], 64)
+						if err == nil {
+							home = append(home, v)
+						}
+					}
 				}
 			}
 		}
 	}
-
 	_, m, err := mission.Read_Mission_File(files[0])
 	if m != nil && err == nil {
-		m.Dump(dms, use_elev, hlat, hlon)
+		m.Dump(dms, home...)
 	}
 	if err != nil {
 		log.Fatal(err)

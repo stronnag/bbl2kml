@@ -11,8 +11,6 @@ Usage of bb2kml [options] file...
     	Show positions as DMS (vice decimal degrees)
   -dump
     	Dump headers and exit
-  -elev
-    	Use online elevation service to adjust mission evelations
   -index int
     	Log index
   -interval int
@@ -121,28 +119,29 @@ A standalone mission file to KML/Z converter is also provided.
 
 ```
 $ mission2kml --help
-Usage of missionkml [options] mission_file
+Usage of mission2kml [options] mission_file
   -dms
     	Show positions as DMS (vice decimal degrees)
   -home string
     	Use home location
 
 The home location is given as decimal degrees latitude and
-longitude. The values should be separated by a single separator, one
-of "/:; ,". If space is used, then the values must be enclosed in
-quotes. In locales where comma is used as decimal "point", then it
-should not be used as a separator.
+longitude and optional altitude. The values should be separated by a single
+separator, one of "/:; ,". If space is used, then the values must be enclosed
+in quotes.
 
-If a syntactically valid home postion is given, an online elevation
-service is used to adjust mission elevations in the KML.
+In locales where comma is used as decimal "point", then comma should not be
+used as a separator.
+
+If a syntactically valid home postion is given, without altitude, an online
+elevation service is used to adjust mission elevations in the KML.
 
 Examples:
     -home 54.353974/-4.5236
-    --home 48,9975:2,5789
+    --home 48,9975:2,5789/104
     -home 54.353974;-4.5236
     --home "48,9975 2,5789"
-    -home 54.353974,-4.5236
-
+    -home 54.353974,-4.5236,24
 ```
 
 ## Setting default options

@@ -31,7 +31,6 @@ func main() {
 
 	defs := os.Getenv("BBL2KML_OPTS")
 	options.Dms = strings.Contains(defs, "-dms")
-	options.Elev = strings.Contains(defs, "-elev")
 	options.Kml = strings.Contains(defs, "-kml")
 	options.Rssi = strings.Contains(defs, "-rssi")
 
@@ -42,7 +41,6 @@ func main() {
 	flag.BoolVar(&options.Dump, "dump", false, "Dump log headers and exit")
 	flag.BoolVar(&options.Dms, "dms", false, "Show positions as DD:MM:SS.s (vice decimal degrees)")
 	flag.StringVar(&options.Mission, "mission", "", "Optional mission file name")
-	flag.BoolVar(&options.Elev, "elev", false, "Use an online elevation service to adjust mission evelations to above terrain")
 	flag.Parse()
 
 	decoder := os.Getenv("BLACKBOX_DECODE")
