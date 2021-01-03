@@ -17,7 +17,7 @@ else
  EXT=
 endif
 
-all: $(APP)$(EXT) $(MAPP)$(EXT) $(OAPP)$(EXT)
+all: $(APP)$(EXT) $(MAPP)$(EXT) # $(OAPP)$(EXT)
 
 PKGCOMMON = $(wildcard pkg/api/*/*.go) $(wildcard pkg/kmlgen/*.go) $(wildcard pkg/mission/*.go)
 PKGOPT = $(wildcard pkg/options/*.go)

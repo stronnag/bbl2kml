@@ -67,7 +67,7 @@ func getStyleURL(r types.BBLRec, colmode uint8) string {
 	return s
 }
 
-func getPoints(recs []types.BBLRec, colmode uint8, viz bool) []kml.Element {
+func getPoints(recs []types.BBLRec, hpos types.HomeRec, colmode uint8, viz bool) []kml.Element {
 	var pt []kml.Element
 	for _, r := range recs {
 		tfmt := r.Utc.Format("2006-01-02T15:04:05.99MST")
@@ -75,15 +75,27 @@ func getPoints(recs []types.BBLRec, colmode uint8, viz bool) []kml.Element {
 		if r.Fs {
 			fmtxt = fmtxt + " FAILSAFE"
 		}
-		str := fmt.Sprintf("Time: %s<br/>Position: %s %.0fm<br/>Course: %d°<br/>Speed: %.1fm/s<br/>Satellites: %d<br/>Range: %.0fm<br/>Bearing: %d°<br/>RSSI: %d%%<br/>Mode: %s<br/>Distance: %.0fm<br/>", tfmt, geo.PositionFormat(r.Lat, r.Lon, options.Dms), r.Alt, r.Cse, r.Spd, r.Numsat, r.Vrange, r.Bearing, r.Rssi, fmtxt, r.Tdist)
+		var alt float64
+		var altmode kml.AltitudeModeEnum
+		if (hpos.Flags & types.HOME_ALT) == types.HOME_ALT {
+			alt = hpos.HomeAlt + r.Alt
+			altmode = kml.AltitudeModeAbsolute
+		} else {
+			alt = r.Alt
+			altmode = kml.AltitudeModeRelativeToGround
+		}
+
+		str := fmt.Sprintf("Time: %s<br/>Position: %s %.0fm<br/>Course: %d°<br/>Speed: %.1fm/s<br/>Satellites: %d<br/>Range: %.0fm<br/>Bearing: %d°<br/>RSSI: %d%%<br/>Mode: %s<br/>Distance: %.0fm<br/>Alts %s %.1f<br/>",
+			tfmt, geo.PositionFormat(r.Lat, r.Lon, options.Dms), r.Alt, r.Cse, r.Spd, r.Numsat, r.Vrange, r.Bearing, r.Rssi, fmtxt, r.Tdist, altmode , alt)
+
 		k := kml.Placemark(
 			kml.Visibility(viz),
 			kml.Description(str),
 			kml.TimeStamp(kml.When(r.Utc)),
 			kml.StyleURL(getStyleURL(r, colmode)),
 			kml.Point(
-				kml.AltitudeMode("relativeToGround"),
-				kml.Coordinates(kml.Coordinate{Lon: r.Lon, Lat: r.Lat, Alt: r.Alt}),
+				kml.AltitudeMode(altmode),
+				kml.Coordinates(kml.Coordinate{Lon: r.Lon, Lat: r.Lat, Alt: alt}),
 			),
 		)
 		pt = append(pt, k)
@@ -91,12 +103,12 @@ func getPoints(recs []types.BBLRec, colmode uint8, viz bool) []kml.Element {
 	return pt
 }
 
-func getHomes(hpos []float64) []kml.Element {
+func getHomes(hpos types.HomeRec) []kml.Element {
 	var hp []kml.Element
 	k := kml.Placemark(
 		kml.Name("Armed"),
 		kml.Point(
-			kml.Coordinates(kml.Coordinate{Lon: hpos[1], Lat: hpos[0]}),
+			kml.Coordinates(kml.Coordinate{Lon: hpos.HomeLon, Lat: hpos.HomeLat}),
 		),
 		kml.Style(
 			kml.IconStyle(
@@ -107,11 +119,11 @@ func getHomes(hpos []float64) []kml.Element {
 		),
 	)
 	hp = append(hp, k)
-	if len(hpos) > 2 {
+	if (hpos.Flags & types.HOME_SAFE) == types.HOME_SAFE {
 		k = kml.Placemark(
 			kml.Name("Home"),
 			kml.Point(
-				kml.Coordinates(kml.Coordinate{Lon: hpos[3], Lat: hpos[2]}),
+				kml.Coordinates(kml.Coordinate{Lon: hpos.SafeLon, Lat: hpos.SafeLat}),
 			),
 			kml.Style(
 				kml.IconStyle(
@@ -244,7 +256,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 	}
 }
 
-func GenerateKML(hpos []float64, recs []types.BBLRec, outfn string,
+func GenerateKML(hpos types.HomeRec, recs []types.BBLRec, outfn string,
 	meta types.BBLSummary, stats types.BBLStats) {
 
 	defviz := !(options.Rssi && recs[0].Rssi > 0)
@@ -253,13 +265,13 @@ func GenerateKML(hpos []float64, recs []types.BBLRec, outfn string,
 
 	f0 := kml.Folder(kml.Name("Flight modes")).Add(kml.Visibility(defviz)).
 		Add(generate_shared_styles(0)...).
-		Add(getPoints(recs,0,defviz)...)
+		Add(getPoints(recs,hpos,0,defviz)...)
 
 	d := kml.Folder(kml.Name("inav flight")).Add(kml.Open(true))
 	if len(options.Mission) > 0 {
 		 _, m, err := mission.Read_Mission_File(options.Mission)
 		if err == nil {
-			mf := m.To_kml(options.Dms, options.Elev, hpos[0], hpos[1], false)
+			mf := m.To_kml(options.Dms, options.Elev, hpos.HomeLat, hpos.HomeLon, false)
 			d.Add(mf)
 		} else {
 			fmt.Fprintf(os.Stderr,"* Failed to read mission file %s\n", options.Mission)
@@ -290,7 +302,7 @@ func GenerateKML(hpos []float64, recs []types.BBLRec, outfn string,
 	if recs[0].Rssi > 0 {
 		f1 := kml.Folder(kml.Name("RSSI")).Add(kml.Visibility(!defviz)).
 			Add(generate_shared_styles(1)...).
-			Add(getPoints(recs,1,!defviz)...)
+			Add(getPoints(recs,hpos,1,!defviz)...)
 		d.Add(f1)
 	}
 	var err error

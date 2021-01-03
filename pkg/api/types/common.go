@@ -72,6 +72,7 @@ type BBLRec struct {
 	Lat     float64
 	Lon     float64
 	Alt     float64
+	GAlt    float64
 	Cse     uint32
 	Spd     float64
 	Amps    float64
@@ -88,6 +89,21 @@ type BBLRec struct {
 	Bearing int32 // -ve => not defined
 	Tdist   float64
 }
+
+type HomeRec struct {
+	Flags   uint8
+	HomeLat float64
+	HomeLon float64
+	HomeAlt float64
+	SafeLat float64
+	SafeLon float64
+}
+
+const (
+	HOME_ARM  = 1
+	HOME_SAFE = 2
+	HOME_ALT  = 4
+)
 
 var Mnames = []string{"Acro", "Manual", "Horizon", "Angle", "Launch", "RTH", "WP",
 	"3CRS", "CRS", "PH", "AH", "EMERG", "F/S"}

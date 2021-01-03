@@ -74,6 +74,12 @@ func get_bbl_line(r []string, have_origin bool) types.BBLRec {
 	if ok {
 		b.Lon, _ = strconv.ParseFloat(s, 64)
 	}
+
+	s, ok = get_rec_value(r, "GPS_altitude")
+	if ok {
+		b.GAlt, _ = strconv.ParseFloat(s, 64)
+	}
+
 	s, ok = get_rec_value(r, "GPS_speed (m/s)")
 	if ok {
 		b.Spd, _ = strconv.ParseFloat(s, 64)
@@ -214,7 +220,7 @@ func Reader(bbfile string, meta types.BBLSummary) bool {
 	out, err := cmd.StdoutPipe()
 	defer cmd.Wait()
 	defer out.Close()
-	var homes []float64
+	var homes types.HomeRec
 	var recs []types.BBLRec
 
 	r := csv.NewReader(out)
@@ -228,7 +234,7 @@ func Reader(bbfile string, meta types.BBLSummary) bool {
 
 	bblsmry := types.BBLStats{false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
-	var home_lat, home_lon, llat, llon float64
+	var llat, llon float64
 	var dt, st, lt uint64
 	var basetime time.Time
 	have_origin := false
@@ -268,17 +274,19 @@ func Reader(bbfile string, meta types.BBLSummary) bool {
 				llat = br.Lat
 				llon = br.Lon
 				st = br.Stamp
-				homes = append(homes, br.Lat, br.Lon)
-				if br.Bearing == -1 {
-					home_lat = br.Lat
-					home_lon = br.Lon
-				} else if br.Bearing == -2 {
-					home_lat = br.Hlat
-					home_lon = br.Hlon
-					homes = append(homes, home_lat, home_lon)
-				} else {
-					home_lat, home_lon = geo.Posit(br.Lat, br.Lon, float64(br.Bearing), br.Vrange/1852.0, true)
-					homes = append(homes, home_lat, home_lon)
+				homes.HomeLat = br.Lat
+				homes.HomeLon = br.Lon
+				homes.HomeAlt = br.GAlt
+				homes.Flags = types.HOME_ARM | types.HOME_ALT
+				if br.Bearing == -2 {
+					homes.SafeLat = br.Hlat
+					homes.SafeLon = br.Hlon
+					homes.Flags |= types.HOME_SAFE
+				} else if br.Bearing > -1 {
+					hlat, hlon := geo.Posit(br.Lat, br.Lon, float64(br.Bearing), br.Vrange/1852.0, true)
+					homes.SafeLat = hlat
+					homes.SafeLon = hlon
+					homes.Flags |= types.HOME_SAFE
 				}
 			}
 			if br.Utc.IsZero() {
@@ -294,7 +302,7 @@ func Reader(bbfile string, meta types.BBLSummary) bool {
 					if br.Utc.IsZero() {
 						br.Utc = basetime.Add(time.Duration(us) * time.Microsecond)
 					}
-					c, d = geo.Csedist(home_lat, home_lon, br.Lat, br.Lon)
+					c, d = geo.Csedist(homes.HomeLat, homes.HomeLon, br.Lat, br.Lon)
 					br.Bearing = int32(c)
 					br.Vrange = d * 1852.0
 
@@ -349,7 +357,7 @@ func Reader(bbfile string, meta types.BBLSummary) bool {
 	fmt.Printf("Distance : %.0f m\n", bblsmry.Distance)
 	fmt.Printf("Duration : %s\n", Show_time(bblsmry.Duration))
 
-	if len(homes) > 0 && len(recs) > 0 {
+	if homes.Flags != 0 && len(recs) > 0 {
 		meta.Valid = true
 		bblsmry.Valid = true
 		outfn := kmlgen.GenKmlName(bbfile, idx)
