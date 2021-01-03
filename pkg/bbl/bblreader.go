@@ -95,11 +95,12 @@ func get_bbl_line(r []string, have_origin bool) types.BBLRec {
 	s, ok = get_rec_value(r, "navState")
 	if ok {
 		i64, _ := strconv.ParseInt(s, 10, 64)
+		fmt.Fprintf(os.Stderr, "%v %v ", b.Stamp, i64)
 		switch {
-		case inav.IsCruise2d(INAV_vers, int(i64)):
-			md = types.FM_CRUISE2D
 		case inav.IsCruise3d(INAV_vers, int(i64)):
 			md = types.FM_CRUISE3D
+		case inav.IsCruise2d(INAV_vers, int(i64)):
+			md = types.FM_CRUISE2D
 		case inav.IsRTH(INAV_vers, int(i64)):
 			md = types.FM_RTH
 		case inav.IsWP(INAV_vers, int(i64)):
@@ -113,20 +114,26 @@ func get_bbl_line(r []string, have_origin bool) types.BBLRec {
 		case inav.IsEmerg(INAV_vers, int(i64)):
 			md = types.FM_EMERG
 		default:
-			if strings.Contains(s0, "MANUAL") {
-				md = types.FM_MANUAL
-			} else if strings.Contains(s0, "ANGLE") {
-				md = types.FM_ANGLE
-			} else if strings.Contains(s0, "HORIZON") {
-				md = types.FM_HORIZON
+			{
+				if strings.Contains(s0, "MANUAL") {
+					md = types.FM_MANUAL
+				} else if strings.Contains(s0, "ANGLE") {
+					md = types.FM_ANGLE
+				} else if strings.Contains(s0, "HORIZON") {
+					md = types.FM_HORIZON
+				}
+				fmt.Fprintf(os.Stderr, "default %v ", md)
 			}
 		}
+
 		if strings.Contains(s0, "NAVRTH") {
 			md = types.FM_RTH
 		}
 	}
+
 	b.Fmode = md
 	b.Fmtext = types.Mnames[md]
+	fmt.Fprintf(os.Stderr, "final %v %v\n", md, b.Fmtext)
 
 	s, ok = get_rec_value(r, "failsafePhase (flags)")
 	if ok {

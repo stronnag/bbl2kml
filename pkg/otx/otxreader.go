@@ -294,16 +294,14 @@ func calc_speed(b types.BBLRec, tdiff time.Duration, llat, llon float64) float64
 	return spd
 }
 
-func Reader(otxfile string, only_armed bool) bool {
-	hlat := 0.0
-	hlon := 0.0
+func Reader(otxfile string, homealt int, only_armed bool) bool {
 	llat := 0.0
 	llon := 0.0
 	cdist := 0.0
 
 	idx := 0
 
-	var homes []float64
+	var homes types.HomeRec
 	var recs []types.BBLRec
 
 	fh, err := os.Open(otxfile)
@@ -345,32 +343,31 @@ func Reader(otxfile string, only_armed bool) bool {
 
 			if b.Utc.Sub(lt).Seconds() > time.Duration(120*time.Second).Seconds() {
 				fmt.Fprintf(os.Stderr, "Splitting at %v\n", b.Utc)
-				if len(homes) > 0 && len(recs) > 0 {
+				if homes.Flags > 0 && len(recs) > 0 {
 					if idx == 0 {
 						idx = 1
 					}
 					outfn := kmlgen.GenKmlName(otxfile, idx)
 					kmlgen.GenerateKML(homes, recs, outfn, types.BBLSummary{}, types.BBLStats{})
-					homes = nil
 					recs = nil
 					st = b.Utc
 					lt = st
 					cdist = 0.0
-					hlat = 0
-					hlon = 0
+					homes.Flags = 0
 					llat = 0
 					llon = 0
 					idx += 1
 				}
 			}
 
-			if hlat == 0 && hlon == 0 {
+			if homes.Flags == 0 {
 				if b.Fix > 1 && b.Numsat > 5 {
-					hlat = b.Lat
-					hlon = b.Lon
+					homes.HomeLat = b.Lat
+					homes.HomeLon = b.Lon
+					homes.HomeAlt = float64(homealt)
+					homes.Flags = (types.HOME_ARM | types.HOME_ALT)
 					llat = b.Lat
 					llon = b.Lon
-					homes = append(homes, hlat, hlon)
 				}
 			}
 
@@ -380,8 +377,8 @@ func Reader(otxfile string, only_armed bool) bool {
 			}
 
 			var c, d float64
-			if hlat != 0 && hlon != 0 {
-				c, d = geo.Csedist(hlat, hlon, b.Lat, b.Lon)
+			if homes.Flags != 0 {
+				c, d = geo.Csedist(homes.HomeLat, homes.HomeLon, b.Lat, b.Lon)
 				b.Bearing = int32(c)
 				b.Vrange = d * 1852.0
 
@@ -402,7 +399,7 @@ func Reader(otxfile string, only_armed bool) bool {
 		}
 	}
 
-	if len(homes) > 0 && len(recs) > 0 {
+	if homes.Flags > 0 && len(recs) > 0 {
 		outfn := kmlgen.GenKmlName(otxfile, idx)
 		kmlgen.GenerateKML(homes, recs, outfn, types.BBLSummary{}, types.BBLStats{})
 		return true

@@ -18,7 +18,7 @@ func IsCruise2d(val, vers int) bool {
 
 func IsCruise3d(val, vers int) bool {
 	if vers > 0x1ffff { // For 2.0.0, hex = 0x20000
-		return contains([]int{29, 30, 31}, val)
+		return contains([]int{32, 33, 34}, val)
 	}
 	return false
 }

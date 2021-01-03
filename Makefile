@@ -17,14 +17,15 @@ else
  EXT=
 endif
 
-all: $(APP)$(EXT) $(MAPP)$(EXT) # $(OAPP)$(EXT)
+all: $(APP)$(EXT) $(MAPP)$(EXT) $(OAPP)$(EXT)
 
 PKGCOMMON = $(wildcard pkg/api/*/*.go) $(wildcard pkg/kmlgen/*.go) $(wildcard pkg/mission/*.go)
 PKGOPT = $(wildcard pkg/options/*.go)
 PKGBBL = $(wildcard pkg/bbl/*.go)
 PKGOTX = $(wildcard pkg/otx/*.go)
+PKGINAV = $(wildcard pkg/inav/*.go)
 
-ASRCS = $(wildcard cmd/bbl2kml/*.go) $(PKGCOMMON) $(PKGBBL)
+ASRCS = $(wildcard cmd/bbl2kml/*.go) $(PKGCOMMON) $(PKGBBL) $(PKGINAV)
 MSRCS = $(wildcard cmd/mission2kml/*.go) $(PKGCOMMON)
 OSRCS = $(wildcard cmd/otx2kml/*.go) $(PKGCOMMON) $(PKGOTX)
 
