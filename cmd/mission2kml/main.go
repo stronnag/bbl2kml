@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 	"strconv"
+	"path/filepath"
 	mission "github.com/stronnag/bbl2kml/pkg/mission"
 )
 
@@ -19,7 +20,7 @@ var (
 )
 
 func getVersion() string {
-	return fmt.Sprintf("mission2kml %s, commit: %s", GitTag, GitCommit)
+	return fmt.Sprintf("%s %s, commit: %s", filepath.Base(os.Args[0]), GitTag, GitCommit)
 }
 
 func split(s string, separators []rune) []string {
@@ -56,7 +57,7 @@ Examples:
     --home "48,9975 2,5789"
     -home 54.353974,-4.5236
 `
-		fmt.Fprintf(os.Stderr, "Usage of missionkml [options] mission_file\n")
+		fmt.Fprintf(os.Stderr, "Usage of %s [options] mission_file\n", filepath.Base(os.Args[0]))
 		flag.PrintDefaults()
 		fmt.Fprintln(os.Stderr)
 		fmt.Fprintln(os.Stderr, extra)

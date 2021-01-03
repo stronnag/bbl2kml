@@ -6,22 +6,24 @@ import (
 	"log"
 	"flag"
 	"strings"
+	"path/filepath"
 	bbl "github.com/stronnag/bbl2kml/pkg/bbl"
 	options "github.com/stronnag/bbl2kml/pkg/options"
-	api "github.com/stronnag/bbl2kml/pkg/api"
+	types "github.com/stronnag/bbl2kml/pkg/api/types"
 )
 
 var GitCommit = "local"
 var GitTag = "0.0.0"
 
 func getVersion() string {
-	return fmt.Sprintf("bbl2kml %s, commit: %s", GitTag, GitCommit)
+	return fmt.Sprintf("%s %s, commit: %s", filepath.Base(os.Args[0]), GitTag, GitCommit)
 }
 
 func main() {
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage of bb2kml [options] file...\n")
+		app := filepath.Base(os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage of %s [options] file...\n", app)
 		flag.PrintDefaults()
 		fmt.Fprintf(os.Stderr, "\n")
 		fmt.Fprintln(os.Stderr, getVersion())
@@ -55,7 +57,7 @@ func main() {
 	}
 
 	if options.Dump {
-		bbl.Reader(files[0], api.BBLSummary{Index: 1})
+		bbl.Reader(files[0], types.BBLSummary{Index: 1})
 		os.Exit(1)
 	}
 
@@ -67,7 +69,7 @@ func main() {
 					fmt.Printf("Log      : %s / %d\n", b.Logname, b.Index)
 					fmt.Printf("Craft    : %s on %s\n", b.Craft, b.Cdate)
 					fmt.Printf("Firmware : %s of %s\n", b.Firmware, b.Fwdate)
-					fmt.Printf("Size     : %s\n", bbl.Show_size(b.Size))
+					fmt.Printf("Size     : %s\n", b.Show_size(b.Size))
 					res := bbl.Reader(fn, b)
 					fmt.Printf("Disarm   : %s\n", b.Disarm)
 					if !res {
