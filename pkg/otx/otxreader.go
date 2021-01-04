@@ -82,7 +82,7 @@ func get_rec_value(r []string, key string) (string, string, bool) {
 	return s, v.u, ok
 }
 
-func normalise_speed(v float64, u string) float64 {
+func normalise_units(v float64, u string) float64 {
 	switch u {
 	case "kmh":
 		v = v / 3.6
@@ -90,6 +90,8 @@ func normalise_speed(v float64, u string) float64 {
 		v = v * 0.44704
 	case "kts":
 		v = v * 0.51444444
+	case "ft":
+		v *= 0.3048
 	}
 	return v
 }
@@ -130,14 +132,19 @@ func get_otx_line(r []string) (types.BBLRec, uint8) {
 
 	if s, u, ok := get_rec_value(r, "Alt"); ok {
 		b.Alt, _ = strconv.ParseFloat(s, 64)
-		if u == "ft" {
-			b.Alt = b.Alt * 0.3048
-		}
+		b.Alt = normalise_units(b.Alt, u)
+	}
+
+	if s, u, ok := get_rec_value(r, "GAlt"); ok {
+		b.GAlt, _ = strconv.ParseFloat(s, 64)
+		b.GAlt = normalise_units(b.GAlt, u)
+	} else {
+		b.GAlt = -999999.9
 	}
 
 	if s, units, ok := get_rec_value(r, "GSpd"); ok {
 		spd, _ := strconv.ParseFloat(s, 64)
-		spd = normalise_speed(spd, units)
+		spd = normalise_units(spd, units)
 		if spd > 255 || spd < 0 {
 			spd = 0
 		}
@@ -294,7 +301,7 @@ func calc_speed(b types.BBLRec, tdiff time.Duration, llat, llon float64) float64
 	return spd
 }
 
-func Reader(otxfile string, homealt int, only_armed bool) bool {
+func Reader(otxfile string, only_armed bool) bool {
 	llat := 0.0
 	llon := 0.0
 	cdist := 0.0
@@ -341,22 +348,24 @@ func Reader(otxfile string, homealt int, only_armed bool) bool {
 				lt = st
 			}
 
-			if b.Utc.Sub(lt).Seconds() > time.Duration(120*time.Second).Seconds() {
-				fmt.Fprintf(os.Stderr, "Splitting at %v\n", b.Utc)
-				if homes.Flags > 0 && len(recs) > 0 {
-					if idx == 0 {
-						idx = 1
+			if options.SplitTime > 0 {
+				if b.Utc.Sub(lt).Seconds() > (time.Duration(options.SplitTime) * time.Second).Seconds() {
+					fmt.Fprintf(os.Stderr, "Splitting at %v after %vs\n", b.Utc, options.SplitTime)
+					if homes.Flags > 0 && len(recs) > 0 {
+						if idx == 0 {
+							idx = 1
+						}
+						outfn := kmlgen.GenKmlName(otxfile, idx)
+						kmlgen.GenerateKML(homes, recs, outfn, types.BBLSummary{}, types.BBLStats{})
+						recs = nil
+						st = b.Utc
+						lt = st
+						cdist = 0.0
+						homes.Flags = 0
+						llat = 0
+						llon = 0
+						idx += 1
 					}
-					outfn := kmlgen.GenKmlName(otxfile, idx)
-					kmlgen.GenerateKML(homes, recs, outfn, types.BBLSummary{}, types.BBLStats{})
-					recs = nil
-					st = b.Utc
-					lt = st
-					cdist = 0.0
-					homes.Flags = 0
-					llat = 0
-					llon = 0
-					idx += 1
 				}
 			}
 
@@ -364,8 +373,20 @@ func Reader(otxfile string, homealt int, only_armed bool) bool {
 				if b.Fix > 1 && b.Numsat > 5 {
 					homes.HomeLat = b.Lat
 					homes.HomeLon = b.Lon
-					homes.HomeAlt = float64(homealt)
-					homes.Flags = (types.HOME_ARM | types.HOME_ALT)
+					homes.Flags = types.HOME_ARM
+					if options.HomeAlt != -999999 {
+						homes.HomeAlt = float64(options.HomeAlt)
+						homes.Flags |= types.HOME_ALT
+					} else if b.GAlt > -999999 {
+						homes.HomeAlt = b.GAlt
+						homes.Flags |= types.HOME_ALT
+					} else {
+						bingelev, err := geo.GetElevation(homes.HomeLat, homes.HomeLon)
+						if err == nil {
+							homes.HomeAlt = bingelev
+							homes.Flags |= types.HOME_ALT
+						}
+					}
 					llat = b.Lat
 					llon = b.Lon
 				}
@@ -382,16 +403,16 @@ func Reader(otxfile string, homealt int, only_armed bool) bool {
 				b.Bearing = int32(c)
 				b.Vrange = d * 1852.0
 
-				if llat != b.Lat && llon != b.Lon {
+				if llat != b.Lat || llon != b.Lon {
 					_, d = geo.Csedist(llat, llon, b.Lat, b.Lon)
 					cdist += d * 1852.0
 				}
 			}
 			b.Tdist = cdist
+			recs = append(recs, b)
 			llat = b.Lat
 			llon = b.Lon
 			lt = b.Utc
-			recs = append(recs, b)
 		}
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "reader %s\n", err)

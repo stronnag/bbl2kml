@@ -156,8 +156,7 @@ func (m *Mission) To_kml(hpos types.HomeRec, dms bool, fake bool) kml.Element {
 		if (hpos.Flags & types.HOME_ALT) == types.HOME_ALT {
 			addAlt = int32(hpos.HomeAlt)
 		} else {
-			bingelev, err :=  GetElevation(hpos.HomeLat, hpos.HomeLon)
-
+			bingelev, err :=  geo.GetElevation(hpos.HomeLat, hpos.HomeLon)
 			if err == nil {
 				addAlt = int32(bingelev)
 				hpos.Flags |= types.HOME_ALT

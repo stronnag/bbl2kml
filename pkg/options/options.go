@@ -9,4 +9,6 @@ var (
 	Idx             int    = 0
 	Blackbox_decode string = "blackbox_decode"
 	Mission         string
+	SplitTime       int = 0
+	HomeAlt         int = -999999
 )

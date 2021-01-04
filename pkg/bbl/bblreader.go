@@ -280,9 +280,12 @@ func Reader(bbfile string, meta types.BBLSummary) bool {
 				homes.HomeAlt = br.GAlt
 				homes.Flags = types.HOME_ARM | types.HOME_ALT
 				if br.Bearing == -2 {
-					homes.SafeLat = br.Hlat
-					homes.SafeLon = br.Hlon
-					homes.Flags |= types.HOME_SAFE
+					_, dh := geo.Csedist(br.Hlat, br.Hlon, br.Lat, br.Lon)
+					if dh > 2.0/1852.0 {
+						homes.SafeLat = br.Hlat
+						homes.SafeLon = br.Hlon
+						homes.Flags |= types.HOME_SAFE
+					}
 				} else if br.Bearing > -1 {
 					hlat, hlon := geo.Posit(br.Lat, br.Lon, float64(br.Bearing), br.Vrange/1852.0, true)
 					homes.SafeLat = hlat
@@ -312,7 +315,7 @@ func Reader(bbfile string, meta types.BBLSummary) bool {
 						bblsmry.Max_range_time = us - st
 					}
 
-					if llat != br.Lat && llon != br.Lon {
+					if llat != br.Lat || llon != br.Lon {
 						_, d = geo.Csedist(llat, llon, br.Lat, br.Lon)
 						bblsmry.Distance += d
 					}

@@ -104,9 +104,22 @@ func getPoints(recs []types.BBLRec, hpos types.HomeRec, colmode uint8, viz bool)
 }
 
 func getHomes(hpos types.HomeRec) []kml.Element {
+	var htext, hdesc string
+
+	if (hpos.Flags & types.HOME_SAFE) == types.HOME_SAFE {
+		htext = "Armed"
+	} else {
+		htext = "Home"
+	}
+	hdesc = fmt.Sprintf("Location %s<br/>",
+		geo.PositionFormat(hpos.HomeLat, hpos.HomeLon, options.Dms))
+	if (hpos.Flags & types.HOME_ALT) == types.HOME_ALT {
+		hdesc = hdesc + fmt.Sprintf("GPS Altitude: %.0fm<br/>", hpos.HomeAlt)
+	}
 	var hp []kml.Element
 	k := kml.Placemark(
-		kml.Name("Armed"),
+		kml.Name(htext),
+		kml.Description(hdesc),
 		kml.Point(
 			kml.Coordinates(kml.Coordinate{Lon: hpos.HomeLon, Lat: hpos.HomeLat}),
 		),
@@ -116,12 +129,14 @@ func getHomes(hpos types.HomeRec) []kml.Element {
 					kml.Href(icon.PaletteHref(4, 29)),
 				),
 			),
-		),
+		).Add(balloon_style()),
 	)
 	hp = append(hp, k)
 	if (hpos.Flags & types.HOME_SAFE) == types.HOME_SAFE {
 		k = kml.Placemark(
 			kml.Name("Home"),
+			kml.Description(fmt.Sprintf("Location %s<br/>",
+				geo.PositionFormat(hpos.SafeLat, hpos.SafeLon, options.Dms))),
 			kml.Point(
 				kml.Coordinates(kml.Coordinate{Lon: hpos.SafeLon, Lat: hpos.SafeLat}),
 			),
@@ -131,16 +146,19 @@ func getHomes(hpos types.HomeRec) []kml.Element {
 						kml.Href(icon.PaletteHref(3, 56)),
 					),
 				),
-			),
+			).Add(balloon_style()),
 		)
 		hp = append(hp, k)
 	}
 	return hp
 }
 
-func generate_shared_styles(style uint8) []kml.Element {
-	bs := kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
+func balloon_style() *kml.CompoundElement {
+	return kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
 		kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`))
+}
+
+func generate_shared_styles(style uint8) []kml.Element {
 	switch style {
 	default:
 		return []kml.Element{
@@ -153,7 +171,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			).Add(bs),
+			).Add(balloon_style()),
 			kml.SharedStyle(
 				"styleLaunch",
 				kml.IconStyle(
@@ -163,7 +181,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			).Add(bs),
+			).Add(balloon_style()),
 			kml.SharedStyle(
 				"styleWP",
 				kml.IconStyle(
@@ -173,7 +191,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			).Add(bs),
+			).Add(balloon_style()),
 			kml.SharedStyle(
 				"styleRTH",
 				kml.IconStyle(
@@ -183,7 +201,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			).Add(bs),
+			).Add(balloon_style()),
 			kml.SharedStyle(
 				"styleCRS",
 				kml.IconStyle(
@@ -193,7 +211,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			).Add(bs),
+			).Add(balloon_style()),
 			kml.SharedStyle(
 				"stylePH",
 				kml.IconStyle(
@@ -203,7 +221,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			).Add(bs),
+			).Add(balloon_style()),
 			kml.SharedStyle(
 				"styleAH",
 				kml.IconStyle(
@@ -213,7 +231,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			).Add(bs),
+			).Add(balloon_style()),
 			kml.SharedStyle(
 				"styleFS",
 				kml.IconStyle(
@@ -223,7 +241,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			).Add(bs),
+			).Add(balloon_style()),
 			kml.SharedStyle(
 				"styleEMERG",
 				kml.IconStyle(
@@ -233,7 +251,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			).Add(bs),
+			).Add(balloon_style()),
 		}
 	case 1:
 		{
@@ -250,7 +268,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 							kml.Href(icon.PaletteHref(2, 18)),
 						),
 					),
-				).Add(bs)
+				).Add(balloon_style())
 				icons = append(icons, el)
 			}
 			return icons
