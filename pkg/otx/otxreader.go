@@ -159,7 +159,7 @@ func get_otx_line(r []string) (types.BBLRec, uint8) {
 	md := uint8(0)
 
 	if s, _, ok := get_rec_value(r, "Tmp1"); ok {
-		tmp1, _ := strconv.ParseInt(s, 10, 16)
+		tmp1, _ := strconv.ParseInt(s, 10, 32)
 		modeU := tmp1 % 10
 		modeT := (tmp1 % 100) / 10
 		modeH := (tmp1 % 1000) / 100
