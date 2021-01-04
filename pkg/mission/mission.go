@@ -205,7 +205,7 @@ func (m *Mission) To_kml(hpos types.HomeRec, dms bool, fake bool) kml.Element {
 		name:= fmt.Sprintf("%s %d", bname, mi.No)
 		p := kml.Placemark(
 			kml.Name(name),
-			kml.Description(fmt.Sprintf("Action: %s<br/>Position: %s<br/>Above Launch: %d<br/>GPS Altitude: %dm<br/>",
+			kml.Description(fmt.Sprintf("Action: %s<br/>Position: %s<br/>Elevation: %dm<br/>GPS Altitude: %dm<br/>",
 				mi.Action, geo.PositionFormat(lat, lon, dms), mi.Alt, alt)),
 			kml.StyleURL(fmt.Sprintf("#style%s", mi.Action)),
 			kml.Point(
@@ -230,7 +230,7 @@ func (m *Mission) To_kml(hpos types.HomeRec, dms bool, fake bool) kml.Element {
 		if fake {
 			p := kml.Placemark(
 				kml.Name("Home"),
-				kml.Description(fmt.Sprintf("Assumed Home<br/>Position: %s %dm",
+				kml.Description(fmt.Sprintf("Assumed Home<br/>Position: %s<br/>GPS Altitude: %dm<br/>",
 					geo.PositionFormat(hpos.HomeLat, hpos.HomeLon, dms), addAlt)),
 				kml.StyleURL("#styleFakeHome"),
 				kml.Point(
