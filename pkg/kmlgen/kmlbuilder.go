@@ -85,7 +85,7 @@ func getPoints(recs []types.BBLRec, hpos types.HomeRec, colmode uint8, viz bool)
 			altmode = kml.AltitudeModeRelativeToGround
 		}
 
-		str := fmt.Sprintf("Time: %s<br/>Position: %s<br/>Above Launch: %.0f<br/>GPS Altitude: %.9fm<br/>Course: %d°<br/>Speed: %.1fm/s<br/>Satellites: %d<br/>Range: %.0fm<br/>Bearing: %d°<br/>RSSI: %d%%<br/>Mode: %s<br/>Distance: %.0fm<br/>Alts %s %.1f<br/>",
+		str := fmt.Sprintf("Time: %s<br/>Position: %s<br/>Elevation: %.0fm<br/>GPS Altitude: %.0fm<br/>Course: %d°<br/>Speed: %.1fm/s<br/>Satellites: %d<br/>Range: %.0fm<br/>Bearing: %d°<br/>RSSI: %d%%<br/>Mode: %s<br/>Distance: %.0fm<br/>",
 			tfmt, geo.PositionFormat(r.Lat, r.Lon, options.Dms), r.Alt, alt, r.Cse, r.Spd, r.Numsat, r.Vrange, r.Bearing, r.Rssi, fmtxt, r.Tdist)
 
 		k := kml.Placemark(
@@ -139,6 +139,8 @@ func getHomes(hpos types.HomeRec) []kml.Element {
 }
 
 func generate_shared_styles(style uint8) []kml.Element {
+	bs := kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
+		kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`))
 	switch style {
 	default:
 		return []kml.Element{
@@ -151,7 +153,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			),
+			).Add(bs),
 			kml.SharedStyle(
 				"styleLaunch",
 				kml.IconStyle(
@@ -161,7 +163,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			),
+			).Add(bs),
 			kml.SharedStyle(
 				"styleWP",
 				kml.IconStyle(
@@ -171,7 +173,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			),
+			).Add(bs),
 			kml.SharedStyle(
 				"styleRTH",
 				kml.IconStyle(
@@ -181,7 +183,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			),
+			).Add(bs),
 			kml.SharedStyle(
 				"styleCRS",
 				kml.IconStyle(
@@ -191,7 +193,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			),
+			).Add(bs),
 			kml.SharedStyle(
 				"stylePH",
 				kml.IconStyle(
@@ -201,7 +203,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			),
+			).Add(bs),
 			kml.SharedStyle(
 				"styleAH",
 				kml.IconStyle(
@@ -211,7 +213,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			),
+			).Add(bs),
 			kml.SharedStyle(
 				"styleFS",
 				kml.IconStyle(
@@ -221,7 +223,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			),
+			).Add(bs),
 			kml.SharedStyle(
 				"styleEMERG",
 				kml.IconStyle(
@@ -231,7 +233,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			),
+			).Add(bs),
 		}
 	case 1:
 		{
@@ -248,7 +250,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 							kml.Href(icon.PaletteHref(2, 18)),
 						),
 					),
-				)
+				).Add(bs)
 				icons = append(icons, el)
 			}
 			return icons

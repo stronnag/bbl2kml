@@ -269,6 +269,8 @@ func mission_styles() []kml.Element {
 					),
 				),
 			),
+			kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
+				kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
 		),
 		kml.SharedStyle(
 			"styleRTH",
@@ -279,6 +281,8 @@ func mission_styles() []kml.Element {
 					),
 				),
 			),
+				kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
+					kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
 		),
 		kml.SharedStyle(
 			"styleSET_HEAD",
@@ -289,6 +293,8 @@ func mission_styles() []kml.Element {
 					),
 				),
 			),
+				kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
+					kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
 		),
 		kml.SharedStyle(
 			"styleWAYPOINT",
@@ -299,6 +305,9 @@ func mission_styles() []kml.Element {
 					),
 				),
 			),
+			kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
+				kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
+
 		),
 		kml.SharedStyle(
 			"stylePOSHOLD_UNLIM",
@@ -309,6 +318,8 @@ func mission_styles() []kml.Element {
 					),
 				),
 			),
+			kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
+				kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
 		),
 		kml.SharedStyle(
 			"stylePOSHOLD_TIME",
@@ -319,6 +330,8 @@ func mission_styles() []kml.Element {
 					),
 				),
 			),
+				kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
+					kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
 		),
 		kml.SharedStyle(
 			"styleJUMP",
@@ -329,6 +342,8 @@ func mission_styles() []kml.Element {
 					),
 				),
 			),
+			kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
+				kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
 		),
 		kml.SharedStyle(
 			"styleLAND",
@@ -339,6 +354,8 @@ func mission_styles() []kml.Element {
 					),
 				),
 			),
+				kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
+					kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
 		),
 		kml.SharedStyle(
 			"styleFakeHome",
@@ -349,6 +366,8 @@ func mission_styles() []kml.Element {
 					),
 				),
 			),
+				kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
+					kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
 		),
 		kml.SharedStyle(
 			"styleWPTrack",
@@ -359,6 +378,8 @@ func mission_styles() []kml.Element {
 				),
 			),
 		),
+		kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
+			kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
 	}
 }
 
