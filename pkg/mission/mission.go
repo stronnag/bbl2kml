@@ -372,9 +372,10 @@ func mission_styles() []kml.Element {
 			"styleWPTrack",
 			kml.LineStyle(
 				kml.Width(2.0),
-				kml.PolyStyle(
-					kml.Color(color.RGBA{R: 0, G: 0, B: 0xff, A: 0x7d}),
-				),
+				kml.Color(color.RGBA{R: 0, G: 0xff, B: 0xff, A: 0x66}),
+			),
+			kml.PolyStyle(
+				kml.Color(color.RGBA{R: 0xc0, G: 0xc0, B: 0xc0, A: 0x66}),
 			),
 		),
 		kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),

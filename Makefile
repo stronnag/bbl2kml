@@ -19,15 +19,16 @@ endif
 
 all: $(APP)$(EXT) $(MAPP)$(EXT) $(OAPP)$(EXT)
 
-PKGCOMMON = $(wildcard pkg/api/*/*.go) $(wildcard pkg/kmlgen/*.go) $(wildcard pkg/mission/*.go)
+PKGCOMMON = $(wildcard pkg/api/*/*.go) $(wildcard pkg/mission/*.go)
 PKGOPT = $(wildcard pkg/options/*.go)
 PKGBBL = $(wildcard pkg/bbl/*.go)
 PKGOTX = $(wildcard pkg/otx/*.go)
 PKGINAV = $(wildcard pkg/inav/*.go)
+PKGKML = $(wildcard pkg/kmlgen/*.go)
 
-ASRCS = $(wildcard cmd/bbl2kml/*.go) $(PKGCOMMON) $(PKGBBL) $(PKGINAV)
+ASRCS = $(wildcard cmd/bbl2kml/*.go) $(PKGCOMMON) $(PKGBBL) $(PKGINAV) $(PKGKML)
 MSRCS = $(wildcard cmd/mission2kml/*.go) $(PKGCOMMON)
-OSRCS = $(wildcard cmd/otx2kml/*.go) $(PKGCOMMON) $(PKGOTX)
+OSRCS = $(wildcard cmd/otx2kml/*.go) $(PKGCOMMON) $(PKGOTX) $(PKGKML)
 
 $(APP)$(EXT): $(ASRCS)
 	go build -ldflags "$(LDFLAGS)" -o $(APP)$(EXT) cmd/bbl2kml/main.go

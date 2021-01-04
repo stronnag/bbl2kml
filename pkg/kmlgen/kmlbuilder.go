@@ -276,6 +276,28 @@ func generate_shared_styles(style uint8) []kml.Element {
 	}
 }
 
+func add_ground_track (recs []types.BBLRec) kml.Element {
+
+	f := kml.Folder(kml.Name("Ground Track")).Add(kml.Visibility(true))
+	var points []kml.Coordinate
+
+	for _, r := range recs {
+		points = append(points, kml.Coordinate{Lon: r.Lon, Lat: r.Lat})
+	}
+
+	tk := kml.Placemark(
+		kml.Style(
+			kml.LineStyle(
+				kml.Width(4.0),
+				kml.Color(color.RGBA{R: 0xd0, G: 0xd0, B: 0xd0, A: 0x66}),
+			),
+		),
+		kml.LineString(kml.Coordinates(points...),),
+	)
+	f.Add(tk)
+	return f
+}
+
 func GenerateKML(hpos types.HomeRec, recs []types.BBLRec, outfn string,
 	meta types.BBLSummary, stats types.BBLStats) {
 
@@ -288,6 +310,7 @@ func GenerateKML(hpos types.HomeRec, recs []types.BBLRec, outfn string,
 		Add(getPoints(recs,hpos,0,defviz)...)
 
 	d := kml.Folder(kml.Name("inav flight")).Add(kml.Open(true))
+	d.Add(add_ground_track(recs))
 	if len(options.Mission) > 0 {
 		 _, m, err := mission.Read_Mission_File(options.Mission)
 		if err == nil {
