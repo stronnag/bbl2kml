@@ -85,8 +85,8 @@ func getPoints(recs []types.BBLRec, hpos types.HomeRec, colmode uint8, viz bool)
 			altmode = kml.AltitudeModeRelativeToGround
 		}
 
-		str := fmt.Sprintf("Time: %s<br/>Position: %s %.0fm<br/>Course: %d°<br/>Speed: %.1fm/s<br/>Satellites: %d<br/>Range: %.0fm<br/>Bearing: %d°<br/>RSSI: %d%%<br/>Mode: %s<br/>Distance: %.0fm<br/>Alts %s %.1f<br/>",
-			tfmt, geo.PositionFormat(r.Lat, r.Lon, options.Dms), r.Alt, r.Cse, r.Spd, r.Numsat, r.Vrange, r.Bearing, r.Rssi, fmtxt, r.Tdist, altmode , alt)
+		str := fmt.Sprintf("Time: %s<br/>Position: %s<br/>Above Launch: %.0f<br/>GPS Altitude: %.9fm<br/>Course: %d°<br/>Speed: %.1fm/s<br/>Satellites: %d<br/>Range: %.0fm<br/>Bearing: %d°<br/>RSSI: %d%%<br/>Mode: %s<br/>Distance: %.0fm<br/>Alts %s %.1f<br/>",
+			tfmt, geo.PositionFormat(r.Lat, r.Lon, options.Dms), r.Alt, alt, r.Cse, r.Spd, r.Numsat, r.Vrange, r.Bearing, r.Rssi, fmtxt, r.Tdist)
 
 		k := kml.Placemark(
 			kml.Visibility(viz),
