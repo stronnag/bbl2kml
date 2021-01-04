@@ -2,7 +2,11 @@
 
 ## Overview
 
-Generate annotated KML/KMZ files from inav blackbox logs
+Generate annotated KML/KMZ files from inav blackbox logs and OpenTX log files (inav S.Port telemetry).
+
+* bbl2kml - Generates KML/Z file(s) from Blackbox log(s)
+* otx2kml - Generate KMZ/L files(s) from OpenTX log(s)
+* mission2kml - Generate KML file from inav mission files (and other formats)
 
 ```
 $ bbl2kml --help
@@ -58,7 +62,7 @@ If you use a format other than MW-XML or mwp JSON, it is recommended that you re
 
 ## Output
 
-KML/Z file defining tracks whch may be displayed Google Earth. Tracks can be animated with the time slider.
+KML/Z file defining tracks which may be displayed Google Earth. Tracks can be animated with the time slider.
 
 Both Flight Mode and RSSI tracks are generated; the default for display is Flight Mode, unless `-rssi` is specified (and RSSI data is available in the log). The log summary is displayed by double clicking on the `inav flight` folder in Google Earth.
 
@@ -92,26 +96,32 @@ Both Flight Mode and RSSI tracks are generated; the default for display is Fligh
 
 ![Example 4](https://github.com/stronnag/mwptools/wiki/images/inav-tracer-rssi.jpg)
 
-## Building
-
-Compiled with:
+## `otx2kml`
 
 ```
-$ go build
+$ ./otx2kml
+Usage of otx2kml [options] file...
+  -dms
+    	Show positions as DD:MM:SS.s (vice decimal degrees) (default true)
+  -home-alt value
+    	Home altitude (m)
+  -interval int
+    	Sampling Interval (ms) (default 1000)
+  -kml
+    	Generate KML (vice default KMZ)
+  -mission string
+    	Optional mission file name
+  -rssi
+    	Set RSSI view as default
+  -split-time int
+    	Time(s) determining log split, 0 disables (default 120)
+
 ```
 
-or
-
-```
-make
-```
-
-**bbl2kml** depends on [twpayne/go-kml](https://github.com/twpayne/go-kml), an outstanding Golang KML library.
-
-bbl2kml may be build for all OS for which Golang is available. It also requires inav's
-[blackbox_decode](https://github.com/iNavFlight/blackbox-tools); 0.4.5 (including RCs) or later is recommended; the minimum `blackbox_decode` version is 0.4.4. For Windows' users it is probably easiest to copy inav's `blackbox_decode.exe` into the same directory as `bbl2kml.exe`.
-
-Binaries are provided for common operating systems in the [Release folder](https://github.com/stronnag/bbl2kml/releases).
+There are a few issues with OpenTX logs, the first of which need OpenTX 2.3.11 to be resolved:
+* CRSF logs in OpenTX 2.3.10 do not record the FM (Flight Mode) field. This makes it impossible to determine flight mode, or even if the craft is armed. Currently `otx2log` tries to evince the armed state from other data.
+* GPS Elevation. Unless you have a GPS attached to the TX, you don't get GPS altitude. This can be set by the `-home-alt H` value (in metres). Otherwise `otx2bbl` will use an online elevation service.
+* OpenTX creates a log per calendar day (IIRC), this means there may be multiple logs in the same file. Delimiting these individual logs is less than trivial, to some degree due to the prior CRSF issue which means arm / disarm is not reliably available. Currently, `otx2kml` assumes that a gap of more than 120 seconds indicates a new flight. The `-split-time` value allows a user-defined split time (seconds). Setting this to zero disables the log splitting function.
 
 ## `mission2kml`
 
@@ -133,7 +143,7 @@ in quotes.
 In locales where comma is used as decimal "point", then comma should not be
 used as a separator.
 
-If a syntactically valid home postion is given, without altitude, an online
+If a syntactically valid home position is given, without altitude, an online
 elevation service is used to adjust mission elevations in the KML.
 
 Examples:
@@ -142,6 +152,12 @@ Examples:
     -home 54.353974;-4.5236
     --home "48,9975 2,5789"
     -home 54.353974,-4.5236,24
+```
+
+A KML file is generated to stdout, which may be redirected to a file, e.g:
+
+```
+$ mission2kml -home 54.125229,-4.730443 barrule-h.mission > mtest.kml
 ```
 
 ## Setting default options
@@ -160,7 +176,7 @@ or
 export BBL2KML_OPTS='-rssi'
 ```
 
-In the permanent usage case the only way to use the dafaults is the redefine / clear the environment variable.
+In the permanent usage case the only way to use the defaults is the redefine / clear the environment variable.
 
 ```
 BBL2KML_OPTS= mission2kml sample.json
@@ -168,10 +184,31 @@ BBL2KML_OPTS= mission2kml sample.json
 
 ## Limitations, Bugs, Bug Reporting
 
-`bbl2kml` aims to support as wide a range of inav firmware and log decoders as possible. During its development, inav has changed both the data logged and in some cases, the meaning of logged items; thus for versions of inav prior to 2.0, the reported flight mode might not be completely accurate. `bbl2kml` is known to work with logs from 2015-10-30 (i.e. pre inav 1.0), and if you have a Blackbox log that is not decoded / visualisated correctly, please raise a [Github issue](https://github.com/stronnag/bbl2kml/issues); this is a bug.
+`bbl2kml` aims to support as wide a range of inav firmware and log decoders as possible. During its development, inav has changed both the data logged and in some cases, the meaning of logged items; thus for versions of inav prior to 2.0, the reported flight mode might not be completely accurate. `bbl2kml` is known to work with logs from 2015-10-30 (i.e. pre inav 1.0), and if you have a Blackbox log that is not decoded / visualised correctly, please raise a [Github issue](https://github.com/stronnag/bbl2kml/issues); this is a bug.
 
 Due to the range of `inav` versions, `blackbox_decode` versions and supported operating systems, when reporting bugs, please include the following information in the Github issue:
 
 * The version of `bbl2kml` and `blackbox_decode`. Both applications have a `--help` option that should give the version numbers.
 * The host operating system and version (e.g. "Debian Sid", "Windows 10", "MacOS 10.15").
 * Provide the blackbox log that illustrates the problem. If you don't want to post the log into an essentially public forum (the Github issue), then please propose a private delivery channel.
+
+## Building
+
+Compiled with:
+
+```
+$ go build
+```
+
+or
+
+```
+make
+```
+
+**bbl2kml** depends on [twpayne/go-kml](https://github.com/twpayne/go-kml), an outstanding Golang KML library.
+
+bbl2kml may be build for all OS for which Golang is available. It also requires inav's
+[blackbox_decode](https://github.com/iNavFlight/blackbox-tools); 0.4.5 (including RCs) or later is recommended; the minimum `blackbox_decode` version is 0.4.4. For Windows' users it is probably easiest to copy inav's `blackbox_decode.exe` into the same directory as `bbl2kml.exe`.
+
+Binaries are provided for common operating systems in the [Release folder](https://github.com/stronnag/bbl2kml/releases).

@@ -45,7 +45,7 @@ in quotes.
 In locales where comma is used as decimal "point", then comma should not be
 used as a separator.
 
-If a syntactically valid home postion is given, without altitude, an online
+If a syntactically valid home position is given, without altitude, an online
 elevation service is used to adjust mission elevations in the KML.
 
 Examples:
