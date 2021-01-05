@@ -96,14 +96,15 @@ func getPoints(recs []types.LogRec, hpos types.HomeRec, colmode uint8, viz bool)
 						sb.Write([]byte(fmt.Sprintf("Current: %.1fA<br/>", r.Amps)))
 		}
 
+		po := kml.Point(
+				kml.AltitudeMode(altmode),
+				kml.Coordinates(kml.Coordinate{Lon: r.Lon, Lat: r.Lat, Alt: alt}),
+			)
+
 		k := kml.Placemark(
 			kml.Visibility(viz),
 			kml.Description(sb.String()),
 			kml.TimeStamp(kml.When(r.Utc)),
-			kml.Point(
-				kml.AltitudeMode(altmode),
-				kml.Coordinates(kml.Coordinate{Lon: r.Lon, Lat: r.Lat, Alt: alt}),
-			),
 			kml.StyleURL(getStyleURL(r, colmode)),
 		)
 
@@ -122,6 +123,13 @@ func getPoints(recs []types.LogRec, hpos types.HomeRec, colmode uint8, viz bool)
 				),
 			)
 		}
+		if options.Extrude {
+			po.Add (
+				kml.Extrude(true),
+				kml.Tessellate(false),
+			)
+		}
+		k.Add(po)
 		pt = append(pt, k)
 	}
 	return pt

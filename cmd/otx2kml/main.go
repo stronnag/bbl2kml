@@ -59,6 +59,7 @@ func main() {
 	flag.BoolVar(&options.Kml, "kml", options.Kml, "Generate KML (vice default KMZ)")
 	flag.BoolVar(&options.Rssi, "rssi", options.Rssi, "Set RSSI view as default")
 	flag.BoolVar(&options.Dms, "dms", options.Dms, "Show positions as DD:MM:SS.s (vice decimal degrees)")
+	flag.BoolVar(&options.Extrude, "extrude", options.Extrude, "Extends track points to ground")
 	flag.IntVar(&options.SplitTime, "split-time", 120, "Time(s) determining log split, 0 disables")
 	flag.StringVar(&options.Mission, "mission", "", "Optional mission file name")
 	flag.Parse()
