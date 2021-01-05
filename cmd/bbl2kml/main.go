@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	bbl "github.com/stronnag/bbl2kml/pkg/bbl"
 	options "github.com/stronnag/bbl2kml/pkg/options"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
 )
 
 var GitCommit = "local"
@@ -55,7 +54,7 @@ func main() {
 	}
 
 	if options.Dump {
-		bbl.Reader(files[0], types.BBLSummary{Index: 1})
+		bbl.Reader(files[0], bbl.BBLMeta{Index: 1})
 		os.Exit(1)
 	}
 
@@ -64,12 +63,14 @@ func main() {
 		if err == nil {
 			for _, b := range bmeta {
 				if (options.Idx == 0 || options.Idx == b.Index) && b.Size > 4096 {
-					fmt.Printf("Log      : %s / %d\n", b.Logname, b.Index)
-					fmt.Printf("Craft    : %s on %s\n", b.Craft, b.Cdate)
-					fmt.Printf("Firmware : %s of %s\n", b.Firmware, b.Fwdate)
-					fmt.Printf("Size     : %s\n", b.Show_size(b.Size))
+					m := b.MetaData()
+					for _, k := range []string{"Log", "Flight", "Firmware", "Size"} {
+						if v, ok := m[k]; ok {
+							fmt.Printf("%-8.8s : %s\n", k, v)
+						}
+					}
 					res := bbl.Reader(fn, b)
-					fmt.Printf("Disarm   : %s\n", b.Disarm)
+					fmt.Printf("%-8.8s : %s\n", "Disarm", m["Disarm"])
 					if !res {
 						fmt.Fprintf(os.Stderr, "*** skipping KML/Z for log  with no valid geospatial data\n")
 					}

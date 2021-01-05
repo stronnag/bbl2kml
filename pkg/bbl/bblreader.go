@@ -20,7 +20,7 @@ import (
 
 var hdrs map[string]int
 
-var INAV_vers int
+var inav_vers int
 
 func get_rec_value(r []string, key string) (string, bool) {
 	var s string
@@ -35,12 +35,20 @@ func get_rec_value(r []string, key string) (string, bool) {
 	return s, ok
 }
 
-func get_bbl_line(r []string, have_origin bool) types.BBLRec {
-	b := types.BBLRec{}
+func get_bbl_line(r []string, have_origin bool) types.LogRec {
+	b := types.LogRec{}
+
 	s, ok := get_rec_value(r, "amperage (A)")
 	if ok {
 		b.Amps, _ = strconv.ParseFloat(s, 64)
 	}
+
+	if s, ok = get_rec_value(r, "vbat (V)"); ok {
+		b.Volts, _ = strconv.ParseFloat(s, 64)
+	} else if s, ok = get_rec_value(r, "vbatLatest (V)"); ok {
+		b.Volts, _ = strconv.ParseFloat(s, 64)
+	}
+
 	s, ok = get_rec_value(r, "navPos[2]")
 	if ok {
 		b.Alt, _ = strconv.ParseFloat(s, 64)
@@ -95,21 +103,21 @@ func get_bbl_line(r []string, have_origin bool) types.BBLRec {
 	s, ok = get_rec_value(r, "navState")
 	if ok {
 		i64, _ := strconv.ParseInt(s, 10, 64)
-		if inav.IsCruise3d(INAV_vers, int(i64)) {
+		if inav.IsCruise3d(inav_vers, int(i64)) {
 			md = types.FM_CRUISE3D
-		} else if inav.IsCruise2d(INAV_vers, int(i64)) {
+		} else if inav.IsCruise2d(inav_vers, int(i64)) {
 			md = types.FM_CRUISE2D
-		} else if inav.IsRTH(INAV_vers, int(i64)) {
+		} else if inav.IsRTH(inav_vers, int(i64)) {
 			md = types.FM_RTH
-		} else if inav.IsWP(INAV_vers, int(i64)) {
+		} else if inav.IsWP(inav_vers, int(i64)) {
 			md = types.FM_WP
-		} else if inav.IsLaunch(INAV_vers, int(i64)) {
+		} else if inav.IsLaunch(inav_vers, int(i64)) {
 			md = types.FM_LAUNCH
-		} else if inav.IsPH(INAV_vers, int(i64)) {
+		} else if inav.IsPH(inav_vers, int(i64)) {
 			md = types.FM_PH
-		} else if inav.IsAH(INAV_vers, int(i64)) {
+		} else if inav.IsAH(inav_vers, int(i64)) {
 			md = types.FM_AH
-		} else if inav.IsEmerg(INAV_vers, int(i64)) {
+		} else if inav.IsEmerg(inav_vers, int(i64)) {
 			md = types.FM_EMERG
 		} else {
 			if strings.Contains(s0, "MANUAL") {
@@ -213,7 +221,7 @@ func dump_headers(m map[string]int) {
 	}
 }
 
-func Reader(bbfile string, meta types.BBLSummary) bool {
+func Reader(bbfile string, meta BBLMeta) bool {
 	idx := meta.Index
 	cmd := exec.Command(options.Blackbox_decode,
 		"--datetime", "--merge-gps", "--stdout", "--index",
@@ -222,7 +230,7 @@ func Reader(bbfile string, meta types.BBLSummary) bool {
 	defer cmd.Wait()
 	defer out.Close()
 	var homes types.HomeRec
-	var recs []types.BBLRec
+	var recs []types.LogRec
 
 	r := csv.NewReader(out)
 	r.TrimLeadingSpace = true
@@ -233,14 +241,14 @@ func Reader(bbfile string, meta types.BBLSummary) bool {
 		os.Exit(1)
 	}
 
-	bblsmry := types.BBLStats{false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	stats := types.LogStats{}
 
 	var llat, llon float64
 	var dt, st, lt uint64
 	var basetime time.Time
 	have_origin := false
 
-	INAV_vers = 0
+	inav_vers = 0
 	fwvers := strings.Split(meta.Firmware, " ")
 	if len(fwvers) == 4 {
 		parts := strings.Split(fwvers[1], ".")
@@ -248,7 +256,7 @@ func Reader(bbfile string, meta types.BBLSummary) bool {
 			mask := (1 << 16)
 			for _, p := range parts {
 				v, _ := strconv.Atoi(p)
-				INAV_vers = INAV_vers + (v * mask)
+				inav_vers = inav_vers + (v * mask)
 				mask = mask >> 8
 			}
 		}
@@ -310,17 +318,17 @@ func Reader(bbfile string, meta types.BBLSummary) bool {
 					br.Bearing = int32(c)
 					br.Vrange = d * 1852.0
 
-					if d > bblsmry.Max_range {
-						bblsmry.Max_range = d
-						bblsmry.Max_range_time = us - st
+					if d > stats.Max_range {
+						stats.Max_range = d
+						stats.Max_range_time = us - st
 					}
 
 					if llat != br.Lat || llon != br.Lon {
 						_, d = geo.Csedist(llat, llon, br.Lat, br.Lon)
-						bblsmry.Distance += d
+						stats.Distance += d
 					}
 
-					br.Tdist = (bblsmry.Distance * 1852.0)
+					br.Tdist = (stats.Distance * 1852.0)
 
 					llat = br.Lat
 					llon = br.Lon
@@ -328,19 +336,19 @@ func Reader(bbfile string, meta types.BBLSummary) bool {
 					recs = append(recs, br)
 				}
 
-				if br.Alt > bblsmry.Max_alt {
-					bblsmry.Max_alt = br.Alt
-					bblsmry.Max_alt_time = us - st
+				if br.Alt > stats.Max_alt {
+					stats.Max_alt = br.Alt
+					stats.Max_alt_time = us - st
 				}
 
-				if br.Spd < 400 && br.Spd > bblsmry.Max_speed {
-					bblsmry.Max_speed = br.Spd
-					bblsmry.Max_speed_time = us - st
+				if br.Spd < 400 && br.Spd > stats.Max_speed {
+					stats.Max_speed = br.Spd
+					stats.Max_speed_time = us - st
 				}
 
-				if br.Amps > bblsmry.Max_current {
-					bblsmry.Max_current = br.Amps
-					bblsmry.Max_current_time = us - st
+				if br.Amps > stats.Max_current {
+					stats.Max_current = br.Amps
+					stats.Max_current_time = us - st
 				}
 				lt = us
 			}
@@ -349,31 +357,11 @@ func Reader(bbfile string, meta types.BBLSummary) bool {
 			log.Fatal(err)
 		}
 	}
-	bblsmry.Duration = lt - st
-	bblsmry.Max_range *= 1852.0
-	bblsmry.Distance *= 1852.0
-	fmt.Printf("Altitude : %.1f m at %s\n", bblsmry.Max_alt, Show_time(bblsmry.Max_alt_time))
-	fmt.Printf("Speed    : %.1f m/s at %s\n", bblsmry.Max_speed, Show_time(bblsmry.Max_speed_time))
-	fmt.Printf("Range    : %.0f m at %s\n", bblsmry.Max_range, Show_time(bblsmry.Max_range_time))
-	if bblsmry.Max_current > 0 {
-		fmt.Printf("Current  : %.1f A at %s\n", bblsmry.Max_current, Show_time(bblsmry.Max_current_time))
-	}
-	fmt.Printf("Distance : %.0f m\n", bblsmry.Distance)
-	fmt.Printf("Duration : %s\n", Show_time(bblsmry.Duration))
-
+	stats.ShowSummary(lt - st)
 	if homes.Flags != 0 && len(recs) > 0 {
-		meta.Valid = true
-		bblsmry.Valid = true
 		outfn := kmlgen.GenKmlName(bbfile, idx)
-		kmlgen.GenerateKML(homes, recs, outfn, meta, bblsmry)
+		kmlgen.GenerateKML(homes, recs, outfn, &meta, stats)
 		return true
 	}
 	return false
-}
-
-func Show_time(t uint64) string {
-	secs := t / 1000000
-	m := secs / 60
-	s := secs % 60
-	return fmt.Sprintf("%02d:%02d", m, s)
 }

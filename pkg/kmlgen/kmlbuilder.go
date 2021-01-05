@@ -4,11 +4,11 @@ import (
 	"image/color"
 	"log"
 	"os"
+	"fmt"
+	"strings"
 	kml "github.com/twpayne/go-kml"
 	kmz "github.com/twpayne/go-kmz"
 	"github.com/twpayne/go-kml/icon"
-	"fmt"
-	"strings"
 	geo "github.com/stronnag/bbl2kml/pkg/geo"
 	mission "github.com/stronnag/bbl2kml/pkg/mission"
 	options "github.com/stronnag/bbl2kml/pkg/options"
@@ -40,14 +40,14 @@ func getflightColour(mode uint8) color.Color {
 	return c
 }
 
-func getStyleURL(r types.BBLRec, colmode uint8) string {
+func getStyleURL(r types.LogRec, colmode uint8) string {
 	var s string
 	if colmode == 1 {
 		return fmt.Sprintf("#styleRSSI%03d", 10*(r.Rssi/10))
 	}
-	if r.Fs {
-		return "#styleFS"
-	}
+	//	if r.Fs {
+	//		return "#styleFS"
+	//}
 	switch r.Fmode {
 	case types.FM_LAUNCH:
 		s = "#styleLaunch"
@@ -67,7 +67,7 @@ func getStyleURL(r types.BBLRec, colmode uint8) string {
 	return s
 }
 
-func getPoints(recs []types.BBLRec, hpos types.HomeRec, colmode uint8, viz bool) []kml.Element {
+func getPoints(recs []types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []kml.Element {
 	var pt []kml.Element
 	for _, r := range recs {
 		tfmt := r.Utc.Format("2006-01-02T15:04:05.99MST")
@@ -85,19 +85,43 @@ func getPoints(recs []types.BBLRec, hpos types.HomeRec, colmode uint8, viz bool)
 			altmode = kml.AltitudeModeRelativeToGround
 		}
 
-		str := fmt.Sprintf("Time: %s<br/>Position: %s<br/>Elevation: %.0fm<br/>GPS Altitude: %.0fm<br/>Course: %d°<br/>Speed: %.1fm/s<br/>Satellites: %d<br/>Range: %.0fm<br/>Bearing: %d°<br/>RSSI: %d%%<br/>Mode: %s<br/>Distance: %.0fm<br/>",
-			tfmt, geo.PositionFormat(r.Lat, r.Lon, options.Dms), r.Alt, alt, r.Cse, r.Spd, r.Numsat, r.Vrange, r.Bearing, r.Rssi, fmtxt, r.Tdist)
+		var sb strings.Builder
+
+		sb.Write([]byte(fmt.Sprintf("Time: %s<br/>Position: %s<br/>Elevation: %.0fm<br/>GPS Altitude: %.0fm<br/>Course: %d°<br/>Speed: %.1fm/s<br/>Satellites: %d<br/>Range: %.0fm<br/>Bearing: %d°<br/>RSSI: %d%%<br/>Mode: %s<br/>Distance: %.0fm<br/>", tfmt, geo.PositionFormat(r.Lat, r.Lon, options.Dms), r.Alt, alt, r.Cse, r.Spd, r.Numsat, r.Vrange, r.Bearing, r.Rssi, fmtxt, r.Tdist)))
+
+		if r.Volts > 0 {
+			sb.Write([]byte(fmt.Sprintf("Voltage: %.1fv<br/>", r.Volts)))
+		}
+		if r.Amps > 0 {
+						sb.Write([]byte(fmt.Sprintf("Current: %.1fA<br/>", r.Amps)))
+		}
 
 		k := kml.Placemark(
 			kml.Visibility(viz),
-			kml.Description(str),
+			kml.Description(sb.String()),
 			kml.TimeStamp(kml.When(r.Utc)),
-			kml.StyleURL(getStyleURL(r, colmode)),
 			kml.Point(
 				kml.AltitudeMode(altmode),
 				kml.Coordinates(kml.Coordinate{Lon: r.Lon, Lat: r.Lat, Alt: alt}),
 			),
+			kml.StyleURL(getStyleURL(r, colmode)),
 		)
+
+	 /**               Other F/S Icon options
+	   * 56 ssquare, 57 circle, 58,59 "texaco", 60 triangle, 61 flag
+		 *							kml.Href(icon.PaletteHref(4, 56)), // square
+     **/
+		if r.Fs {
+			k.Add(
+				kml.Style(
+					kml.IconStyle(
+						kml.Icon(
+							kml.Href(icon.PaddleHref("wht-circle-lv")),
+						),
+					),
+				),
+			)
+		}
 		pt = append(pt, k)
 	}
 	return pt
@@ -276,7 +300,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 	}
 }
 
-func add_ground_track (recs []types.BBLRec) kml.Element {
+func add_ground_track (recs []types.LogRec) kml.Element {
 
 	f := kml.Folder(kml.Name("Ground Track")).Add(kml.Visibility(true))
 	var points []kml.Coordinate
@@ -298,8 +322,8 @@ func add_ground_track (recs []types.BBLRec) kml.Element {
 	return f
 }
 
-func GenerateKML(hpos types.HomeRec, recs []types.BBLRec, outfn string,
-	meta types.BBLSummary, stats types.BBLStats) {
+func GenerateKML(hpos types.HomeRec, recs []types.LogRec, outfn string,
+	meta types.MetaLog, stats types.LogStats) {
 
 	defviz := !(options.Rssi && recs[0].Rssi > 0)
 	ts0 := recs[0].Utc
@@ -320,25 +344,27 @@ func GenerateKML(hpos types.HomeRec, recs []types.BBLRec, outfn string,
 			fmt.Fprintf(os.Stderr,"* Failed to read mission file %s\n", options.Mission)
 		}
 	}
-	if meta.Valid {
-		e := kml.ExtendedData(
-			kml.Data(kml.Name("Log"), kml.Value(fmt.Sprintf("%s / %d", meta.Logname, meta.Index))),
-			kml.Data(kml.Name("Craft"), kml.Value(fmt.Sprintf("%s / %s", meta.Craft, meta.Cdate))),
-			kml.Data(kml.Name("Firmware"), kml.Value(fmt.Sprintf("%s of %s", meta.Firmware, meta.Fwdate))),
-			kml.Data(kml.Name("Log size"), kml.Value(fmt.Sprintf("%s", meta.Show_size(meta.Size)))),
-			kml.Data(kml.Name("Max. Altitude"), kml.Value(fmt.Sprintf("%.1fm at %s", stats.Max_alt, stats.Show_time(stats.Max_alt_time)))),
-			kml.Data(kml.Name("Max. Speed"), kml.Value(fmt.Sprintf("%.1fm/s at %s", stats.Max_speed, stats.Show_time(stats.Max_speed_time)))),
-			kml.Data(kml.Name("Max. Range"), kml.Value(fmt.Sprintf("%.0fm at %s", stats.Max_range, stats.Show_time(stats.Max_range_time)))),
-		)
-
-		if stats.Max_current > 0 {
-			e.Add(kml.Data(kml.Name("Max. Current"), kml.Value(fmt.Sprintf("%.1fA at %s", stats.Max_current, stats.Show_time(stats.Max_current_time)))))
+	m := meta.MetaData()
+	e := kml.ExtendedData(kml.Data(kml.Name("Log"), kml.Value(m["Log"])))
+	for _, k := range []string{"Flight", "Firmware","Size"} {
+		if v,ok := m[k]; ok {
+			e.Add(kml.Data(kml.Name(k), kml.Value(v)))
 		}
-		e.Add(kml.Data(kml.Name("Distance"), kml.Value(fmt.Sprintf("%.0fm", stats.Distance))),
-			kml.Data(kml.Name("Duration"), kml.Value(stats.Show_time(stats.Duration))),
-			kml.Data(kml.Name("Disarm"), kml.Value(meta.Disarm)))
-		d.Add(e)
 	}
+	e.Add(kml.Data(kml.Name("Max. Altitude"), kml.Value(fmt.Sprintf("%.1fm at %s", stats.Max_alt, stats.Show_time(stats.Max_alt_time)))),
+		kml.Data(kml.Name("Max. Speed"), kml.Value(fmt.Sprintf("%.1fm/s at %s", stats.Max_speed, stats.Show_time(stats.Max_speed_time)))),
+		kml.Data(kml.Name("Max. Range"), kml.Value(fmt.Sprintf("%.0fm at %s", stats.Max_range, stats.Show_time(stats.Max_range_time)))),
+	)
+	if stats.Max_current > 0 {
+		e.Add(kml.Data(kml.Name("Max. Current"), kml.Value(fmt.Sprintf("%.1fA at %s", stats.Max_current, stats.Show_time(stats.Max_current_time)))))
+	}
+	e.Add(kml.Data(kml.Name("Distance"), kml.Value(fmt.Sprintf("%.0fm", stats.Distance))),
+		kml.Data(kml.Name("Duration"), kml.Value(stats.Show_time(stats.Duration))))
+	if v,ok := m["Disarm"]; ok {
+		e.Add(kml.Data(kml.Name("Disarm"), kml.Value(v)))
+	}
+	d.Add(e)
+
 	d.Add(kml.TimeSpan(kml.Begin(ts0), kml.End(ts1)))
 	d.Add(getHomes(hpos)...)
 	d.Add(f0)
