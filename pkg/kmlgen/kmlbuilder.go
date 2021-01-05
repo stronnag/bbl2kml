@@ -112,22 +112,34 @@ func getPoints(recs []types.LogRec, hpos types.HomeRec, colmode uint8, viz bool)
 	   * 56 ssquare, 57 circle, 58,59 "texaco", 60 triangle, 61 flag
 		 *							kml.Href(icon.PaletteHref(4, 56)), // square
      **/
-		if r.Fs {
-			k.Add(
-				kml.Style(
-					kml.IconStyle(
-						kml.Icon(
-							kml.Href(icon.PaddleHref("wht-circle-lv")),
-						),
-					),
-				),
-			)
-		}
+
+
+		se:= kml.Style()
+
 		if options.Extrude {
 			po.Add (
 				kml.Extrude(true),
 				kml.Tessellate(false),
 			)
+			se.Add(
+				kml.LineStyle(
+					kml.Width(2),
+					kml.Color(color.RGBA{R: 0xc0, G: 0xc0, B: 0xc0, A: 0x66}),
+				),
+			)
+		}
+		if r.Fs {
+			se.Add(
+				kml.IconStyle(
+					kml.Icon(
+						kml.Href(icon.PaddleHref("wht-circle-lv")),
+					),
+				),
+			)
+		}
+
+		if options.Extrude || r.Fs {
+			k.Add(se)
 		}
 		k.Add(po)
 		pt = append(pt, k)
