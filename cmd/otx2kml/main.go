@@ -48,6 +48,7 @@ func main() {
 
 	defs := os.Getenv("BBL2KML_OPTS")
 	options.Dms = strings.Contains(defs, "-dms")
+	options.Extrude = strings.Contains(defs, "-extrude")
 	options.Kml = strings.Contains(defs, "-kml")
 	options.Rssi = strings.Contains(defs, "-rssi")
 

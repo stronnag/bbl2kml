@@ -32,11 +32,13 @@ func main() {
 	options.Dms = strings.Contains(defs, "-dms")
 	options.Kml = strings.Contains(defs, "-kml")
 	options.Rssi = strings.Contains(defs, "-rssi")
+	options.Extrude = strings.Contains(defs, "-extrude")
 
 	flag.IntVar(&options.Idx, "index", 0, "Log index")
 	flag.IntVar(&options.Intvl, "interval", 1000, "Sampling Interval (ms)")
 	flag.BoolVar(&options.Kml, "kml", options.Kml, "Generate KML (vice default KMZ)")
 	flag.BoolVar(&options.Rssi, "rssi", options.Rssi, "Set RSSI view as default")
+	flag.BoolVar(&options.Extrude, "extrude", options.Extrude, "Extends track points to ground")
 	flag.BoolVar(&options.Dump, "dump", false, "Dump log headers and exit")
 	flag.BoolVar(&options.Dms, "dms", options.Dms, "Show positions as DD:MM:SS.s (vice decimal degrees)")
 	flag.StringVar(&options.Mission, "mission", "", "Optional mission file name")
