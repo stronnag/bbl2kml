@@ -1,21 +1,21 @@
 package otx
 
 import (
-	"fmt"
-	"io"
-	"os"
 	"encoding/csv"
+	"fmt"
+	types "github.com/stronnag/bbl2kml/pkg/api/types"
+	geo "github.com/stronnag/bbl2kml/pkg/geo"
+	kmlgen "github.com/stronnag/bbl2kml/pkg/kmlgen"
+	options "github.com/stronnag/bbl2kml/pkg/options"
+	"io"
+	"math"
+	"os"
+	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
-	"math"
-	"regexp"
-	"path/filepath"
-	geo "github.com/stronnag/bbl2kml/pkg/geo"
-	options "github.com/stronnag/bbl2kml/pkg/options"
-	kmlgen "github.com/stronnag/bbl2kml/pkg/kmlgen"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
 )
 
 const LOGTIMEPARSE = "2006-01-02 15:04:05.000"
@@ -401,7 +401,7 @@ func Reader(otxfile string, only_armed bool) bool {
 							otx.index = idx
 						}
 						otx.show_meta()
-						stats.ShowSummary(uint64(lt.Sub(st).Microseconds()))
+						stats.ShowSummary(uint64(lt.Sub(st) / 1000 /*.Microseconds()*/))
 						outfn := kmlgen.GenKmlName(otxfile, idx)
 						kmlgen.GenerateKML(homes, recs, outfn, &otx, stats)
 						fmt.Println()
@@ -455,22 +455,22 @@ func Reader(otxfile string, only_armed bool) bool {
 
 				if d > stats.Max_range {
 					stats.Max_range = d
-					stats.Max_range_time = uint64(b.Utc.Sub(st).Microseconds())
+					stats.Max_range_time = uint64(b.Utc.Sub(st) / 1000 /*.Microseconds()*/)
 				}
 
 				if b.Alt > stats.Max_alt {
 					stats.Max_alt = b.Alt
-					stats.Max_alt_time = uint64(b.Utc.Sub(st).Microseconds())
+					stats.Max_alt_time = uint64(b.Utc.Sub(st) / 1000 /*.Microseconds()*/)
 				}
 
 				if b.Spd < 400 && b.Spd > stats.Max_speed {
 					stats.Max_speed = b.Spd
-					stats.Max_speed_time = uint64(b.Utc.Sub(st).Microseconds())
+					stats.Max_speed_time = uint64(b.Utc.Sub(st) / 1000 /*.Microseconds()*/)
 				}
 
 				if b.Amps > stats.Max_current {
 					stats.Max_current = b.Amps
-					stats.Max_current_time = uint64(b.Utc.Sub(st).Microseconds())
+					stats.Max_current_time = uint64(b.Utc.Sub(st) / 1000 /*.Microseconds()*/)
 				}
 
 				if llat != b.Lat || llon != b.Lon {
@@ -494,7 +494,7 @@ func Reader(otxfile string, only_armed bool) bool {
 	if homes.Flags > 0 && len(recs) > 0 {
 		outfn := kmlgen.GenKmlName(otxfile, idx)
 		otx.show_meta()
-		stats.ShowSummary(uint64(lt.Sub(st).Microseconds()))
+		stats.ShowSummary(uint64(lt.Sub(st) / 1000 /*.Microseconds()*/))
 		kmlgen.GenerateKML(homes, recs, outfn, &otx, stats)
 		fmt.Println()
 		return true
