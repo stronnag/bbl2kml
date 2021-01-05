@@ -15,6 +15,8 @@ Usage of bb2kml [options] file...
     	Show positions as DMS (vice decimal degrees)
   -dump
     	Dump headers and exit
+  -extrude
+    	Extends track points to ground
   -index int
     	Log index
   -interval int
@@ -25,8 +27,6 @@ Usage of bb2kml [options] file...
     	Mission file name
   -rssi
     	Set RSSI view as default
-
-bbl2kml 0.2.0, commit: 816eea0 / 2021-01-02
 ```
 
 Multiple logs (with multiple indices) may be given. A KML/Z will be generated for each file / index.
@@ -103,6 +103,8 @@ $ ./otx2kml
 Usage of otx2kml [options] file...
   -dms
     	Show positions as DD:MM:SS.s (vice decimal degrees) (default true)
+  -extrude
+    	Extends track points to ground
   -home-alt value
     	Home altitude (m)
   -interval int
@@ -115,7 +117,6 @@ Usage of otx2kml [options] file...
     	Set RSSI view as default
   -split-time int
     	Time(s) determining log split, 0 disables (default 120)
-
 ```
 
 There are a few issues with OpenTX logs, the first of which need OpenTX 2.3.11 to be resolved:
@@ -171,7 +172,7 @@ BBL2KML_OPTS='-dms' bbl2kml somelog.TXT #
 A permanent value can set in e.g. `.bashrc`, `.pam_environment` or Windows' equivalent.
 
 ```
-export BBL2KML_OPTS='-dms -elev'
+export BBL2KML_OPTS='-dms -extrude'
 or
 export BBL2KML_OPTS='-rssi'
 ```
