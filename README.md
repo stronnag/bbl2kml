@@ -193,7 +193,7 @@ $ mission2kml -home 54.125229,-4.730443 barrule-h.mission > mtest.kml
 It is possible to define default options using the `BBL2KML_OPTS` environment variable.
 
 ```
-BBL2KML_OPTS='-dms' bbl2kml somelog.TXT #
+BBL2KML_OPTS='-dms' bbl2kml somelog.TXT
 ```
 
 A permanent value can set in e.g. `.bashrc`, `.pam_environment` or Windows' equivalent.
