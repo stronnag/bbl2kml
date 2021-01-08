@@ -6,6 +6,7 @@ import (
 	"os"
 	"fmt"
 	"strings"
+	"github.com/bmizerany/perks/quantile"
 	kml "github.com/twpayne/go-kml"
 	kmz "github.com/twpayne/go-kmz"
 	"github.com/twpayne/go-kml/icon"
@@ -13,6 +14,14 @@ import (
 	mission "github.com/stronnag/bbl2kml/pkg/mission"
 	options "github.com/stronnag/bbl2kml/pkg/options"
 	types "github.com/stronnag/bbl2kml/pkg/api/types"
+)
+
+const (
+	BS_NAME_DESC = iota
+	BS_DESC_ONLY
+	COL_STYLE_MODE
+	COL_STYLE_RSSI
+	COL_STYLE_EFFIC
 )
 
 func getflightColour(mode uint8) color.Color {
@@ -40,37 +49,48 @@ func getflightColour(mode uint8) color.Color {
 	return c
 }
 
-func getStyleURL(r types.LogRec, colmode uint8) string {
+func getStyleURL(r types.LogItem, colmode uint8) string {
 	var s string
-	if colmode == 1 {
-		return fmt.Sprintf("#styleRSSI%03d", 10*(r.Rssi/10))
-	}
-	//	if r.Fs {
-	//		return "#styleFS"
-	//}
-	switch r.Fmode {
-	case types.FM_LAUNCH:
-		s = "#styleLaunch"
-	case types.FM_RTH:
-		s = "#styleRTH"
-	case types.FM_WP:
-		s = "#styleWP"
-	case types.FM_CRUISE3D, types.FM_CRUISE2D:
-		s = "#styleCRS"
-	case types.FM_PH:
+	if colmode == COL_STYLE_RSSI {
+		s = fmt.Sprintf("#styleGrad%03d", 5*(r.Rssi/5))
+	} else if colmode == COL_STYLE_EFFIC {
+		s= fmt.Sprintf("#styleGrad%03d", 5*(int(r.Qval)/5))
+	} else {
+		switch r.Fmode {
+		case types.FM_LAUNCH:
+			s = "#styleLaunch"
+		case types.FM_RTH:
+			s = "#styleRTH"
+		case types.FM_WP:
+			s = "#styleWP"
+		case types.FM_CRUISE3D, types.FM_CRUISE2D:
+			s = "#styleCRS"
+		case types.FM_PH:
 		s = "#stylePH"
-	case types.FM_EMERG:
-		s = "#styleEMERG"
-	default:
-		s = "#styleNormal"
+		case types.FM_EMERG:
+			s = "#styleEMERG"
+		default:
+			s = "#styleNormal"
+		}
 	}
 	return s
 }
 
-func getPoints(recs []types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []kml.Element {
+func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []kml.Element {
 	var pt []kml.Element
-	for _, r := range recs {
-		tfmt := r.Utc.Format("2006-01-02T15:04:05.99MST")
+	var qval0,qval1 float64
+	if colmode == COL_STYLE_EFFIC {
+		q := quantile.NewTargeted(0.05, 0.95)
+		for _, r := range rec.Items {
+			q.Insert(r.Effic)
+		}
+		qval0 = q.Query(0.05)
+		qval1 = q.Query(0.95)
+	}
+
+	tpts := len(rec.Items)
+	for np, r := range rec.Items {
+		tfmt := r.Utc.Format("2006‑01‑02T15:04:05.99MST")
 		fmtxt := r.Fmtext
 		if r.Fs {
 			fmtxt = fmtxt + " FAILSAFE"
@@ -84,17 +104,47 @@ func getPoints(recs []types.LogRec, hpos types.HomeRec, colmode uint8, viz bool)
 			alt = r.Alt
 			altmode = kml.AltitudeModeRelativeToGround
 		}
+		if colmode == COL_STYLE_EFFIC {
+			if r.Effic > qval1 {
+				r.Qval = 100
+			} else if r.Effic < qval0 {
+				r.Qval = 0
+			} else {
+				r.Qval = 100*(1-(r.Effic-qval0)/(qval1-qval0))
+			}
+		}
 
 		var sb strings.Builder
+		sb.Write([]byte(fmt.Sprintf("<h3>Track Point %d of %d</h3>", np, tpts)))
 
-		sb.Write([]byte(fmt.Sprintf("Time: %s<br/>Position: %s<br/>Elevation: %.0fm<br/>GPS Altitude: %.0fm<br/>Course: %d°<br/>Speed: %.1fm/s<br/>Satellites: %d<br/>Range: %.0fm<br/>Bearing: %d°<br/>RSSI: %d%%<br/>Mode: %s<br/>Distance: %.0fm<br/>", tfmt, geo.PositionFormat(r.Lat, r.Lon, options.Dms), r.Alt, alt, r.Cse, r.Spd, r.Numsat, r.Vrange, r.Bearing, r.Rssi, fmtxt, r.Tdist)))
+		sb.Write([]byte(`<table style="border="1px" silver; border="1" silver; rules="all";;">`))
 
+		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%s</td></tr>","Time", tfmt)))
+		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%s</td></tr>", "Position", geo.PositionFormat(r.Lat, r.Lon, options.Dms))))
+		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.0f m</td></tr>", "Elevation", r.Alt)))
+		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.0f m</td></tr>", "GPS Altitude", alt)))
+		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%d°</td></tr>", "Course", r.Cse)))
+		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.1f m/s</td></tr>", "Speed", r.Spd)))
+		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%d</td></tr>", "Satellites", r.Numsat)))
+
+		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.0f m</td></tr>", "Range", r.Vrange)))
+		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%d°</td></tr>", "Bearing", r.Bearing)))
+		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%d %%</td></tr>", "RSSI", r.Rssi)))
+		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%s</td></tr>", "Mode", fmtxt)))
+		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.0f m</td></tr>", "Cumulative Distance", r.Tdist)))
 		if r.Volts > 0 {
-			sb.Write([]byte(fmt.Sprintf("Voltage: %.1fv<br/>", r.Volts)))
+			sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.1f V</br>", "Voltage",  r.Volts)))
 		}
-		if r.Amps > 0 {
-						sb.Write([]byte(fmt.Sprintf("Current: %.1fA<br/>", r.Amps)))
+		if (rec.Cap & types.CAP_AMPS) == types.CAP_AMPS {
+			sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.1f A</td></tr>", "Current", r.Amps)))
+			if (rec.Cap & types.CAP_ENERGY) == types.CAP_ENERGY {
+				sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.1f mah</td></tr>", "Total Energy", r.Energy)))
+				ceav := r.Energy*1000/r.Tdist
+				sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.1f mah / km</td></tr>", "Efficiency",r.Effic)))
+				sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.1f mah / km</td></tr>", "Average Efficiency",ceav)))
+			}
 		}
+		sb.Write([]byte("</table>"))
 
 		po := kml.Point(
 				kml.AltitudeMode(altmode),
@@ -107,12 +157,6 @@ func getPoints(recs []types.LogRec, hpos types.HomeRec, colmode uint8, viz bool)
 			kml.TimeStamp(kml.When(r.Utc)),
 			kml.StyleURL(getStyleURL(r, colmode)),
 		)
-
-	 /**               Other F/S Icon options
-	   * 56 ssquare, 57 circle, 58,59 "texaco", 60 triangle, 61 flag
-		 *							kml.Href(icon.PaletteHref(4, 56)), // square
-     **/
-
 
 		se:= kml.Style()
 
@@ -173,7 +217,7 @@ func getHomes(hpos types.HomeRec) []kml.Element {
 					kml.Href(icon.PaletteHref(4, 29)),
 				),
 			),
-		).Add(balloon_style()),
+		).Add(balloon_style(BS_NAME_DESC)),
 	)
 	hp = append(hp, k)
 	if (hpos.Flags & types.HOME_SAFE) == types.HOME_SAFE {
@@ -190,16 +234,21 @@ func getHomes(hpos types.HomeRec) []kml.Element {
 						kml.Href(icon.PaletteHref(3, 56)),
 					),
 				),
-			).Add(balloon_style()),
+			).Add(balloon_style(BS_NAME_DESC)),
 		)
 		hp = append(hp, k)
 	}
 	return hp
 }
 
-func balloon_style() *kml.CompoundElement {
-	return kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
+func balloon_style(bs uint8) *kml.CompoundElement {
+	if bs == BS_NAME_DESC {
+		return kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
 		kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`))
+	} else {
+		return kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
+			kml.Text(`$[description]`))
+	}
 }
 
 func generate_shared_styles(style uint8) []kml.Element {
@@ -215,7 +264,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			).Add(balloon_style()),
+			).Add(balloon_style(BS_DESC_ONLY)),
 			kml.SharedStyle(
 				"styleLaunch",
 				kml.IconStyle(
@@ -225,7 +274,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			).Add(balloon_style()),
+			).Add(balloon_style(BS_DESC_ONLY)),
 			kml.SharedStyle(
 				"styleWP",
 				kml.IconStyle(
@@ -235,7 +284,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			).Add(balloon_style()),
+			).Add(balloon_style(BS_DESC_ONLY)),
 			kml.SharedStyle(
 				"styleRTH",
 				kml.IconStyle(
@@ -245,7 +294,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			).Add(balloon_style()),
+			).Add(balloon_style(BS_DESC_ONLY)),
 			kml.SharedStyle(
 				"styleCRS",
 				kml.IconStyle(
@@ -255,7 +304,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			).Add(balloon_style()),
+			).Add(balloon_style(BS_DESC_ONLY)),
 			kml.SharedStyle(
 				"stylePH",
 				kml.IconStyle(
@@ -265,7 +314,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			).Add(balloon_style()),
+			).Add(balloon_style(BS_DESC_ONLY)),
 			kml.SharedStyle(
 				"styleAH",
 				kml.IconStyle(
@@ -275,7 +324,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			).Add(balloon_style()),
+			).Add(balloon_style(BS_DESC_ONLY)),
 			kml.SharedStyle(
 				"styleFS",
 				kml.IconStyle(
@@ -285,7 +334,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			).Add(balloon_style()),
+			).Add(balloon_style(BS_DESC_ONLY)),
 			kml.SharedStyle(
 				"styleEMERG",
 				kml.IconStyle(
@@ -295,24 +344,34 @@ func generate_shared_styles(style uint8) []kml.Element {
 						kml.Href(icon.PaletteHref(2, 18)),
 					),
 				),
-			).Add(balloon_style()),
+			).Add(balloon_style(BS_DESC_ONLY)),
 		}
-	case 1:
+	case COL_STYLE_RSSI:
 		{
+			gidx := 0
+
+			switch options.Gradset {
+			case "rdgn":
+				gidx = GRAD_RGN
+			case "yor":
+				gidx = GRAD_YOR
+			default:
+				gidx = GRAD_RED
+			}
+			gcols := Get_gradset(gidx)
 			icons := []kml.Element{}
-			for j := 0; j < 11; j++ {
-				sname := fmt.Sprintf("styleRSSI%03d", j*10)
-				col := uint8((10-j)*255/10)
+			for j,c := range gcols {
+				sname := fmt.Sprintf("styleGrad%03d", j*5)
 				el := kml.SharedStyle(
 					sname,
 					kml.IconStyle(
 						kml.Scale(0.5),
-						kml.Color(color.RGBA{R: 0xff, G: col, B: 0, A: 0xa0}),
+						kml.Color(color.RGBA{R: c.R, G: c.G, B: c.B, A: c.A}),
 						kml.Icon(
 							kml.Href(icon.PaletteHref(2, 18)),
 						),
 					),
-				).Add(balloon_style())
+				).Add(balloon_style(BS_DESC_ONLY))
 				icons = append(icons, el)
 			}
 			return icons
@@ -320,12 +379,11 @@ func generate_shared_styles(style uint8) []kml.Element {
 	}
 }
 
-func add_ground_track (recs []types.LogRec) kml.Element {
-
+func add_ground_track (rec types.LogRec) kml.Element {
 	f := kml.Folder(kml.Name("Ground Track")).Add(kml.Visibility(true))
 	var points []kml.Coordinate
 
-	for _, r := range recs {
+	for _, r := range rec.Items {
 		points = append(points, kml.Coordinate{Lon: r.Lon, Lat: r.Lat})
 	}
 
@@ -342,29 +400,31 @@ func add_ground_track (recs []types.LogRec) kml.Element {
 	return f
 }
 
-func GenerateKML(hpos types.HomeRec, recs []types.LogRec, outfn string,
+func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 	meta types.MetaLog, stats types.LogStats) {
 
-	defviz := !(options.Rssi && recs[0].Rssi > 0)
-	ts0 := recs[0].Utc
-	ts1 := recs[len(recs)-1].Utc
+	defviz := !(options.Rssi && rec.Items[0].Rssi > 0)
+	ts0 := rec.Items[0].Utc
+	ts1 := rec.Items[len(rec.Items)-1].Utc
 
 	f0 := kml.Folder(kml.Name("Flight modes")).Add(kml.Visibility(defviz)).
 		Add(generate_shared_styles(0)...).
-		Add(getPoints(recs,hpos,0,defviz)...)
+		Add(getPoints(rec, hpos, COL_STYLE_MODE, defviz)...)
 
-	d := kml.Folder(kml.Name("inav flight")).Add(kml.Open(true))
-	d.Add(add_ground_track(recs))
+	m := meta.MetaData()
+	d := kml.Folder(kml.Name(m["Log"])).Add(kml.Open(true))
+	d.Add(add_ground_track(rec))
+
 	if len(options.Mission) > 0 {
-		 _, m, err := mission.Read_Mission_File(options.Mission)
+		 _, ms, err := mission.Read_Mission_File(options.Mission)
 		if err == nil {
-			mf := m.To_kml(hpos, options.Dms, false)
+			mf := ms.To_kml(hpos, options.Dms, false)
 			d.Add(mf)
 		} else {
 			fmt.Fprintf(os.Stderr,"* Failed to read mission file %s\n", options.Mission)
 		}
 	}
-	m := meta.MetaData()
+
 	e := kml.ExtendedData(kml.Data(kml.Name("Log"), kml.Value(m["Log"])))
 	for _, k := range []string{"Flight", "Firmware","Size"} {
 		if v,ok := m[k]; ok {
@@ -388,12 +448,21 @@ func GenerateKML(hpos types.HomeRec, recs []types.LogRec, outfn string,
 	d.Add(kml.TimeSpan(kml.Begin(ts0), kml.End(ts1)))
 	d.Add(getHomes(hpos)...)
 	d.Add(f0)
-	if recs[0].Rssi > 0 {
+	if rec.Cap&types.CAP_RSSI_VALID !=0 || options.Efficiency {
+		d.Add(generate_shared_styles(COL_STYLE_RSSI)...)
+	}
+
+	if rec.Cap&types.CAP_RSSI_VALID !=0  {
 		f1 := kml.Folder(kml.Name("RSSI")).Add(kml.Visibility(!defviz)).
-			Add(generate_shared_styles(1)...).
-			Add(getPoints(recs,hpos,1,!defviz)...)
+			Add(getPoints(rec,hpos,COL_STYLE_RSSI,!defviz)...)
 		d.Add(f1)
 	}
+	if options.Efficiency {
+		f1 := kml.Folder(kml.Name("Efficiency")).Add(kml.Visibility(false)).
+			Add(getPoints(rec,hpos,COL_STYLE_EFFIC,!defviz)...)
+		d.Add(f1)
+	}
+
 	var err error
 
 	if strings.HasSuffix(outfn, ".kmz") {

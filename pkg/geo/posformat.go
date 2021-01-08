@@ -24,11 +24,11 @@ func LonFormat(lon float64, dms bool) string {
 
 func PositionFormat(lat float64, lon float64, dms bool) string {
 	if dms == false {
-		return fmt.Sprintf("%.6f %.6f", lat, lon)
+		return fmt.Sprintf("%.6f %.6f", lat, lon)
 	} else {
 		var sb strings.Builder
 		sb.WriteString(LatFormat(lat, dms))
-		sb.WriteByte(' ')
+		sb.WriteRune(0xa0)
 		sb.WriteString(LonFormat(lon, dms))
 		return sb.String()
 	}

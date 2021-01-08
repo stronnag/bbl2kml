@@ -21,7 +21,14 @@ const (
 	FM_FS
 )
 
-type LogRec struct {
+const (
+	CAP_AMPS = 1 << iota
+	CAP_VOLTS
+	CAP_ENERGY
+	CAP_RSSI_VALID
+)
+
+type LogItem struct {
 	Stamp   uint64
 	Lat     float64
 	Lon     float64
@@ -43,10 +50,18 @@ type LogRec struct {
 	Vrange  float64
 	Bearing int32 // -ve => not defined
 	Tdist   float64
+	Effic   float64
+	Energy  float64
+	Qval    float64
+}
+
+type LogRec struct {
+	Cap   uint8
+	Items []LogItem
 }
 
 var Mnames = []string{"Acro", "Manual", "Horizon", "Angle", "Launch", "RTH", "WP",
-	"3CRS", "CRS", "PH", "AH", "EMERG", "F/S"}
+	"3CRS", "CRS", "PH", "AH", "EMERGENCY", "F/S"}
 
 const (
 	HOME_ARM  = 1

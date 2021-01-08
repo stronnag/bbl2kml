@@ -112,22 +112,40 @@ func get_rec_value(r []string, key string) (string, string, bool) {
 	return s, v.u, ok
 }
 
+func dataCapability() uint8 {
+	var ret uint8 = 0
+	if _, ok := hdrs["Curr"]; ok {
+		ret |= types.CAP_AMPS
+	}
+	if _, ok := hdrs["VFAS"]; ok {
+		ret |= types.CAP_VOLTS
+	} else if _, ok := hdrs["RxBt"]; ok {
+		ret |= types.CAP_VOLTS
+	}
+	if _, ok := hdrs["Fuel"]; ok {
+		ret |= types.CAP_ENERGY
+	} else if _, ok := hdrs["Capa"]; ok {
+		ret |= types.CAP_ENERGY
+	}
+	return ret
+}
+
 func normalise_units(v float64, u string) float64 {
 	switch u {
 	case "kmh":
-		v = v / 3.6
+		v /= 3.6
 	case "mph":
-		v = v * 0.44704
+		v *= 0.44704
 	case "kts":
-		v = v * 0.51444444
+		v *= 0.51444444
 	case "ft":
 		v *= 0.3048
 	}
 	return v
 }
 
-func get_otx_line(r []string) (types.LogRec, uint8) {
-	b := types.LogRec{}
+func get_otx_line(r []string) (types.LogItem, uint8) {
+	b := types.LogItem{}
 	status := uint8(0)
 	if s, _, ok := get_rec_value(r, "Tmp2"); ok {
 		tmp2, _ := strconv.ParseInt(s, 10, 32)
@@ -285,7 +303,7 @@ func get_otx_line(r []string) (types.LogRec, uint8) {
 			if s == "0" {
 				if s, _, ok := get_rec_value(r, "Thr"); ok {
 					thr, _ := strconv.ParseInt(s, 10, 32)
-					if thr > -800 {
+					if thr > -1024 {
 						status |= is_ARMED
 					}
 				}
@@ -321,8 +339,24 @@ func get_otx_line(r []string) (types.LogRec, uint8) {
 		if u == "mA" {
 			b.Amps /= 1000
 		}
+		if s, u, ok = get_rec_value(r, "Fuel"); ok {
+			b.Energy, _ = strconv.ParseFloat(s, 64)
+		} else if s, u, ok = get_rec_value(r, "Capa"); ok {
+			b.Energy, _ = strconv.ParseFloat(s, 64)
+		}
+		if b.Energy > 0 {
+			switch u {
+			case "mwh", "mWh":
+				if b.Volts > 0 {
+					b.Energy /= b.Volts
+				} else {
+					b.Energy = 0
+				}
+			case "pct", "%", "PCT":
+				b.Energy = 0
+			}
+		}
 	}
-
 	return b, status
 }
 
@@ -334,7 +368,7 @@ func to_radians(deg float64) float64 {
 	return (deg * math.Pi / 180.0)
 }
 
-func calc_speed(b types.LogRec, tdiff time.Duration, llat, llon float64) float64 {
+func calc_speed(b types.LogItem, tdiff time.Duration, llat, llon float64) float64 {
 	spd := 0.0
 	if tdiff > 0 && llat != 0 && llon != 0 {
 		// Flat earth
@@ -354,7 +388,7 @@ func Reader(otxfile string, only_armed bool) bool {
 	idx := 0
 
 	var homes types.HomeRec
-	var recs []types.LogRec
+	rec := types.LogRec{}
 
 	fh, err := os.Open(otxfile)
 	if err != nil {
@@ -370,6 +404,8 @@ func Reader(otxfile string, only_armed bool) bool {
 	//	var armtime time.Time
 	var lt, st time.Time
 
+	leffic := 0.0
+
 	for i := 0; ; i++ {
 		record, err := r.Read()
 		if err == io.EOF {
@@ -377,6 +413,7 @@ func Reader(otxfile string, only_armed bool) bool {
 		}
 		if i == 0 {
 			read_headers(record)
+			rec.Cap = dataCapability()
 			if options.Dump {
 				dump_headers()
 				return true
@@ -395,17 +432,17 @@ func Reader(otxfile string, only_armed bool) bool {
 			if options.SplitTime > 0 {
 				if b.Utc.Sub(lt).Seconds() > (time.Duration(options.SplitTime) * time.Second).Seconds() {
 					fmt.Fprintf(os.Stderr, "Splitting at %v after %vs\n", b.Utc.Format(TIMEDATE), options.SplitTime)
-					if homes.Flags > 0 && len(recs) > 0 {
+					if homes.Flags > 0 && len(rec.Items) > 0 {
 						if idx == 0 {
 							idx = 1
 							otx.index = idx
 						}
 						otx.show_meta()
-						stats.ShowSummary(uint64(lt.Sub(st) / 1000 /*.Microseconds()*/))
+						stats.ShowSummary(uint64(lt.Sub(st) / 1000 /*.Microseconds()*/ ))
 						outfn := kmlgen.GenKmlName(otxfile, idx)
-						kmlgen.GenerateKML(homes, recs, outfn, &otx, stats)
+						kmlgen.GenerateKML(homes, rec, outfn, &otx, stats)
 						fmt.Println()
-						recs = nil
+						rec.Items = nil
 						st = b.Utc
 						lt = st
 						homes.Flags = 0
@@ -455,22 +492,22 @@ func Reader(otxfile string, only_armed bool) bool {
 
 				if d > stats.Max_range {
 					stats.Max_range = d
-					stats.Max_range_time = uint64(b.Utc.Sub(st) / 1000 /*.Microseconds()*/)
+					stats.Max_range_time = uint64(b.Utc.Sub(st).Microseconds())
 				}
 
 				if b.Alt > stats.Max_alt {
 					stats.Max_alt = b.Alt
-					stats.Max_alt_time = uint64(b.Utc.Sub(st) / 1000 /*.Microseconds()*/)
+					stats.Max_alt_time = uint64(b.Utc.Sub(st).Microseconds())
 				}
 
 				if b.Spd < 400 && b.Spd > stats.Max_speed {
 					stats.Max_speed = b.Spd
-					stats.Max_speed_time = uint64(b.Utc.Sub(st) / 1000 /*.Microseconds()*/)
+					stats.Max_speed_time = uint64(b.Utc.Sub(st).Microseconds())
 				}
 
 				if b.Amps > stats.Max_current {
 					stats.Max_current = b.Amps
-					stats.Max_current_time = uint64(b.Utc.Sub(st) / 1000 /*.Microseconds()*/)
+					stats.Max_current_time = uint64(b.Utc.Sub(st).Microseconds())
 				}
 
 				if llat != b.Lat || llon != b.Lon {
@@ -480,7 +517,22 @@ func Reader(otxfile string, only_armed bool) bool {
 			}
 
 			b.Tdist = stats.Distance * 1852.0
-			recs = append(recs, b)
+			if (rec.Cap & types.CAP_AMPS) == types.CAP_AMPS {
+				if d > 0 {
+					deltat := tdiff.Seconds()
+					aspd := d * 1852 / deltat              // m/s
+					b.Effic = b.Amps * 1000 / (3.6 * aspd) // efficiency
+					leffic = b.Effic
+				} else {
+					b.Effic = leffic
+				}
+			}
+
+			if b.Rssi > 0 {
+				rec.Cap |= types.CAP_RSSI_VALID
+			}
+
+			rec.Items = append(rec.Items, b)
 			llat = b.Lat
 			llon = b.Lon
 			lt = b.Utc
@@ -491,11 +543,11 @@ func Reader(otxfile string, only_armed bool) bool {
 		}
 	}
 
-	if homes.Flags > 0 && len(recs) > 0 {
+	if homes.Flags > 0 && len(rec.Items) > 0 {
 		outfn := kmlgen.GenKmlName(otxfile, idx)
 		otx.show_meta()
-		stats.ShowSummary(uint64(lt.Sub(st) / 1000 /*.Microseconds()*/))
-		kmlgen.GenerateKML(homes, recs, outfn, &otx, stats)
+		stats.ShowSummary(uint64(lt.Sub(st) / 1000 /*.Microseconds()*/ ))
+		kmlgen.GenerateKML(homes, rec, outfn, &otx, stats)
 		fmt.Println()
 		return true
 	}

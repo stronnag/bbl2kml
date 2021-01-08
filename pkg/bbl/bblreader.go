@@ -35,12 +35,27 @@ func get_rec_value(r []string, key string) (string, bool) {
 	return s, ok
 }
 
-func get_bbl_line(r []string, have_origin bool) types.LogRec {
-	b := types.LogRec{}
+func dataCapability() uint8 {
+	var ret uint8 = 0
+	if _, ok := hdrs["amperage (A)"]; ok {
+		ret |= types.CAP_AMPS
+	}
+	if _, ok := hdrs["vbat (V)"]; ok {
+		ret |= types.CAP_VOLTS
+	}
+	if _, ok := hdrs["energyCumulative (mAh)"]; ok {
+		ret |= types.CAP_ENERGY
+	}
+	return ret
+}
 
-	s, ok := get_rec_value(r, "amperage (A)")
+func get_bbl_line(r []string, have_origin bool) types.LogItem {
+	b := types.LogItem{}
+
+	s, ok := get_rec_value(r, "GPS_numSat")
 	if ok {
-		b.Amps, _ = strconv.ParseFloat(s, 64)
+		i64, _ := strconv.Atoi(s)
+		b.Numsat = uint8(i64)
 	}
 
 	if s, ok = get_rec_value(r, "vbat (V)"); ok {
@@ -53,12 +68,6 @@ func get_bbl_line(r []string, have_origin bool) types.LogRec {
 	if ok {
 		b.Alt, _ = strconv.ParseFloat(s, 64)
 		b.Alt = b.Alt / 100.0
-	}
-
-	s, ok = get_rec_value(r, "GPS_numSat")
-	if ok {
-		i64, _ := strconv.Atoi(s)
-		b.Numsat = uint8(i64)
 	}
 
 	s, ok = get_rec_value(r, "GPS_fixType")
@@ -193,6 +202,16 @@ func get_bbl_line(r []string, have_origin bool) types.LogRec {
 	if ok {
 		b.Utc, _ = time.Parse(time.RFC3339Nano, s)
 	}
+
+	s, ok = get_rec_value(r, "amperage (A)")
+	if ok {
+		b.Amps, _ = strconv.ParseFloat(s, 64)
+	}
+
+	if s, ok = get_rec_value(r, "energyCumulative (mAh)"); ok {
+		b.Energy, _ = strconv.ParseFloat(s, 64)
+	}
+
 	return b
 }
 
@@ -230,7 +249,7 @@ func Reader(bbfile string, meta BBLMeta) bool {
 	defer cmd.Wait()
 	defer out.Close()
 	var homes types.HomeRec
-	var recs []types.LogRec
+	var rec types.LogRec
 
 	r := csv.NewReader(out)
 	r.TrimLeadingSpace = true
@@ -262,6 +281,7 @@ func Reader(bbfile string, meta BBLMeta) bool {
 		}
 	}
 
+	leffic := 0.0
 	for i := 0; ; i++ {
 		record, err := r.Read()
 		if err == io.EOF {
@@ -269,85 +289,99 @@ func Reader(bbfile string, meta BBLMeta) bool {
 		}
 		if i == 0 {
 			hdrs = get_headers(record)
+			rec.Cap = dataCapability()
 			if options.Dump {
 				dump_headers(hdrs)
 				return true
 			}
 		}
 
-		br := get_bbl_line(record, have_origin)
+		b := get_bbl_line(record, have_origin)
 
 		if !have_origin {
-			if br.Fix > 1 && br.Numsat > 5 {
+			if b.Fix > 1 && b.Numsat > 5 {
 				have_origin = true
-				llat = br.Lat
-				llon = br.Lon
-				st = br.Stamp
-				homes.HomeLat = br.Lat
-				homes.HomeLon = br.Lon
-				homes.HomeAlt = br.GAlt
+				llat = b.Lat
+				llon = b.Lon
+				st = b.Stamp
+				homes.HomeLat = b.Lat
+				homes.HomeLon = b.Lon
+				homes.HomeAlt = b.GAlt
 				homes.Flags = types.HOME_ARM | types.HOME_ALT
-				if br.Bearing == -2 {
-					_, dh := geo.Csedist(br.Hlat, br.Hlon, br.Lat, br.Lon)
+				if b.Bearing == -2 {
+					_, dh := geo.Csedist(b.Hlat, b.Hlon, b.Lat, b.Lon)
 					if dh > 2.0/1852.0 {
-						homes.SafeLat = br.Hlat
-						homes.SafeLon = br.Hlon
+						homes.SafeLat = b.Hlat
+						homes.SafeLon = b.Hlon
 						homes.Flags |= types.HOME_SAFE
 					}
-				} else if br.Bearing > -1 {
-					hlat, hlon := geo.Posit(br.Lat, br.Lon, float64(br.Bearing), br.Vrange/1852.0, true)
+				} else if b.Bearing > -1 {
+					hlat, hlon := geo.Posit(b.Lat, b.Lon, float64(b.Bearing), b.Vrange/1852.0, true)
 					homes.SafeLat = hlat
 					homes.SafeLon = hlon
 					homes.Flags |= types.HOME_SAFE
 				}
 			}
-			if br.Utc.IsZero() {
+			if b.Utc.IsZero() {
 				basetime, _ = time.Parse("Jan 2 2006 15:04:05", meta.Fwdate)
 			}
 		} else {
-			us := br.Stamp
+			us := b.Stamp
 			if us > st {
 				var d float64
 				var c float64
 				// Do the plot every 100ms
 				if (us - dt) > 1000*uint64(options.Intvl) {
-					if br.Utc.IsZero() {
-						br.Utc = basetime.Add(time.Duration(us) * time.Microsecond)
+					if b.Utc.IsZero() {
+						b.Utc = basetime.Add(time.Duration(us) * time.Microsecond)
 					}
-					c, d = geo.Csedist(homes.HomeLat, homes.HomeLon, br.Lat, br.Lon)
-					br.Bearing = int32(c)
-					br.Vrange = d * 1852.0
+					c, d = geo.Csedist(homes.HomeLat, homes.HomeLon, b.Lat, b.Lon)
+					b.Bearing = int32(c)
+					b.Vrange = d * 1852.0
 
 					if d > stats.Max_range {
 						stats.Max_range = d
 						stats.Max_range_time = us - st
 					}
 
-					if llat != br.Lat || llon != br.Lon {
-						_, d = geo.Csedist(llat, llon, br.Lat, br.Lon)
+					if llat != b.Lat || llon != b.Lon {
+						_, d = geo.Csedist(llat, llon, b.Lat, b.Lon)
 						stats.Distance += d
 					}
+					b.Tdist = (stats.Distance * 1852.0)
+					llat = b.Lat
+					llon = b.Lon
 
-					br.Tdist = (stats.Distance * 1852.0)
+					if (rec.Cap & types.CAP_AMPS) == types.CAP_AMPS {
+						if d > 0 {
+							deltat := float64((us - dt)) / 1000000.0 // seconds
+							aspd := d * 1852 / deltat                // m/s
+							b.Effic = b.Amps * 1000 / (3.6 * aspd)   // efficiency
+							leffic = b.Effic
+						} else {
+							b.Effic = leffic
+						}
+					}
+					if b.Rssi > 0 {
+						rec.Cap |= types.CAP_RSSI_VALID
+					}
 
-					llat = br.Lat
-					llon = br.Lon
+					rec.Items = append(rec.Items, b)
 					dt = us
-					recs = append(recs, br)
 				}
 
-				if br.Alt > stats.Max_alt {
-					stats.Max_alt = br.Alt
+				if b.Alt > stats.Max_alt {
+					stats.Max_alt = b.Alt
 					stats.Max_alt_time = us - st
 				}
 
-				if br.Spd < 400 && br.Spd > stats.Max_speed {
-					stats.Max_speed = br.Spd
+				if b.Spd < 400 && b.Spd > stats.Max_speed {
+					stats.Max_speed = b.Spd
 					stats.Max_speed_time = us - st
 				}
 
-				if br.Amps > stats.Max_current {
-					stats.Max_current = br.Amps
+				if b.Amps > stats.Max_current {
+					stats.Max_current = b.Amps
 					stats.Max_current_time = us - st
 				}
 				lt = us
@@ -357,10 +391,11 @@ func Reader(bbfile string, meta BBLMeta) bool {
 			log.Fatal(err)
 		}
 	}
+
 	stats.ShowSummary(lt - st)
-	if homes.Flags != 0 && len(recs) > 0 {
+	if homes.Flags != 0 && len(rec.Items) > 0 {
 		outfn := kmlgen.GenKmlName(bbfile, idx)
-		kmlgen.GenerateKML(homes, recs, outfn, &meta, stats)
+		kmlgen.GenerateKML(homes, rec, outfn, &meta, stats)
 		return true
 	}
 	return false

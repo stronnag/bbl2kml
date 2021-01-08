@@ -19,7 +19,7 @@ endif
 
 all: $(APP)$(EXT) $(MAPP)$(EXT) $(OAPP)$(EXT)
 
-PKGCOMMON = $(wildcard pkg/api/*/*.go) $(wildcard pkg/mission/*.go)
+PKGCOMMON = $(wildcard pkg/api/*/*.go) $(wildcard pkg/mission/*.go) $(wildcard pkg/geo/*.go)
 PKGOPT = $(wildcard pkg/options/*.go)
 PKGBBL = $(wildcard pkg/bbl/*.go)
 PKGOTX = $(wildcard pkg/otx/*.go)

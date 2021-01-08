@@ -10,21 +10,25 @@ Generate annotated KML/KMZ files from inav blackbox logs and OpenTX log files (i
 
 ```
 $ bbl2kml --help
-Usage of bb2kml [options] file...
+Usage of bbl2kml [options] file...
   -dms
-    	Show positions as DMS (vice decimal degrees)
+    	Show positions as DD:MM:SS.s (vice decimal degrees)
   -dump
-    	Dump headers and exit
+    	Dump log headers and exit
+  -efficiency
+    	Include efficiency layer in KML/Z
   -extrude
     	Extends track points to ground
+  -gradient string
+    	Specific colour gradient [red,rdgn,yor]
   -index int
     	Log index
   -interval int
     	Sampling Interval (ms) (default 1000)
   -kml
-    	Generate KML (vice KMZ)
+    	Generate KML (vice default KMZ)
   -mission string
-    	Mission file name
+    	Optional mission file name
   -rssi
     	Set RSSI view as default
 ```
@@ -34,20 +38,20 @@ Multiple logs (with multiple indices) may be given. A KML/Z will be generated fo
 The output file is named from the base name of the Blackbox log file, appended with the index number and `.kml` or `.kmz` as appropriate. For example:
 
 ```
-bbl2kml /tmp/LOG00022.TXT
-Log      : LOG00022.TXT / 1
-Craft    :  on 2020-11-08T14:08:22.500+00:00
-Firmware : INAV 2.3.0 (063ba5a) MATEKF722 of Jan 19 2020 20:20:56
-Size     : 13.50 MB
-Altitude : 553.3 m at 26:12
-Speed    : 23.7 m/s at 57:24
-Range    : 22735 m at 27:58
-Current  : 16.2 A at 00:10
-Distance : 51899 m
-Duration : 49:33
-Disarm   : NONE
+$ ./bbl2kml LOG00044.TXT
+Log      : LOG00044.TXT / 1
+Flight   : "Model" on 2020-04-12T14:24:01.410+03:00
+Firmware : INAV 2.4.0 (bcd4caef9) MATEKF722 of Feb 11 2020 22:48:59
+Size     : 19.36 MB
+Altitude : 292.8 m at 25:42
+Speed    : 28.0 m/s at 13:54
+Range    : 17322 m at 14:22
+Current  : 30.6 A at 00:05
+Distance : 48437 m
+Duration : 43:44
+Disarm   : Switch
 
-results in the KMZ file "LOG00022.1.kmz"
+results in the KMZ file "LOG00044.1.kmz"
 ```
 
 Where `-mission <file>` is given, the given waypoint `<mission file>` will be included in the generated KML/Z; mission files may be one of the following formats as supported by [impload](https://github.com/stronnag/impload):
@@ -64,9 +68,17 @@ If you use a format other than MW-XML or mwp JSON, it is recommended that you re
 
 KML/Z file defining tracks which may be displayed Google Earth. Tracks can be animated with the time slider.
 
-Both Flight Mode and RSSI tracks are generated; the default for display is Flight Mode, unless `-rssi` is specified (and RSSI data is available in the log). The log summary is displayed by double clicking on the `inav flight` folder in Google Earth.
+Both Flight Mode and RSSI tracks are generated; the default for display is Flight Mode, unless `-rssi` is specified (and RSSI data is available in the log). The log summary is displayed by double clicking on the "file name"` folder in Google Earth.
 
-### Flight Mode Track
+### Modes
+
+`bbl2kml` and `otx2kml` can generate three distinct colour-coded outputs:
+
+* Flight mode: the default, colours as [below](#flight_mode_track).
+* RSSI mode: RSSI percentage as a colour gradient, according to the current `--gradient` setting. Note that if no valid RSSI is found in the log, this mode will be suppressed.
+* Efficiency mode: The efficiency (mAh/km) as a colour gradient,  according to the current `--gradient` setting. This is not enabled by default, and requires the `--efficiency` setting to be specified, either as a command line option or permanently in `$BBL2KML_OPTS`.
+
+#### Flight Mode Track
 
 * White : WP Mission
 * Yellow : RTH
@@ -78,11 +90,18 @@ Both Flight Mode and RSSI tracks are generated; the default for display is Fligh
 * Red : Failsafe
 * Orange : Emergency Landing
 
-### RSSI Track
+### Colour Gradients
 
-* RSSI shading; range from red (100%) to yellow (0%), 10 step gradient
+The RSSI and Efficiency modes are displayed using a colour gradient. Three gradients are available:
+* `red` : The default, white representing the best (100%), red the worst (0%)
+* `rdgn` : Red to green, green representing the best (100%), red the worst (0%)
+* `yor` : Yellow/Orange/Red, yellow representing the best (100%), red the worst (0%)
+
+If no option is given, `red` is assumed. Values are set by the `--gradient` command line option or  in `$BBL2KML_OPTS`.
 
 ### Examples
+
+Note: These images are rather old, it looks much better now.
 
 #### Flight Modes
 
@@ -102,11 +121,19 @@ Both Flight Mode and RSSI tracks are generated; the default for display is Fligh
 $ ./otx2kml
 Usage of otx2kml [options] file...
   -dms
-    	Show positions as DD:MM:SS.s (vice decimal degrees) (default true)
+    	Show positions as DD:MM:SS.s (vice decimal degrees)
+  -dump
+    	Dump log headers and exit
+  -efficiency
+    	Include efficiency layer in KML/Z
   -extrude
     	Extends track points to ground
-  -home-alt value
-    	Home altitude (m)
+  -gradient string
+    	Specific colour gradient [red,rdgn,yor]
+  -home-alt int
+    	home altitude
+  -index int
+    	Log index
   -interval int
     	Sampling Interval (ms) (default 1000)
   -kml
@@ -120,8 +147,8 @@ Usage of otx2kml [options] file...
 ```
 
 There are a few issues with OpenTX logs, the first of which need OpenTX 2.3.11 to be resolved:
-* CRSF logs in OpenTX 2.3.10 do not record the FM (Flight Mode) field. This makes it impossible to determine flight mode, or even if the craft is armed. Currently `otx2log` tries to evince the armed state from other data.
-* GPS Elevation. Unless you have a GPS attached to the TX, you don't get GPS altitude. This can be set by the `-home-alt H` value (in metres). Otherwise `otx2bbl` will use an online elevation service.
+* CRSF logs in OpenTX 2.3.10 do not record the FM (Flight Mode) field. This makes it impossible to determine flight mode, or even if the craft is armed. Currently `otx2kml` tries to evince the armed state from other data.
+* GPS Elevation. Unless you have a GPS attached to the TX, you don't get GPS altitude. This can be set by the `-home-alt H` value (in metres). Otherwise `otx2kml` will use an online elevation service.
 * OpenTX creates a log per calendar day (IIRC), this means there may be multiple logs in the same file. Delimiting these individual logs is less than trivial, to some degree due to the prior CRSF issue which means arm / disarm is not reliably available. Currently, `otx2kml` assumes that a gap of more than 120 seconds indicates a new flight. The `-split-time` value allows a user-defined split time (seconds). Setting this to zero disables the log splitting function.
 
 ## `mission2kml`
@@ -177,11 +204,25 @@ or
 export BBL2KML_OPTS='-rssi'
 ```
 
-In the permanent usage case the only way to use the defaults is the redefine / clear the environment variable.
+In the permanent usage case, options may be changed / inverted by command line using explicit values.
 
 ```
-BBL2KML_OPTS= mission2kml sample.json
+$ echo $BBL2KML_OPTS
+-dms -extrude --gradient=yor --efficiency
+
+$ bbl2kml -extrude=false --dms=false randomBBL.TXT
 ```
+
+The following options are recognised in `$BBL2KML_OPTS`; any other values (e.g. the obsolete `--elev` will cause the application to terminate. This is a feature.
+
+* `--kml`
+* `--rssi`
+* `--extrude`
+* `--gradient=red`
+* `--decoder=blackbox_decode` The `blackbox_decode` application to use. This setting enables the use of experimental (or obsolete) decoders, mainly for testing and is thus only available via the environment.
+* `--efficiency`
+
+Note that the command interpreter allows `-flag` or `--flag` for any option.
 
 ## Limitations, Bugs, Bug Reporting
 
@@ -195,6 +236,7 @@ Due to the range of `inav` versions, `blackbox_decode` versions and supported op
 
 ## Building
 
+Requires Go v1.13 or later.
 Compiled with:
 
 ```
