@@ -396,7 +396,7 @@ func (lg *BBLOG) Reader(meta types.FlightMeta) bool {
 	var rec types.LogRec
 	var froboff time.Duration
 
-	frobing := geo.Frobnicate_init()
+	frobing := geo.Getfrobnication()
 
 	r := csv.NewReader(out)
 	r.TrimLeadingSpace = true

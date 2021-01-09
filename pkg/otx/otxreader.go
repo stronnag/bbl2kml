@@ -452,6 +452,9 @@ func (lg *OTXLOG) Reader(m types.FlightMeta) bool {
 
 	var homes types.HomeRec
 	rec := types.LogRec{}
+	var froboff time.Duration
+
+	frobing := geo.Getfrobnication()
 
 	fh, err := os.Open(lg.name)
 	if err != nil {
@@ -488,6 +491,13 @@ func (lg *OTXLOG) Reader(m types.FlightMeta) bool {
 
 			if homes.Flags == 0 {
 				if b.Fix > 1 && b.Numsat > 5 {
+					if frobing {
+						geo.Frobnicate_set(b.Lat, b.Lon, b.GAlt)
+						b.Lat, b.Lon, b.GAlt = geo.Frobnicate_move(b.Lat, b.Lon, b.GAlt)
+						ttmp := time.Now().Add(time.Hour * 24 * 42)
+						froboff = ttmp.Sub(b.Utc)
+						b.Utc = ttmp
+					}
 					homes.HomeLat = b.Lat
 					homes.HomeLon = b.Lon
 					homes.Flags = types.HOME_ARM
@@ -506,6 +516,11 @@ func (lg *OTXLOG) Reader(m types.FlightMeta) bool {
 					}
 					llat = b.Lat
 					llon = b.Lon
+				}
+			} else {
+				if frobing {
+					b.Utc = b.Utc.Add(froboff)
+					b.Lat, b.Lon, _ = geo.Frobnicate_move(b.Lat, b.Lon, 0)
 				}
 			}
 

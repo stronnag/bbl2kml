@@ -35,7 +35,7 @@ func isFlagSet(name string) bool {
 	return found
 }
 
-func ParseCLI(gv func() string, otx bool) []string {
+func ParseCLI(gv func() string) []string {
 	app := filepath.Base(os.Args[0])
 
 	flag.Usage = func() {
@@ -84,17 +84,13 @@ func ParseCLI(gv func() string, otx bool) []string {
 	flag.StringVar(&Gradset, "gradient", Gradset, "Specific colour gradient [red,rdgn,yor]")
 	flag.BoolVar(&Dms, "dms", Dms, "Show positions as DD:MM:SS.s (vice decimal degrees)")
 	flag.StringVar(&Mission, "mission", "", "Optional mission file name")
-	if otx {
-		flag.IntVar(&SplitTime, "split-time", 120, "Time(s) determining log split, 0 disables")
-		flag.IntVar(&HomeAlt, "home-alt", 0, "home altitude")
-	}
+	flag.IntVar(&SplitTime, "split-time", 120, "[OTX] Time(s) determining log split, 0 disables")
+	flag.IntVar(&HomeAlt, "home-alt", 0, "[OTX] home altitude")
 
 	flag.Parse()
 
-	if otx {
-		if !isFlagSet("home-alt") {
-			HomeAlt = -999999 // sentinel
-		}
+	if !isFlagSet("home-alt") {
+		HomeAlt = -999999 // sentinel
 	}
 
 	files := flag.Args()

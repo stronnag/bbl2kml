@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
-	//	"strings"
+	"strings"
 	otx "github.com/stronnag/bbl2kml/pkg/otx"
 	bbl "github.com/stronnag/bbl2kml/pkg/bbl"
 	options "github.com/stronnag/bbl2kml/pkg/options"
 	types "github.com/stronnag/bbl2kml/pkg/api/types"
+	geo "github.com/stronnag/bbl2kml/pkg/geo"
 )
 
 var GitCommit = "local"
@@ -20,12 +21,13 @@ func getVersion() string {
 }
 
 func main() {
-	files := options.ParseCLI(getVersion, true)
-	var lfr types.FlightLog
+	files := options.ParseCLI(getVersion)
+	geo.Frobnicate_init()
 
+	var lfr types.FlightLog
 	for _, fn := range files {
 		ext := filepath.Ext(fn)
-		if ext == ".csv" || ext == ".CSV" {
+		if strings.EqualFold(ext, ".csv") {
 			olfr := otx.NewOTXReader(fn)
 			lfr = &olfr
 		} else {

@@ -129,6 +129,11 @@ func (m *Mission) is_valid() bool {
 	return true
 }
 
+func (mi *MissionItem) Is_GeoPoint() bool {
+	a := mi.Action
+	return !(a == "RTH" || a == "SET_HEAD" || a == "JUMP")
+}
+
 func (m *Mission) Dump(dms bool, homep...float64)  {
 	var hpos types.HomeRec
 	hpos.HomeLat = homep[0]

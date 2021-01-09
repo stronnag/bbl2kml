@@ -417,6 +417,13 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 	if len(options.Mission) > 0 {
 		 _, ms, err := mission.Read_Mission_File(options.Mission)
 		if err == nil {
+			if geo.Getfrobnication() {
+				for k,mi := range ms.MissionItems {
+					if mi.Is_GeoPoint() {
+						ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, _ = geo.Frobnicate_move(ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, 0)
+					}
+				}
+			}
 			mf := ms.To_kml(hpos, options.Dms, false)
 			d.Add(mf)
 		} else {
