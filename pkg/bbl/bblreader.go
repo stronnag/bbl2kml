@@ -250,6 +250,9 @@ func Reader(bbfile string, meta BBLMeta) bool {
 	defer out.Close()
 	var homes types.HomeRec
 	var rec types.LogRec
+	var froboff time.Duration
+
+	frobing := geo.Frobnicate_init()
 
 	r := csv.NewReader(out)
 	r.TrimLeadingSpace = true
@@ -301,6 +304,13 @@ func Reader(bbfile string, meta BBLMeta) bool {
 		if !have_origin {
 			if b.Fix > 1 && b.Numsat > 5 {
 				have_origin = true
+				if frobing {
+					geo.Frobnicate_set(b.Lat, b.Lon, b.GAlt)
+					b.Lat, b.Lon, b.GAlt = geo.Frobnicate_move(b.Lat, b.Lon, b.GAlt)
+					ttmp := time.Now().Add(time.Hour * 24 * 42)
+					froboff = ttmp.Sub(b.Utc)
+					b.Utc = ttmp
+				}
 				llat = b.Lat
 				llon = b.Lon
 				st = b.Stamp
@@ -321,6 +331,9 @@ func Reader(bbfile string, meta BBLMeta) bool {
 					homes.SafeLon = hlon
 					homes.Flags |= types.HOME_SAFE
 				}
+				if frobing && (homes.Flags&types.HOME_SAFE != 0) {
+					homes.SafeLat, homes.SafeLon, _ = geo.Frobnicate_move(homes.SafeLat, homes.SafeLon, b.GAlt)
+				}
 			}
 			if b.Utc.IsZero() {
 				basetime, _ = time.Parse("Jan 2 2006 15:04:05", meta.Fwdate)
@@ -335,6 +348,11 @@ func Reader(bbfile string, meta BBLMeta) bool {
 					if b.Utc.IsZero() {
 						b.Utc = basetime.Add(time.Duration(us) * time.Microsecond)
 					}
+					if frobing {
+						b.Utc = b.Utc.Add(froboff)
+						b.Lat, b.Lon, _ = geo.Frobnicate_move(b.Lat, b.Lon, 0)
+					}
+
 					c, d = geo.Csedist(homes.HomeLat, homes.HomeLon, b.Lat, b.Lon)
 					b.Bearing = int32(c)
 					b.Vrange = d * 1852.0

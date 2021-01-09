@@ -39,6 +39,9 @@ $(MAPP)$(EXT): $(MSRCS)
 $(OAPP)$(EXT): $(OSRCS)
 	go build -ldflags "$(LDFLAGS)" -o $(OAPP)$(EXT) cmd/otx2kml/main.go
 
+otxreader: cmd/otx2kml2/main.go $(PKGCOMMON) $(PKGKML)  $(wildcard pkg/otx2/*.go)
+	go build -ldflags "$(LDFLAGS)" -o otxreader cmd/otx2kml2/main.go
+
 clean:
 	@rm -f $(APP)$(EXT) $(MAPP)$(EXT) $(OAPP)$(EXT)
 	@go clean

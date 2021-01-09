@@ -81,6 +81,7 @@ type HomeRec struct {
 type MetaLog interface {
 	LogName() string
 	MetaData() map[string]string
+	Valid() bool
 }
 
 type LogStats struct {
@@ -115,4 +116,31 @@ func (b *LogStats) ShowSummary(t uint64) {
 	}
 	fmt.Printf("Distance : %.0f m\n", b.Distance)
 	fmt.Printf("Duration : %s\n", b.Show_time(b.Duration))
+}
+
+type FlightLog interface {
+	Reader(FlightMeta) bool
+	GetMetas() ([]FlightMeta, error)
+	GetCapa() int
+}
+
+const (
+	Has_Craft = 1 << iota
+	Has_Firmware
+	Has_Disarm
+	Has_Size
+	Has_Start
+)
+
+type FlightMeta struct {
+	Logname  string
+	Date     string
+	Craft    string
+	Firmware string
+	Fwdate   string
+	Disarm   string
+	Index    int
+	Size     int64
+	Start    int
+	End      int
 }
