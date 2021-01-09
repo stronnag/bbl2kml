@@ -592,7 +592,6 @@ func (lg *OTXLOG) Reader(m types.FlightMeta) bool {
 		outfn := kmlgen.GenKmlName(m.Logname, m.Index)
 		stats.ShowSummary(uint64(lt.Sub(st) / 1000 /*.Microseconds()*/ ))
 		kmlgen.GenerateKML(homes, rec, outfn, m, stats)
-		fmt.Println()
 		return true
 	}
 	return false

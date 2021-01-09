@@ -43,16 +43,16 @@ func main() {
 			for _, b := range metas {
 				if (options.Idx == 0 || options.Idx == b.Index) && b.Flags&types.Is_Valid != 0 {
 					fmt.Printf("%-8.8s : %s\n", "Log", b.LogName())
-					fmt.Printf("%-8.8s : %s", "Flight", b.Flight())
+					fmt.Printf("%-8.8s : %s\n", "Flight", b.Flight())
 					if s, ok := b.ShowFirmware(); ok {
-						fmt.Sprintf("%-8.8s : %s", "Firmware", s)
+						fmt.Printf("%-8.8s : %s\n", "Firmware", s)
 					}
 					if s, ok := b.ShowSize(); ok {
-						fmt.Sprintf("%-8.8s : %s", "Size", s)
+						fmt.Printf("%-8.8s : %s\n", "Size", s)
 					}
 					res := lfr.Reader(b)
 					if s, ok := b.ShowDisarm(); ok {
-						fmt.Sprintf("%-8.8s : %s", "Disarm", s)
+						fmt.Printf("%-8.8s : %s\n", "Disarm", s)
 					}
 					if !res {
 						fmt.Fprintf(os.Stderr, "*** skipping KML/Z for log  with no valid geospatial data\n")
