@@ -5,7 +5,7 @@ ifndef DESTDIR
  FAPP=flightlog2kml
  MAPP=mission2kml
 else
- FAPP=flightlog2kml
+ FAPP=$(DESTDIR)/flightlog2kml
  MAPP=$(DESTDIR)/mission2kml
 endif
 
@@ -15,7 +15,7 @@ else
  EXT=
 endif
 
-all: $(FAPP)$(EXT) $(BAPP)$(EXT) $(MAPP)$(EXT) $(OAPP)$(EXT)
+all: $(FAPP)$(EXT) $(MAPP)$(EXT)
 
 PKGCOMMON = $(wildcard pkg/api/*/*.go) $(wildcard pkg/mission/*.go) $(wildcard pkg/geo/*.go)
 PKGOPT = $(wildcard pkg/options/*.go)
