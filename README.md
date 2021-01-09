@@ -1,26 +1,27 @@
-# bbl2kml
+# flightlog2kml
 
 ## Overview
 
 Generate annotated KML/KMZ files from inav blackbox logs and OpenTX log files (inav S.Port telemetry).
 
-* bbl2kml - Generates KML/Z file(s) from Blackbox log(s)
-* otx2kml - Generate KMZ/L files(s) from OpenTX log(s)
+* flightlog2kml - Generates KML/Z file(s) from Blackbox log(s) and OpenTX (OTX) logs
 * mission2kml - Generate KML file from inav mission files (and other formats)
 
 ```
-$ bbl2kml --help
-Usage of bbl2kml [options] file...
+ flightlog2kml --help
+Usage of flightlog2kml [options] file...
   -dms
-    	Show positions as DD:MM:SS.s (vice decimal degrees)
+    	Show positions as DD:MM:SS.s (vice decimal degrees) (default true)
   -dump
     	Dump log headers and exit
   -efficiency
-    	Include efficiency layer in KML/Z
+    	Include efficiency layer in KML/Z (default true)
   -extrude
-    	Extends track points to ground
+    	Extends track points to ground (default true)
   -gradient string
-    	Specific colour gradient [red,rdgn,yor]
+    	Specific colour gradient [red,rdgn,yor] (default "yor")
+  -home-alt int
+    	[OTX] home altitude
   -index int
     	Log index
   -interval int
@@ -31,14 +32,18 @@ Usage of bbl2kml [options] file...
     	Optional mission file name
   -rssi
     	Set RSSI view as default
+  -split-time int
+    	[OTX] Time(s) determining log split, 0 disables (default 120)
+
+flightlog2kml 0.8.4, commit: 0adaefb / 2021-01-09
 ```
 
 Multiple logs (with multiple indices) may be given. A KML/Z will be generated for each file / index.
 
-The output file is named from the base name of the Blackbox log file, appended with the index number and `.kml` or `.kmz` as appropriate. For example:
+The output file is named from the base name of the source log file, appended with the index number and `.kml` or `.kmz` as appropriate. For example:
 
 ```
-$ ./bbl2kml LOG00044.TXT
+$ flightlog2kml LOG00044.TXT
 Log      : LOG00044.TXT / 1
 Flight   : "Model" on 2020-04-12T14:24:01.410+03:00
 Firmware : INAV 2.4.0 (bcd4caef9) MATEKF722 of Feb 11 2020 22:48:59
@@ -72,7 +77,7 @@ Both Flight Mode and RSSI tracks are generated; the default for display is Fligh
 
 ### Modes
 
-`bbl2kml` and `otx2kml` can generate three distinct colour-coded outputs:
+`flightlog2kml` can generate three distinct colour-coded outputs:
 
 * Flight mode: the default, colours as [below](#flight_mode_track).
 * RSSI mode: RSSI percentage as a colour gradient, according to the current `--gradient` setting. Note that if no valid RSSI is found in the log, this mode will be suppressed.
@@ -115,41 +120,12 @@ Note: These images are rather old, it looks much better now.
 
 ![Example 4](https://github.com/stronnag/mwptools/wiki/images/inav-tracer-rssi.jpg)
 
-## `otx2kml`
+## Using OpenTX logs
 
-```
-$ ./otx2kml
-Usage of otx2kml [options] file...
-  -dms
-    	Show positions as DD:MM:SS.s (vice decimal degrees)
-  -dump
-    	Dump log headers and exit
-  -efficiency
-    	Include efficiency layer in KML/Z
-  -extrude
-    	Extends track points to ground
-  -gradient string
-    	Specific colour gradient [red,rdgn,yor]
-  -home-alt int
-    	home altitude
-  -index int
-    	Log index
-  -interval int
-    	Sampling Interval (ms) (default 1000)
-  -kml
-    	Generate KML (vice default KMZ)
-  -mission string
-    	Optional mission file name
-  -rssi
-    	Set RSSI view as default
-  -split-time int
-    	Time(s) determining log split, 0 disables (default 120)
-```
-
-There are a few issues with OpenTX logs, the first of which need OpenTX 2.3.11 to be resolved:
-* CRSF logs in OpenTX 2.3.10 do not record the FM (Flight Mode) field. This makes it impossible to determine flight mode, or even if the craft is armed. Currently `otx2kml` tries to evince the armed state from other data.
-* GPS Elevation. Unless you have a GPS attached to the TX, you don't get GPS altitude. This can be set by the `-home-alt H` value (in metres). Otherwise `otx2kml` will use an online elevation service.
-* OpenTX creates a log per calendar day (IIRC), this means there may be multiple logs in the same file. Delimiting these individual logs is less than trivial, to some degree due to the prior CRSF issue which means arm / disarm is not reliably available. Currently, `otx2kml` assumes that a gap of more than 120 seconds indicates a new flight. The `-split-time` value allows a user-defined split time (seconds). Setting this to zero disables the log splitting function.
+There are a few issues with OpenTX logs, the first of which needs OpenTX 2.3.11 (released 2021-01-08) to be resolved:
+* CRSF logs in OpenTX 2.3.10 do not record the FM (Flight Mode) field. This makes it impossible to determine flight mode, or even if the craft is armed. Currently `flightlog2kml` tries to evince the armed state from other data.
+* GPS Elevation. Unless you have a GPS attached to the TX, you don't get GPS altitude. This can be set by the `-home-alt H` value (in metres). Otherwise `flightlog2kml` will use an online elevation service.
+* OpenTX creates a log per calendar day (IIRC), this means there may be multiple logs in the same file. Delimiting these individual logs is less than trivial, to some degree due to the prior CRSF issue which means arm / disarm is not reliably available. Currently, `flightlog2kml` assumes that a gap of more than 120 seconds indicates a new flight. The `-split-time` value allows a user-defined split time (seconds). Setting this to zero disables the log splitting function.
 
 ## `mission2kml`
 
@@ -190,10 +166,10 @@ $ mission2kml -home 54.125229,-4.730443 barrule-h.mission > mtest.kml
 
 ## Setting default options
 
-It is possible to define default options using the `BBL2KML_OPTS` environment variable.
+It is possible to define default options using the `BBL2KML_OPTS` (sic) environment variable.
 
 ```
-BBL2KML_OPTS='-dms' bbl2kml somelog.TXT
+BBL2KML_OPTS='-dms' flightlog2kml somelog.TXT
 ```
 
 A permanent value can set in e.g. `.bashrc`, `.pam_environment` or Windows' equivalent.
@@ -210,7 +186,7 @@ In the permanent usage case, options may be changed / inverted by command line u
 $ echo $BBL2KML_OPTS
 -dms -extrude --gradient=yor --efficiency
 
-$ bbl2kml -extrude=false --dms=false randomBBL.TXT
+$ flightlog2kml -extrude=false --dms=false randomBBL.TXT
 ```
 
 The following options are recognised in `$BBL2KML_OPTS`; any other values (e.g. the obsolete `--elev` will cause the application to terminate. This is a feature.
@@ -226,11 +202,11 @@ Note that the command interpreter allows `-flag` or `--flag` for any option.
 
 ## Limitations, Bugs, Bug Reporting
 
-`bbl2kml` aims to support as wide a range of inav firmware and log decoders as possible. During its development, inav has changed both the data logged and in some cases, the meaning of logged items; thus for versions of inav prior to 2.0, the reported flight mode might not be completely accurate. `bbl2kml` is known to work with logs from 2015-10-30 (i.e. pre inav 1.0), and if you have a Blackbox log that is not decoded / visualised correctly, please raise a [Github issue](https://github.com/stronnag/bbl2kml/issues); this is a bug.
+`flightlog2kml` aims to support as wide a range of inav firmware and log decoders as possible. During its development, inav has changed both the data logged and in some cases, the meaning of logged items; thus for versions of inav prior to 2.0, the reported flight mode might not be completely accurate. `flightlog2kml` is known to work with logs from 2015-10-30 (i.e. pre inav 1.0), and if you have a Blackbox log that is not decoded / visualised correctly, please raise a [Github issue](https://github.com/stronnag/bbl2kml/issues); this is a bug.
 
 Due to the range of `inav` versions, `blackbox_decode` versions and supported operating systems, when reporting bugs, please include the following information in the Github issue:
 
-* The version of `bbl2kml` and `blackbox_decode`. Both applications have a `--help` option that should give the version numbers.
+* The version of `flightlog2kml` and `blackbox_decode`. Both applications have a `--help` option that should give the version numbers.
 * The host operating system and version (e.g. "Debian Sid", "Windows 10", "MacOS 10.15").
 * Provide the blackbox log that illustrates the problem. If you don't want to post the log into an essentially public forum (the Github issue), then please propose a private delivery channel.
 
@@ -240,8 +216,7 @@ Requires Go v1.13 or later.
 Compiled with:
 
 ```
-$ go build cmd/bbl2kml/main.go
-$ go build cmd/otx2kml/main.go
+$ go build cmd/flightlog2kml/main.go
 $ go build cmd/mission2kml/main.go
 ```
 
@@ -251,9 +226,8 @@ or more simply
 make
 ```
 
-**bbl2kml** depends on [twpayne/go-kml](https://github.com/twpayne/go-kml), an outstanding Golang KML library.
+**flightlog2kml** depends on [twpayne/go-kml](https://github.com/twpayne/go-kml), an outstanding Golang KML library.
 
-bbl2kml may be build for all OS for which Golang is available. It also requires inav's
-[blackbox_decode](https://github.com/iNavFlight/blackbox-tools); 0.4.5 (or future) is recommended; the minimum `blackbox_decode` version is 0.4.4. For Windows' users it is probably easiest to copy inav's `blackbox_decode.exe` into the same directory as `bbl2kml.exe`.
+`flightlog2kml` may be build for all OS for which a suitable Golang is available. It also requires inav's [blackbox_decode](https://github.com/iNavFlight/blackbox-tools); 0.4.5 (or future) is recommended; the minimum `blackbox_decode` version is 0.4.4. For Windows' users it is probably easiest to copy inav's `blackbox_decode.exe` into the same directory as `flightlog2kml.exe`.
 
 Binaries are provided for common operating systems in the [Release folder](https://github.com/stronnag/bbl2kml/releases).
