@@ -401,7 +401,7 @@ func add_ground_track (rec types.LogRec) kml.Element {
 }
 
 func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
-	meta types.MetaLog, stats types.LogStats) {
+	meta types.FlightMeta, stats types.LogStats) {
 
 	defviz := !(options.Rssi && rec.Items[0].Rssi > 0)
 	ts0 := rec.Items[0].Utc
@@ -411,8 +411,7 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 		Add(generate_shared_styles(0)...).
 		Add(getPoints(rec, hpos, COL_STYLE_MODE, defviz)...)
 
-	m := meta.MetaData()
-	d := kml.Folder(kml.Name(m["Log"])).Add(kml.Open(true))
+	d := kml.Folder(kml.Name(meta.LogName())).Add(kml.Open(true))
 	d.Add(add_ground_track(rec))
 
 	if len(options.Mission) > 0 {
@@ -425,11 +424,13 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 		}
 	}
 
-	e := kml.ExtendedData(kml.Data(kml.Name("Log"), kml.Value(m["Log"])))
-	for _, k := range []string{"Flight", "Firmware","Size"} {
-		if v,ok := m[k]; ok {
-			e.Add(kml.Data(kml.Name(k), kml.Value(v)))
-		}
+	e := kml.ExtendedData(kml.Data(kml.Name("Log"), kml.Value(meta.LogName())))
+	e.Add(kml.Data(kml.Name("Flight"), kml.Value(meta.Flight())))
+	if s,ok := meta.ShowFirmware(); ok {
+		e.Add(kml.Data(kml.Name("Firmware"), kml.Value(s)))
+	}
+	if s,ok := meta.ShowSize(); ok {
+		e.Add(kml.Data(kml.Name("Size"), kml.Value(s)))
 	}
 	e.Add(kml.Data(kml.Name("Max. Altitude"), kml.Value(fmt.Sprintf("%.1fm at %s", stats.Max_alt, stats.Show_time(stats.Max_alt_time)))),
 		kml.Data(kml.Name("Max. Speed"), kml.Value(fmt.Sprintf("%.1fm/s at %s", stats.Max_speed, stats.Show_time(stats.Max_speed_time)))),
@@ -440,8 +441,8 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 	}
 	e.Add(kml.Data(kml.Name("Distance"), kml.Value(fmt.Sprintf("%.0fm", stats.Distance))),
 		kml.Data(kml.Name("Duration"), kml.Value(stats.Show_time(stats.Duration))))
-	if v,ok := m["Disarm"]; ok {
-		e.Add(kml.Data(kml.Name("Disarm"), kml.Value(v)))
+	if s,ok := meta.ShowDisarm(); ok {
+		e.Add(kml.Data(kml.Name("Disarm"), kml.Value(s)))
 	}
 	d.Add(e)
 

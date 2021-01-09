@@ -21,30 +21,26 @@ import (
 const LOGTIMEPARSE = "2006-01-02 15:04:05.000"
 const TIMEDATE = "2006-01-02 15:04:05"
 
-type OTXMeta struct {
-	logname string
-	date    string
-	index   int
+type OTXLOG struct {
+	name  string
+	ltype uint8
+	meta  []types.FlightMeta
 }
 
-func (o *OTXMeta) LogName() string {
-	name := o.logname
-	if o.index > 0 {
-		name = name + fmt.Sprintf(" / %d", o.index)
-	}
-	return name
+func NewOTXReader(fn string) OTXLOG {
+	var l OTXLOG
+	l.name = fn
+	l.ltype = 'O'
+	l.meta = nil
+	return l
 }
 
-func (o *OTXMeta) MetaData() map[string]string {
-	m := make(map[string]string)
-	m["Log"] = o.LogName()
-	m["Flight"] = o.date
-	return m
+func (o *OTXLOG) GetMetas() ([]types.FlightMeta, error) {
+	return metas(o.name)
 }
 
-func (o *OTXMeta) show_meta() {
-	fmt.Printf("Log      : %s\n", o.LogName())
-	fmt.Printf("Flight   : %s\n", o.date)
+func (o *OTXLOG) Dump() {
+	dump_headers()
 }
 
 type hdrrec struct {
@@ -53,9 +49,6 @@ type hdrrec struct {
 }
 
 var hdrs map[string]hdrrec
-
-const is_ARMED uint8 = 1
-const is_CRSF uint8 = 2
 
 func read_headers(r []string) {
 	hdrs = make(map[string]hdrrec)
@@ -73,6 +66,74 @@ func read_headers(r []string) {
 		}
 		hdrs[k] = hdrrec{i, u}
 	}
+}
+
+func metas(otxfile string) ([]types.FlightMeta, error) {
+	var metas []types.FlightMeta
+
+	fh, err := os.Open(otxfile)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "log file %s\n", err)
+		return metas, err
+	}
+	defer fh.Close()
+
+	basefile := filepath.Base(otxfile)
+	r := csv.NewReader(fh)
+	r.TrimLeadingSpace = true
+
+	var lasttm time.Time
+	dindex := -1
+	tindex := -1
+
+	idx := 0
+	for i := 1; ; i++ {
+		record, err := r.Read()
+		if err == io.EOF {
+			metas[idx-1].End = (i - 1)
+			break
+		}
+		if i == 1 {
+			read_headers(record) // for future usage
+			for j, s := range record {
+				switch s {
+				case "Date":
+					dindex = j
+				case "Time":
+					tindex = j
+				}
+				if dindex != -1 && tindex != -1 {
+					break
+				}
+			}
+		} else {
+			var sb strings.Builder
+			sb.WriteString(record[dindex])
+			sb.WriteByte(' ')
+			sb.WriteString(record[tindex])
+			t_utc, _ := time.Parse(LOGTIMEPARSE, sb.String())
+			if t_utc.Sub(lasttm).Seconds() > time.Duration(120*time.Second).Seconds() {
+				if idx > 0 {
+					metas[idx-1].End = i - 1
+				}
+				idx += 1
+				mt := types.FlightMeta{Logname: basefile, Date: t_utc.Format(TIMEDATE), Index: idx, Start: i}
+				metas = append(metas, mt)
+			}
+			lasttm = t_utc
+		}
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "reader %s\n", err)
+			return metas, err
+		}
+	}
+
+	for j, mx := range metas {
+		if mx.End-mx.Start > 64 {
+			metas[j].Flags = types.Has_Start | types.Is_Valid
+		}
+	}
+	return metas, nil
 }
 
 func dump_headers() {
@@ -98,6 +159,9 @@ func dump_headers() {
 		}
 	}
 }
+
+const is_ARMED uint8 = 1
+const is_CRSF uint8 = 2
 
 func get_rec_value(r []string, key string) (string, string, bool) {
 	var s string
@@ -380,17 +444,16 @@ func calc_speed(b types.LogItem, tdiff time.Duration, llat, llon float64) float6
 	return spd
 }
 
-func Reader(otxfile string, only_armed bool) bool {
+func (lg *OTXLOG) Reader(m types.FlightMeta) bool {
 	var stats types.LogStats
-	otx := OTXMeta{filepath.Base(otxfile), "", 0}
+
 	llat := 0.0
 	llon := 0.0
-	idx := 0
 
 	var homes types.HomeRec
 	rec := types.LogRec{}
 
-	fh, err := os.Open(otxfile)
+	fh, err := os.Open(lg.name)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "log file %s\n", err)
 		os.Exit(-1)
@@ -406,53 +469,21 @@ func Reader(otxfile string, only_armed bool) bool {
 
 	leffic := 0.0
 
-	for i := 0; ; i++ {
+	for i := 1; ; i++ {
 		record, err := r.Read()
 		if err == io.EOF {
 			break
 		}
-		if i == 0 {
-			read_headers(record)
+		if i >= m.Start && i <= m.End {
 			rec.Cap = dataCapability()
-			if options.Dump {
-				dump_headers()
-				return true
-			}
-		} else {
 			b, status := get_otx_line(record)
-			if only_armed && (status&is_ARMED) == 0 && b.Alt < 10 && b.Spd < 7 {
+			if (status&is_ARMED) == 0 && b.Alt < 10 && b.Spd < 7 {
 				continue
 			}
 
 			if st.IsZero() {
 				st = b.Utc
 				lt = st
-			}
-
-			if options.SplitTime > 0 {
-				if b.Utc.Sub(lt).Seconds() > (time.Duration(options.SplitTime) * time.Second).Seconds() {
-					fmt.Fprintf(os.Stderr, "Splitting at %v after %vs\n", b.Utc.Format(TIMEDATE), options.SplitTime)
-					if homes.Flags > 0 && len(rec.Items) > 0 {
-						if idx == 0 {
-							idx = 1
-							otx.index = idx
-						}
-						otx.show_meta()
-						stats.ShowSummary(uint64(lt.Sub(st) / 1000 /*.Microseconds()*/ ))
-						outfn := kmlgen.GenKmlName(otxfile, idx)
-						kmlgen.GenerateKML(homes, rec, outfn, &otx, stats)
-						fmt.Println()
-						rec.Items = nil
-						st = b.Utc
-						lt = st
-						homes.Flags = 0
-						llat = 0
-						llon = 0
-						idx += 1
-						otx.index = idx
-						stats = types.LogStats{}
-					}
-				}
 			}
 
 			if homes.Flags == 0 {
@@ -475,7 +506,6 @@ func Reader(otxfile string, only_armed bool) bool {
 					}
 					llat = b.Lat
 					llon = b.Lon
-					otx.date = b.Utc.Format(TIMEDATE)
 				}
 			}
 
@@ -544,10 +574,9 @@ func Reader(otxfile string, only_armed bool) bool {
 	}
 
 	if homes.Flags > 0 && len(rec.Items) > 0 {
-		outfn := kmlgen.GenKmlName(otxfile, idx)
-		otx.show_meta()
+		outfn := kmlgen.GenKmlName(m.Logname, m.Index)
 		stats.ShowSummary(uint64(lt.Sub(st) / 1000 /*.Microseconds()*/ ))
-		kmlgen.GenerateKML(homes, rec, outfn, &otx, stats)
+		kmlgen.GenerateKML(homes, rec, outfn, m, stats)
 		fmt.Println()
 		return true
 	}

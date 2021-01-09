@@ -3,6 +3,7 @@ package api
 import (
 	"time"
 	"fmt"
+	"strings"
 )
 
 const (
@@ -121,11 +122,12 @@ func (b *LogStats) ShowSummary(t uint64) {
 type FlightLog interface {
 	Reader(FlightMeta) bool
 	GetMetas() ([]FlightMeta, error)
-	GetCapa() int
+	Dump()
 }
 
 const (
-	Has_Craft = 1 << iota
+	Is_Valid = 1 << iota
+	Has_Craft
 	Has_Firmware
 	Has_Disarm
 	Has_Size
@@ -139,8 +141,60 @@ type FlightMeta struct {
 	Firmware string
 	Fwdate   string
 	Disarm   string
-	Index    int
 	Size     int64
+	Index    int
 	Start    int
 	End      int
+	Flags    uint8
+}
+
+func (b *FlightMeta) LogName() string {
+	name := b.Logname
+	if b.Index > 0 {
+		name = name + fmt.Sprintf(" / %d", b.Index)
+	}
+	return name
+}
+
+func (b *FlightMeta) ShowSize() (string, bool) {
+	if b.Flags&Has_Size == 0 {
+		return "", false
+	} else {
+		var s string
+		switch {
+		case b.Size > 1024*1024:
+			s = fmt.Sprintf("%.2f MB", float64(b.Size)/(1024*1024))
+		case b.Size > 10*1024:
+			s = fmt.Sprintf("%.1f KB", float64(b.Size)/1024)
+		default:
+			s = fmt.Sprintf("%d B", b.Size)
+		}
+		return s, true
+	}
+}
+
+func (b *FlightMeta) ShowDisarm() (string, bool) {
+	if b.Flags&Has_Disarm == 0 {
+		return "", false
+	} else {
+		return b.Disarm, true
+	}
+}
+
+func (b *FlightMeta) ShowFirmware() (string, bool) {
+	if b.Flags&Has_Firmware == 0 {
+		return "", false
+	} else {
+		return fmt.Sprintf("%s of %s", b.Firmware, b.Fwdate), true
+	}
+}
+
+func (b *FlightMeta) Flight() string {
+	var sb strings.Builder
+	if b.Flags&Has_Craft != 0 {
+		sb.WriteString(b.Craft)
+		sb.WriteString(" on ")
+	}
+	sb.WriteString(b.Date)
+	return sb.String()
 }

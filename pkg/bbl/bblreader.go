@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"path/filepath"
+	"bufio"
 	geo "github.com/stronnag/bbl2kml/pkg/geo"
 	inav "github.com/stronnag/bbl2kml/pkg/inav"
 	options "github.com/stronnag/bbl2kml/pkg/options"
@@ -18,9 +20,177 @@ import (
 	types "github.com/stronnag/bbl2kml/pkg/api/types"
 )
 
+var inav_vers int
+
+
 var hdrs map[string]int
 
-var inav_vers int
+type BBLOG struct {
+	name  string
+	ltype uint8
+	meta  []types.FlightMeta
+}
+
+func NewBBLReader(fn string) BBLOG {
+	var l BBLOG
+	l.name = fn
+	l.ltype = 'B'
+	l.meta = nil
+	return l
+}
+
+func (o *BBLOG) GetMetas() ([]types.FlightMeta, error) {
+	return metas(o.name)
+}
+
+func (o *BBLOG) Dump() {
+	dump_headers()
+}
+
+type reason int
+
+func (r reason) String() string {
+	var reasons = [...]string{"None", "Timeout", "Sticks", "Switch_3d", "Switch", "Killswitch", "Failsafe", "Navigation"}
+	if r < 0 || int(r) >= len(reasons) {
+		r = 0
+	}
+	return reasons[r]
+}
+
+func get_headers(fn string) {
+	cmd := exec.Command(options.Blackbox_decode,
+		"--datetime", "--merge-gps", "--stdout", "--index", "1", fn)
+	out, err := cmd.StdoutPipe()
+	defer cmd.Wait()
+	defer out.Close()
+	r := csv.NewReader(out)
+	r.TrimLeadingSpace = true
+	err = cmd.Start()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to start err=%v", err)
+		os.Exit(1)
+	}
+	record, err := r.Read()
+	hdrs = make(map[string]int)
+	for i, s := range record {
+		hdrs[s] = i
+	}
+}
+
+func dump_headers() {
+	n := map[int][]string{}
+	var a []int
+	for k, v := range hdrs {
+		n[v] = append(n[v], k)
+	}
+	for k := range n {
+		a = append(a, k)
+	}
+	sort.Sort(sort.IntSlice(a))
+	for _, k := range a {
+		for _, s := range n[k] {
+			fmt.Printf("%s, %d\n", s, k)
+		}
+	}
+}
+
+func metas(fn string) ([]types.FlightMeta, error) {
+	var bes []types.FlightMeta
+	get_headers(fn)
+	r, err := os.Open(fn)
+	if err == nil {
+		var nbes int
+		var loffset int64
+
+		base := filepath.Base(fn)
+		scanner := bufio.NewScanner(r)
+
+		zero_or_nl := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+			if atEOF && len(data) == 0 {
+				return 0, nil, nil
+			}
+			for i, b := range data {
+				if b == '\n' || b == 0 || b == 0xff {
+					return i + 1, data[0:i], nil
+				}
+			}
+
+			if atEOF {
+				return len(data), data, nil
+			}
+			return
+		}
+
+		scanner.Split(zero_or_nl)
+		for scanner.Scan() {
+			l := scanner.Text()
+			switch {
+			case strings.Contains(string(l), "H Product:"):
+				offset, _ := r.Seek(0, io.SeekCurrent)
+
+				if loffset != 0 {
+					bes[nbes].Size = offset - loffset
+				}
+				loffset = offset
+				be := types.FlightMeta{Disarm: "NONE", Size: 0,
+					Date: "<no date>", Fwdate: "<no date>",
+					Flags: types.Has_Disarm | types.Has_Size}
+				bes = append(bes, be)
+				nbes = len(bes) - 1
+				bes[nbes].Logname = base
+				bes[nbes].Index = nbes + 1
+			case strings.HasPrefix(string(l), "H Firmware revision:"):
+				if n := strings.Index(string(l), ":"); n != -1 {
+					fw := string(l)[n+1:]
+					bes[nbes].Firmware = fw
+					bes[nbes].Flags |= types.Has_Firmware
+				}
+
+			case strings.HasPrefix(string(l), "H Firmware date:"):
+				if n := strings.Index(string(l), ":"); n != -1 {
+					fw := string(l)[n+1:]
+					bes[nbes].Fwdate = fw
+				}
+
+			case strings.HasPrefix(string(l), "H Log start datetime:"):
+				if n := strings.Index(string(l), ":"); n != -1 {
+					date := string(l)[n+1:]
+					if len(date) > 0 {
+						bes[nbes].Date = date
+					}
+				}
+
+			case strings.HasPrefix(string(l), "H Craft name:"):
+				if n := strings.Index(string(l), ":"); n != -1 {
+					cname := string(l)[n+1:]
+					if len(cname) > 0 {
+						bes[nbes].Craft = cname
+					}
+					bes[nbes].Flags |= types.Has_Craft
+				}
+
+			case strings.Contains(string(l), "reason:"):
+				if n := strings.Index(string(l), ":"); n != -1 {
+					dindx, _ := strconv.Atoi(string(l)[n+1 : n+2])
+					bes[nbes].Disarm = reason(dindx).String()
+				}
+			}
+			if err = scanner.Err(); err != nil {
+				return bes, err
+			}
+		}
+		if bes[nbes].Size == 0 {
+			offset, _ := r.Seek(0, io.SeekCurrent)
+			if loffset != 0 {
+				bes[nbes].Size = offset - loffset
+				if bes[nbes].Size > 4096 {
+					bes[nbes].Flags |= types.Is_Valid
+				}
+			}
+		}
+	}
+	return bes, err
+}
 
 func get_rec_value(r []string, key string) (string, bool) {
 	var s string
@@ -215,36 +385,10 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 	return b
 }
 
-func get_headers(r []string) map[string]int {
-	m := make(map[string]int)
-	for i, s := range r {
-		m[s] = i
-	}
-	return m
-}
-
-func dump_headers(m map[string]int) {
-	n := map[int][]string{}
-	var a []int
-	for k, v := range m {
-		n[v] = append(n[v], k)
-	}
-	for k := range n {
-		a = append(a, k)
-	}
-	sort.Sort(sort.IntSlice(a))
-	for _, k := range a {
-		for _, s := range n[k] {
-			fmt.Printf("%s, %d\n", s, k)
-		}
-	}
-}
-
-func Reader(bbfile string, meta BBLMeta) bool {
-	idx := meta.Index
+func (lg *BBLOG) Reader(meta types.FlightMeta) bool {
 	cmd := exec.Command(options.Blackbox_decode,
 		"--datetime", "--merge-gps", "--stdout", "--index",
-		strconv.Itoa(idx), bbfile)
+		strconv.Itoa(meta.Index), lg.name)
 	out, err := cmd.StdoutPipe()
 	defer cmd.Wait()
 	defer out.Close()
@@ -291,12 +435,7 @@ func Reader(bbfile string, meta BBLMeta) bool {
 			break
 		}
 		if i == 0 {
-			hdrs = get_headers(record)
 			rec.Cap = dataCapability()
-			if options.Dump {
-				dump_headers(hdrs)
-				return true
-			}
 		}
 
 		b := get_bbl_line(record, have_origin)
@@ -412,8 +551,8 @@ func Reader(bbfile string, meta BBLMeta) bool {
 
 	stats.ShowSummary(lt - st)
 	if homes.Flags != 0 && len(rec.Items) > 0 {
-		outfn := kmlgen.GenKmlName(bbfile, idx)
-		kmlgen.GenerateKML(homes, rec, outfn, &meta, stats)
+		outfn := kmlgen.GenKmlName(meta.Logname, meta.Index)
+		kmlgen.GenerateKML(homes, rec, outfn, meta, stats)
 		return true
 	}
 	return false
