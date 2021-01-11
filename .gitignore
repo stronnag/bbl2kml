@@ -3,6 +3,10 @@
 *.exe
 /bbl2kml
 /mission2kml
-*.sh
+mk*.sh
 *.backup
 go.sum
+cmd/fl2kmlgtk/res.go
+fl2kmlfyne
+fl2kmlgtk
+flightlog2kml

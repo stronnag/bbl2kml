@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"errors"
 	"time"
 )
 
@@ -22,17 +23,19 @@ const LOGTIMEPARSE = "2006-01-02 15:04:05.000"
 const TIMEDATE = "2006-01-02 15:04:05"
 
 type OTXLOG struct {
-	name  string
-	ltype uint8
-	meta  []types.FlightMeta
+	name string
+	meta []types.FlightMeta
 }
 
 func NewOTXReader(fn string) OTXLOG {
 	var l OTXLOG
 	l.name = fn
-	l.ltype = 'O'
 	l.meta = nil
 	return l
+}
+
+func (o *OTXLOG) LogType() byte {
+	return 'O'
 }
 
 func (o *OTXLOG) GetMetas() ([]types.FlightMeta, error) {
@@ -135,7 +138,10 @@ func metas(otxfile string) ([]types.FlightMeta, error) {
 			metas[j].Flags = types.Has_Start | types.Is_Valid
 		}
 	}
-	return metas, nil
+	if len(metas) == 0 {
+		err = errors.New("No records in OTX file")
+	}
+	return metas, err
 }
 
 func dump_headers() {
@@ -446,7 +452,7 @@ func calc_speed(b types.LogItem, tdiff time.Duration, llat, llon float64) float6
 	return spd
 }
 
-func (lg *OTXLOG) Reader(m types.FlightMeta) bool {
+func (lg *OTXLOG) Reader(m types.FlightMeta) (types.MapRec, bool) {
 	var stats types.LogStats
 
 	llat := 0.0
@@ -592,9 +598,9 @@ func (lg *OTXLOG) Reader(m types.FlightMeta) bool {
 
 	if homes.Flags > 0 && len(rec.Items) > 0 {
 		outfn := kmlgen.GenKmlName(m.Logname, m.Index)
-		stats.ShowSummary(uint64(lt.Sub(st) / 1000 /*.Microseconds()*/ ))
-		kmlgen.GenerateKML(homes, rec, outfn, m, stats)
-		return true
+		srec := stats.Summary(uint64(lt.Sub(st).Microseconds()))
+		kmlgen.GenerateKML(homes, rec, outfn, m, srec)
+		return srec, true
 	}
-	return false
+	return types.MapRec{}, false
 }

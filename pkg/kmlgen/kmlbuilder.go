@@ -401,7 +401,7 @@ func add_ground_track (rec types.LogRec) kml.Element {
 }
 
 func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
-	meta types.FlightMeta, stats types.LogStats) {
+	meta types.FlightMeta, smap types.MapRec) {
 
 	defviz := !(options.Rssi && rec.Items[0].Rssi > 0)
 	ts0 := rec.Items[0].Utc
@@ -432,22 +432,13 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 	}
 
 	e := kml.ExtendedData(kml.Data(kml.Name("Log"), kml.Value(meta.LogName())))
-	e.Add(kml.Data(kml.Name("Flight"), kml.Value(meta.Flight())))
-	if s,ok := meta.ShowFirmware(); ok {
-		e.Add(kml.Data(kml.Name("Firmware"), kml.Value(s)))
+
+	for k,v := range meta.Summary() {
+		e.Add(kml.Data(kml.Name(k), kml.Value(v)))
 	}
-	if s,ok := meta.ShowSize(); ok {
-		e.Add(kml.Data(kml.Name("Size"), kml.Value(s)))
+	for k,v := range smap {
+		e.Add(kml.Data(kml.Name(k), kml.Value(v)))
 	}
-	e.Add(kml.Data(kml.Name("Max. Altitude"), kml.Value(fmt.Sprintf("%.1fm at %s", stats.Max_alt, stats.Show_time(stats.Max_alt_time)))),
-		kml.Data(kml.Name("Max. Speed"), kml.Value(fmt.Sprintf("%.1fm/s at %s", stats.Max_speed, stats.Show_time(stats.Max_speed_time)))),
-		kml.Data(kml.Name("Max. Range"), kml.Value(fmt.Sprintf("%.0fm at %s", stats.Max_range, stats.Show_time(stats.Max_range_time)))),
-	)
-	if stats.Max_current > 0 {
-		e.Add(kml.Data(kml.Name("Max. Current"), kml.Value(fmt.Sprintf("%.1fA at %s", stats.Max_current, stats.Show_time(stats.Max_current_time)))))
-	}
-	e.Add(kml.Data(kml.Name("Distance"), kml.Value(fmt.Sprintf("%.0fm", stats.Distance))),
-		kml.Data(kml.Name("Duration"), kml.Value(stats.Show_time(stats.Duration))))
 	if s,ok := meta.ShowDisarm(); ok {
 		e.Add(kml.Data(kml.Name("Disarm"), kml.Value(s)))
 	}

@@ -35,6 +35,10 @@ func isFlagSet(name string) bool {
 	return found
 }
 
+func Usage() {
+	flag.Usage()
+}
+
 func ParseCLI(gv func() string) []string {
 	app := filepath.Base(os.Args[0])
 
@@ -94,9 +98,5 @@ func ParseCLI(gv func() string) []string {
 	}
 
 	files := flag.Args()
-	if len(files) == 0 {
-		flag.Usage()
-		os.Exit(1)
-	}
 	return files
 }

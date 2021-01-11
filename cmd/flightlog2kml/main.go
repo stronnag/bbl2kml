@@ -22,6 +22,11 @@ func getVersion() string {
 
 func main() {
 	files := options.ParseCLI(getVersion)
+	if len(files) == 0 {
+		options.Usage()
+		os.Exit(1)
+	}
+
 	geo.Frobnicate_init()
 
 	var lfr types.FlightLog
@@ -42,15 +47,13 @@ func main() {
 			}
 			for _, b := range metas {
 				if (options.Idx == 0 || options.Idx == b.Index) && b.Flags&types.Is_Valid != 0 {
-					fmt.Printf("%-8.8s : %s\n", "Log", b.LogName())
-					fmt.Printf("%-8.8s : %s\n", "Flight", b.Flight())
-					if s, ok := b.ShowFirmware(); ok {
-						fmt.Printf("%-8.8s : %s\n", "Firmware", s)
+					for k, v := range b.Summary() {
+						fmt.Printf("%-8.8s : %s\n", k, v)
 					}
-					if s, ok := b.ShowSize(); ok {
-						fmt.Printf("%-8.8s : %s\n", "Size", s)
+					smap, res := lfr.Reader(b)
+					for k, v := range smap {
+						fmt.Printf("%-8.8s : %s\n", k, v)
 					}
-					res := lfr.Reader(b)
 					if s, ok := b.ShowDisarm(); ok {
 						fmt.Printf("%-8.8s : %s\n", "Disarm", s)
 					}

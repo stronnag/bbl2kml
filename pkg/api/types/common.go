@@ -105,24 +105,30 @@ func (b *LogStats) Show_time(t uint64) string {
 	return fmt.Sprintf("%02d:%02d", m, s)
 }
 
-func (b *LogStats) ShowSummary(t uint64) {
+type MapRec map[string]string
+
+func (b *LogStats) Summary(t uint64) MapRec {
+	var m MapRec
+	m = make(MapRec)
 	b.Duration = t
 	b.Max_range *= 1852.0
 	b.Distance *= 1852.0
-	fmt.Printf("Altitude : %.1f m at %s\n", b.Max_alt, b.Show_time(b.Max_alt_time))
-	fmt.Printf("Speed    : %.1f m/s at %s\n", b.Max_speed, b.Show_time(b.Max_speed_time))
-	fmt.Printf("Range    : %.0f m at %s\n", b.Max_range, b.Show_time(b.Max_range_time))
+	m["Altitude"] = fmt.Sprintf("%.1f m at %s", b.Max_alt, b.Show_time(b.Max_alt_time))
+	m["Speed"] = fmt.Sprintf("%.1f m/s at %s", b.Max_speed, b.Show_time(b.Max_speed_time))
+	m["Range"] = fmt.Sprintf("%.0f m at %s", b.Max_range, b.Show_time(b.Max_range_time))
 	if b.Max_current > 0 {
-		fmt.Printf("Current  : %.1f A at %s\n", b.Max_current, b.Show_time(b.Max_current_time))
+		m["Current"] = fmt.Sprintf("%.1f A at %s", b.Max_current, b.Show_time(b.Max_current_time))
 	}
-	fmt.Printf("Distance : %.0f m\n", b.Distance)
-	fmt.Printf("Duration : %s\n", b.Show_time(b.Duration))
+	m["Distance"] = fmt.Sprintf("%.0f m", b.Distance)
+	m["Duration"] = fmt.Sprintf("%s", b.Show_time(b.Duration))
+	return m
 }
 
 type FlightLog interface {
-	Reader(FlightMeta) bool
+	Reader(FlightMeta) (MapRec, bool)
 	GetMetas() ([]FlightMeta, error)
 	Dump()
+	LogType() byte
 }
 
 const (
@@ -197,4 +203,18 @@ func (b *FlightMeta) Flight() string {
 	}
 	sb.WriteString(b.Date)
 	return sb.String()
+}
+
+func (b *FlightMeta) Summary() MapRec {
+	var m MapRec
+	m = make(MapRec)
+	m["Log"] = b.LogName()
+	m["Flight"] = b.Flight()
+	if s, ok := b.ShowFirmware(); ok {
+		m["Firmware"] = s
+	}
+	if s, ok := b.ShowSize(); ok {
+		m["Size"] = s
+	}
+	return m
 }

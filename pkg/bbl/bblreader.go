@@ -13,6 +13,7 @@ import (
 	"time"
 	"path/filepath"
 	"bufio"
+	"errors"
 	geo "github.com/stronnag/bbl2kml/pkg/geo"
 	inav "github.com/stronnag/bbl2kml/pkg/inav"
 	options "github.com/stronnag/bbl2kml/pkg/options"
@@ -21,26 +22,26 @@ import (
 )
 
 var inav_vers int
-
-
 var hdrs map[string]int
 
 type BBLOG struct {
-	name  string
-	ltype uint8
-	meta  []types.FlightMeta
+	name string
+	meta []types.FlightMeta
 }
 
 func NewBBLReader(fn string) BBLOG {
 	var l BBLOG
 	l.name = fn
-	l.ltype = 'B'
 	l.meta = nil
 	return l
 }
 
 func (o *BBLOG) GetMetas() ([]types.FlightMeta, error) {
 	return metas(o.name)
+}
+
+func (o *BBLOG) LogType() byte {
+	return 'B'
 }
 
 func (o *BBLOG) Dump() {
@@ -60,6 +61,7 @@ func (r reason) String() string {
 func get_headers(fn string) {
 	cmd := exec.Command(options.Blackbox_decode,
 		"--datetime", "--merge-gps", "--stdout", "--index", "1", fn)
+	types.SetSilentProcess(cmd)
 	out, err := cmd.StdoutPipe()
 	defer cmd.Wait()
 	defer out.Close()
@@ -179,15 +181,19 @@ func metas(fn string) ([]types.FlightMeta, error) {
 				return bes, err
 			}
 		}
-		if bes[nbes].Size == 0 {
-			offset, _ := r.Seek(0, io.SeekCurrent)
-			if loffset != 0 {
-				bes[nbes].Size = offset - loffset
-				if bes[nbes].Size > 4096 {
-					bes[nbes].Flags |= types.Is_Valid
+		if len(bes) > 0 {
+			if bes[nbes].Size == 0 {
+				offset, _ := r.Seek(0, io.SeekCurrent)
+				if loffset != 0 {
+					bes[nbes].Size = offset - loffset
+					if bes[nbes].Size > 4096 {
+						bes[nbes].Flags |= types.Is_Valid
+					}
 				}
 			}
 		}
+	} else {
+		err = errors.New("No records in BBL")
 	}
 	return bes, err
 }
@@ -385,10 +391,11 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 	return b
 }
 
-func (lg *BBLOG) Reader(meta types.FlightMeta) bool {
+func (lg *BBLOG) Reader(meta types.FlightMeta) (types.MapRec, bool) {
 	cmd := exec.Command(options.Blackbox_decode,
 		"--datetime", "--merge-gps", "--stdout", "--index",
 		strconv.Itoa(meta.Index), lg.name)
+	types.SetSilentProcess(cmd)
 	out, err := cmd.StdoutPipe()
 	defer cmd.Wait()
 	defer out.Close()
@@ -549,11 +556,11 @@ func (lg *BBLOG) Reader(meta types.FlightMeta) bool {
 		}
 	}
 
-	stats.ShowSummary(lt - st)
+	srec := stats.Summary(lt - st)
 	if homes.Flags != 0 && len(rec.Items) > 0 {
 		outfn := kmlgen.GenKmlName(meta.Logname, meta.Index)
-		kmlgen.GenerateKML(homes, rec, outfn, meta, stats)
-		return true
+		kmlgen.GenerateKML(homes, rec, outfn, meta, srec)
+		return srec, true
 	}
-	return false
+	return types.MapRec{}, false
 }
