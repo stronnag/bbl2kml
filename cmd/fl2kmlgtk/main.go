@@ -50,10 +50,14 @@ func main() {
 
 	obj, err = b.GetObject("runbtn")
 	runbtn := obj.(*gtk.Button)
-
-	logchooser, _ := gtk.FileChooserDialogNewWith2Buttons(
+	/*
+		logchooser, _ := gtk.FileChooserDialogNewWith2Buttons(
+			"Log file", win, gtk.FILE_CHOOSER_ACTION_OPEN,
+			"OK", gtk.RESPONSE_OK, "Cancel", gtk.RESPONSE_CANCEL)
+	*/
+	logchooser, _ := gtk.FileChooserNativeDialogNew(
 		"Log file", win, gtk.FILE_CHOOSER_ACTION_OPEN,
-		"OK", gtk.RESPONSE_OK, "Cancel", gtk.RESPONSE_CANCEL)
+		"OK", "Cancel")
 	filter, err := gtk.FileFilterNew()
 	filter.SetName("All Logs")
 	filter.AddPattern("*.bbl")
@@ -91,7 +95,7 @@ func main() {
 	logbtn := obj.(*gtk.Button)
 	logbtn.Connect("clicked", func() {
 		id := logchooser.Run()
-		if id == gtk.RESPONSE_OK {
+		if id == int(gtk.RESPONSE_OK) || id == int(gtk.RESPONSE_ACCEPT) {
 			fs, err := logchooser.GetFilenames()
 			if err == nil {
 				files = fs
@@ -110,10 +114,9 @@ func main() {
 		logchooser.Hide()
 	})
 
-	missionchooser, _ := gtk.FileChooserDialogNewWith2Buttons(
+	missionchooser, _ := gtk.FileChooserNativeDialogNew(
 		"Mission file", win, gtk.FILE_CHOOSER_ACTION_OPEN,
-		"OK", gtk.RESPONSE_OK,
-		"Cancel", gtk.RESPONSE_CANCEL)
+		"OK", "Cancel")
 
 	filter, err = gtk.FileFilterNew()
 	filter.SetName("All inav Missions")
@@ -129,11 +132,34 @@ func main() {
 	missionbtn := obj.(*gtk.Button)
 	missionbtn.Connect("clicked", func() {
 		id := missionchooser.Run()
-		if id == gtk.RESPONSE_OK {
+		if id == int(gtk.RESPONSE_OK) || id == int(gtk.RESPONSE_ACCEPT) {
 			options.Mission = missionchooser.GetFilename()
 			missionlbl.SetText(filepath.Base(options.Mission))
 		}
 		missionchooser.Hide()
+	})
+
+	/*
+		outchooser, _ := gtk.FileChooserDialogNewWith2Buttons(
+		"Output Directory", win, gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER,
+		"OK", gtk.RESPONSE_OK,
+		"Cancel", gtk.RESPONSE_CANCEL)
+	*/
+	outchooser, _ := gtk.FileChooserNativeDialogNew(
+		"Output Directory", win, gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER,
+		"OK", "Cancel")
+
+	if len(options.Outdir) > 0 {
+		outchooser.SetCurrentFolder(options.Outdir)
+	}
+	obj, err = b.GetObject("out_btn")
+	outbtn := obj.(*gtk.Button)
+	outbtn.Connect("clicked", func() {
+		id := outchooser.Run()
+		if id == int(gtk.RESPONSE_OK) || id == int(gtk.RESPONSE_ACCEPT) {
+			options.Outdir = outchooser.GetFilename()
+		}
+		outchooser.Hide()
 	})
 
 	runbtn.SetSensitive(false)

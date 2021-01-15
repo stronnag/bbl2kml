@@ -112,7 +112,16 @@
               </packing>
             </child>
             <child>
-              <placeholder/>
+              <object class="GtkButton" id="out_btn">
+                <property name="label" translatable="yes">Output...</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+              </object>
+              <packing>
+                <property name="left-attach">2</property>
+                <property name="top-attach">1</property>
+              </packing>
             </child>
           </object>
           <packing>

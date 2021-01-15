@@ -23,6 +23,7 @@ var (
 	Blackbox_decode string = "blackbox_decode"
 	Mission         string
 	Gradset         string
+	Outdir          string
 )
 
 func isFlagSet(name string) bool {
@@ -88,6 +89,7 @@ func ParseCLI(gv func() string) []string {
 	flag.StringVar(&Gradset, "gradient", Gradset, "Specific colour gradient [red,rdgn,yor]")
 	flag.BoolVar(&Dms, "dms", Dms, "Show positions as DD:MM:SS.s (vice decimal degrees)")
 	flag.StringVar(&Mission, "mission", "", "Optional mission file name")
+	flag.StringVar(&Outdir, "outdir", "", "Output directory for generated KML")
 	flag.IntVar(&SplitTime, "split-time", 120, "[OTX] Time(s) determining log split, 0 disables")
 	flag.IntVar(&HomeAlt, "home-alt", 0, "[OTX] home altitude")
 

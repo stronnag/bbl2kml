@@ -78,6 +78,18 @@ func main() {
 		fc.Show()
 	})
 
+	obut := widget.NewButton("Output ...", func() {
+		fc := dialog.NewFolderOpen(
+			func(cb fyne.ListableURI, err error) {
+				if cb != nil {
+					odir := cb.String()
+					options.Outdir = strings.Replace(odir, "file://", "", 1)
+				}
+			},
+			w)
+		fc.Show()
+	})
+
 	blank := widget.NewLabel(" ")
 	blankmax := fyne.NewContainerWithLayout(layout.NewMaxLayout())
 	blankmax.AddObject(blank)
@@ -92,15 +104,15 @@ func main() {
 	idxbox.AddObject(widget.NewLabel("Index"))
 	idxbox.AddObject(idxentry)
 
-	cols := 3
-	grid1 := fyne.NewContainerWithLayout(layout.NewGridLayout(cols))
+	grid1 := fyne.NewContainerWithLayout(layout.NewGridLayout(3))
 	grid1.AddObject(lbut)
 	grid1.AddObject(lfmax)
 	grid1.AddObject(idxbox)
 	grid1.AddObject(mbut)
 	grid1.AddObject(mfname)
-	cols = 2
-	grid2 := fyne.NewContainerWithLayout(layout.NewGridLayout(cols))
+	grid1.AddObject(obut)
+
+	grid2 := fyne.NewContainerWithLayout(layout.NewGridLayout(2))
 	dmsck := widget.NewCheck("DMS", func(b bool) { options.Dms = b })
 	extck := widget.NewCheck("Extrude", func(b bool) { options.Extrude = b })
 	rssck := widget.NewCheck("RSSI is default", func(b bool) { options.Rssi = b })
