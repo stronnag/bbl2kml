@@ -254,13 +254,15 @@ func main() {
 			geo.Frobnicate_init()
 			var lfr types.FlightLog
 			for _, fn := range files {
-				ext := filepath.Ext(fn)
-				if strings.EqualFold(ext, ".csv") {
+				ftype := types.EvinceFileType(fn)
+				if ftype == types.IS_OTX {
 					olfr := otx.NewOTXReader(fn)
 					lfr = &olfr
-				} else {
+				} else if ftype == types.IS_BBL {
 					blfr := bbl.NewBBLReader(fn)
 					lfr = &blfr
+				} else {
+					continue
 				}
 				metas, err := lfr.GetMetas()
 				if err == nil {

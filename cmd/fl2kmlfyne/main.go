@@ -169,13 +169,15 @@ func main() {
 		options.Efficiency = effck.Checked
 		geo.Frobnicate_init()
 		var lfr types.FlightLog
-		ext := filepath.Ext(logfile)
-		if strings.EqualFold(ext, ".csv") {
+		ftype := types.EvinceFileType(logfile)
+		if ftype == types.IS_OTX {
 			olfr := otx.NewOTXReader(logfile)
 			lfr = &olfr
-		} else {
+		} else if ftype == types.IS_BBL {
 			blfr := bbl.NewBBLReader(logfile)
 			lfr = &blfr
+		} else {
+			return
 		}
 		metas, err := lfr.GetMetas()
 		if err == nil {
