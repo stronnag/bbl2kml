@@ -29,31 +29,42 @@ const (
 	CAP_RSSI_VALID
 )
 
+const (
+	Is_ARMED uint8 = 1
+	Is_FAIL  uint8 = 2
+	Is_CRSF  uint8 = 4
+)
+
 type LogItem struct {
-	Stamp   uint64
-	Lat     float64
-	Lon     float64
-	Alt     float64
-	GAlt    float64
-	Cse     uint32
-	Spd     float64
-	Amps    float64
-	Volts   float64
-	Fix     uint8
-	Numsat  uint8
-	Fmode   uint8
-	Rssi    uint8
-	Fmtext  string
-	Utc     time.Time
-	Fs      bool
-	Hlat    float64
-	Hlon    float64
-	Vrange  float64
-	Bearing int32 // -ve => not defined
-	Tdist   float64
-	Effic   float64
-	Energy  float64
-	Qval    float64
+	Stamp    uint64
+	Lat      float64
+	Lon      float64
+	Alt      float64
+	GAlt     float64
+	Cse      uint32
+	Cog      uint32
+	Spd      float64
+	Amps     float64
+	Volts    float64
+	Fix      uint8
+	Numsat   uint8
+	Fmode    uint8
+	Rssi     uint8
+	Fmtext   string
+	Utc      time.Time
+	Hlat     float64
+	Hlon     float64
+	Vrange   float64
+	Bearing  int32 // -ve => not defined
+	Tdist    float64
+	Effic    float64
+	Energy   float64
+	Qval     float64
+	Throttle int
+	Roll     int16
+	Pitch    int16
+	Status   uint8
+	Hdop     uint16
 }
 
 type LogRec struct {
@@ -105,7 +116,6 @@ func (b *LogStats) Show_time(t uint64) string {
 	return fmt.Sprintf("%02d:%02d", m, s)
 }
 
-type MapRec map[string]string
 
 func (b *LogStats) Summary(t uint64) MapRec {
 	var m MapRec
@@ -124,8 +134,17 @@ func (b *LogStats) Summary(t uint64) MapRec {
 	return m
 }
 
+type MapRec map[string]string
+
+type LogSegment struct {
+	L LogRec
+	H HomeRec
+	M MapRec
+}
+
+
 type FlightLog interface {
-	Reader(FlightMeta) (MapRec, bool)
+	Reader(FlightMeta) (LogSegment, bool)
 	GetMetas() ([]FlightMeta, error)
 	Dump()
 	LogType() byte

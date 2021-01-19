@@ -13,6 +13,8 @@ var (
 	jlat      float64
 	jlon      float64
 	frobinit  bool
+	dlat      float64
+	dlon      float64
 )
 
 func Frobnicate_init() bool {
@@ -35,6 +37,8 @@ func Frobnicate_init() bool {
 
 func Frobnicate_set(lat float64, lon float64, alt float64) (float64, float64) {
 	jmp_angle, jmp_dist = Csedist(lat, lon, jlat, jlon)
+	dlat = jlat - lat
+	dlon = jlon - lon
 	if alt != 0 {
 		jmp_up -= alt
 	}
@@ -43,7 +47,9 @@ func Frobnicate_set(lat float64, lon float64, alt float64) (float64, float64) {
 
 func Frobnicate_move(lat float64, lon float64, alt float64) (float64, float64, float64) {
 	var nlat, nlon, nalt float64
-	nlat, nlon = Posit(lat, lon, jmp_angle, jmp_dist, false)
+	//	nlat, nlon = Posit(lat, lon, jmp_angle, jmp_dist, false)
+	nlat = lat + dlat
+	nlon = lon + dlon
 	nalt = alt + jmp_up
 	return nlat, nlon, nalt
 }

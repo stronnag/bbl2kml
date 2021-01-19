@@ -6,6 +6,7 @@ Generate annotated KML/KMZ files from inav blackbox logs and OpenTX log files (i
 
 * flightlog2kml - Generates KML/Z file(s) from Blackbox log(s) and OpenTX (OTX) logs
 * mission2kml - Generate KML file from inav mission files (and other formats)
+* fl2mqtt - Generates MQTT data to stimulate the on-line Ground Control Station [BulletGCSS](https://bulletgcss.fpvsampa.com/)
 
 ```
  flightlog2kml --help
@@ -126,6 +127,44 @@ There are a few issues with OpenTX logs, the first of which needs OpenTX 2.3.11 
 * CRSF logs in OpenTX 2.3.10 do not record the FM (Flight Mode) field. This makes it impossible to determine flight mode, or even if the craft is armed. Currently `flightlog2kml` tries to evince the armed state from other data.
 * GPS Elevation. Unless you have a GPS attached to the TX, you don't get GPS altitude. This can be set by the `-home-alt H` value (in metres). Otherwise `flightlog2kml` will use an online elevation service.
 * OpenTX creates a log per calendar day (IIRC), this means there may be multiple logs in the same file. Delimiting these individual logs is less than trivial, to some degree due to the prior CRSF issue which means arm / disarm is not reliably available. Currently, `flightlog2kml` assumes that a gap of more than 120 seconds indicates a new flight. The `-split-time` value allows a user-defined split time (seconds). Setting this to zero disables the log splitting function.
+
+
+## `fl2mqtt`
+
+The MQTT option (BulletGCSS) requires two or three comma separated parameters:
+
+* A MQTT broker
+* A MQTT topic
+* The broker port, defaults to 1883
+
+
+```
+$ fl2mqtt --help
+Usage of fl2mqtt [options] file...
+  -dump
+    	Dump log headers and exit
+  -index int
+    	Log index
+  -interval int
+    	Sampling Interval (ms) (default 1000)
+  -mqtt string
+    	Mqtt options [broker,topic,port]
+
+fl2mqtt 0.8.6-rc1, commit: d524fa7 / 2021-01-19
+```
+
+The [BulletGCSS wiki](https://github.com/danarrib/BulletGCSS/wiki) describes how these values are chosen; in general:
+
+* It is safe to use `broker.emqx.io` as the MQTT broker, this is default is nothing appears before the comma in the `-mqtt` option.
+* You should use a unique topic for publishing your own data, this is slash separated string, for example `foo/bar/quux/demo', which should include at least three elements.
+
+Example:
+
+```
+$ fl2mqtt -mqtt ",org/mwptools/mqtt/playotx" openTXlog.csv`
+$ fl2mqtt -mqtt ",org/mwptools/mqtt/playbbl" blackbox.TXT`
+## the default broker is used ##
+```
 
 ## `mission2kml`
 

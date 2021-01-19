@@ -17,7 +17,6 @@ import (
 	geo "github.com/stronnag/bbl2kml/pkg/geo"
 	inav "github.com/stronnag/bbl2kml/pkg/inav"
 	options "github.com/stronnag/bbl2kml/pkg/options"
-	kmlgen "github.com/stronnag/bbl2kml/pkg/kmlgen"
 	types "github.com/stronnag/bbl2kml/pkg/api/types"
 )
 
@@ -225,13 +224,21 @@ func dataCapability() uint8 {
 	return ret
 }
 
+
 func get_bbl_line(r []string, have_origin bool) types.LogItem {
+	status := types.Is_ARMED
 	b := types.LogItem{}
 
 	s, ok := get_rec_value(r, "GPS_numSat")
 	if ok {
 		i64, _ := strconv.Atoi(s)
 		b.Numsat = uint8(i64)
+	}
+
+	s, ok = get_rec_value(r, "GPS_hdop")
+	if ok {
+		i64, _ := strconv.Atoi(s)
+		b.Hdop = uint16(i64)
 	}
 
 	if s, ok = get_rec_value(r, "vbat (V)"); ok {
@@ -324,8 +331,12 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 
 	s, ok = get_rec_value(r, "failsafePhase (flags)")
 	if ok {
-		b.Fs = !strings.Contains(s, "IDLE")
+		if !strings.Contains(s, "IDLE") {
+			status |= types.Is_FAIL
+		}
 	}
+
+	b.Status = uint8(status)
 
 	if !have_origin {
 		b.Hlat = 0
@@ -362,12 +373,26 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 		}
 	}
 
+	s, ok = get_rec_value(r, "attitude[0]")
+	if ok {
+		i64, _ := strconv.Atoi(s)
+		b.Roll = int16(i64 / 10)
+	}
+	s, ok = get_rec_value(r, "attitude[1]")
+	if ok {
+		i64, _ := strconv.Atoi(s)
+		b.Pitch = int16(i64 / 10)
+	}
 	s, ok = get_rec_value(r, "attitude[2]")
 	if ok {
 		i64, _ := strconv.Atoi(s)
 		b.Cse = uint32(i64 / 10)
 	}
-
+	s, ok = get_rec_value(r, "GPS_ground_course")
+	if ok {
+		v, _ := strconv.ParseFloat(s, 64)
+		b.Cog = uint32(v)
+	}
 	s, ok = get_rec_value(r, "rssi")
 	if ok {
 		i64, _ := strconv.Atoi(s)
@@ -388,10 +413,17 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 		b.Energy, _ = strconv.ParseFloat(s, 64)
 	}
 
+	s, ok = get_rec_value(r, "rcData[3]")
+	if ok {
+		i64, _ := strconv.Atoi(s)
+		b.Throttle = int(i64)
+		b.Throttle = (b.Throttle - 1000) / 10
+	}
+
 	return b
 }
 
-func (lg *BBLOG) Reader(meta types.FlightMeta) (types.MapRec, bool) {
+func (lg *BBLOG) Reader(meta types.FlightMeta) (types.LogSegment, bool) {
 	cmd := exec.Command(options.Blackbox_decode,
 		"--datetime", "--merge-gps", "--stdout", "--index",
 		strconv.Itoa(meta.Index), lg.name)
@@ -557,10 +589,12 @@ func (lg *BBLOG) Reader(meta types.FlightMeta) (types.MapRec, bool) {
 	}
 
 	srec := stats.Summary(lt - st)
-	if homes.Flags != 0 && len(rec.Items) > 0 {
-		outfn := kmlgen.GenKmlName(meta.Logname, meta.Index)
-		kmlgen.GenerateKML(homes, rec, outfn, meta, srec)
-		return srec, true
+	ok := homes.Flags != 0 && len(rec.Items) > 0
+	ls := types.LogSegment{}
+	if ok {
+		ls.L = rec
+		ls.H = homes
+		ls.M = srec
 	}
-	return types.MapRec{}, false
+	return ls, ok
 }

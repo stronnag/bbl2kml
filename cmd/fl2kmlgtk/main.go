@@ -15,6 +15,7 @@ import (
 	bbl "github.com/stronnag/bbl2kml/pkg/bbl"
 	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	geo "github.com/stronnag/bbl2kml/pkg/geo"
+	kmlgen "github.com/stronnag/bbl2kml/pkg/kmlgen"
 )
 
 var GitCommit = "local"
@@ -271,8 +272,12 @@ func main() {
 							for k, v := range b.Summary() {
 								add_textview(textview, fmt.Sprintf("%-8.8s : %s\n", k, v))
 							}
-							smap, res := lfr.Reader(b)
-							for k, v := range smap {
+							ls, res := lfr.Reader(b)
+							if res {
+								outfn := kmlgen.GenKmlName(b.Logname, b.Index)
+								kmlgen.GenerateKML(ls.H, ls.L, outfn, b, ls.M)
+							}
+							for k, v := range ls.M {
 								add_textview(textview, fmt.Sprintf("%-8.8s : %s\n", k, v))
 							}
 							if s, ok := b.ShowDisarm(); ok {

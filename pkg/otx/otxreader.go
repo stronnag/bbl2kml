@@ -5,7 +5,6 @@ import (
 	"fmt"
 	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	geo "github.com/stronnag/bbl2kml/pkg/geo"
-	kmlgen "github.com/stronnag/bbl2kml/pkg/kmlgen"
 	options "github.com/stronnag/bbl2kml/pkg/options"
 	"io"
 	"math"
@@ -168,9 +167,6 @@ func dump_headers() {
 	}
 }
 
-const is_ARMED uint8 = 1
-const is_CRSF uint8 = 2
-
 func get_rec_value(r []string, key string) (string, string, bool) {
 	var s string
 	v, ok := hdrs[key]
@@ -216,7 +212,7 @@ func normalise_units(v float64, u string) float64 {
 	return v
 }
 
-func get_otx_line(r []string) (types.LogItem, uint8) {
+func get_otx_line(r []string) types.LogItem {
 	b := types.LogItem{}
 	status := uint8(0)
 	if s, _, ok := get_rec_value(r, "Tmp2"); ok {
@@ -230,6 +226,8 @@ func get_otx_line(r []string) (types.LogItem, uint8) {
 		} else {
 			b.Fix = 0
 		}
+		hdp := uint16((tmp2 % 1000) / 100)
+		b.Hdop = uint16(550 - (hdp * 50))
 	}
 
 	if s, _, ok := get_rec_value(r, "GPS"); ok {
@@ -274,6 +272,23 @@ func get_otx_line(r []string) (types.LogItem, uint8) {
 	if s, _, ok := get_rec_value(r, "Hdg"); ok {
 		v, _ := strconv.ParseFloat(s, 64)
 		b.Cse = uint32(v)
+		b.Cog = b.Cse
+	}
+
+	if s, _, ok := get_rec_value(r, "AccX"); ok {
+		ax, _ := strconv.ParseFloat(s, 64)
+		if s, _, ok := get_rec_value(r, "AccY"); ok {
+			ay, _ := strconv.ParseFloat(s, 64)
+			if s, _, ok = get_rec_value(r, "AccZ"); ok {
+				az, _ := strconv.ParseFloat(s, 64)
+				b.Pitch, b.Roll = acc_to_ah(ax, ay, az)
+			}
+		}
+	}
+
+	if s, _, ok := get_rec_value(r, "Thr"); ok {
+		v, _ := strconv.ParseInt(s, 10, 32)
+		b.Throttle = int(v)
 	}
 
 	md := uint8(0)
@@ -287,7 +302,7 @@ func get_otx_line(r []string) (types.LogItem, uint8) {
 		modeA := tmp1 / 10000
 
 		if (modeE & 4) == 4 {
-			status |= is_ARMED
+			status |= types.Is_ARMED
 		}
 
 		switch modeD {
@@ -320,7 +335,7 @@ func get_otx_line(r []string) (types.LogItem, uint8) {
 			}
 		}
 		if modeA == 4 {
-			b.Fs = true
+			status |= types.Is_FAIL
 		}
 	}
 
@@ -334,7 +349,7 @@ func get_otx_line(r []string) (types.LogItem, uint8) {
 	}
 
 	if s, _, ok := get_rec_value(r, "1RSS"); ok {
-		status |= is_CRSF
+		status |= types.Is_CRSF
 		rssi, _ := strconv.ParseInt(s, 10, 32)
 		b.Rssi = uint8(rssi)
 
@@ -344,10 +359,10 @@ func get_otx_line(r []string) (types.LogItem, uint8) {
 
 		if s, _, ok = get_rec_value(r, "FM"); ok {
 			md = 0
-			status |= is_ARMED
+			status |= types.Is_ARMED
 			switch s {
 			case "0", "OK", "WAIT", "!ERR":
-				status &= ^is_ARMED
+				status &= ^types.Is_ARMED
 			case "ACRO", "AIR":
 				md = types.FM_ACRO
 			case "ANGL", "STAB":
@@ -369,14 +384,14 @@ func get_otx_line(r []string) (types.LogItem, uint8) {
 			case "RTH":
 				md = types.FM_RTH
 			case "!FS!":
-				b.Fs = true
+				status |= types.Is_FAIL
 			}
 
 			if s == "0" {
 				if s, _, ok := get_rec_value(r, "Thr"); ok {
 					thr, _ := strconv.ParseInt(s, 10, 32)
 					if thr > -1024 {
-						status |= is_ARMED
+						status |= types.Is_ARMED
 					}
 				}
 			}
@@ -387,10 +402,16 @@ func get_otx_line(r []string) (types.LogItem, uint8) {
 			b.Numsat = uint8(ns)
 			if ns > 5 {
 				b.Fix = 3
+				b.Hdop = uint16((3.3 - float64(ns)/12.0) * 100)
+				if b.Hdop < 50 {
+					b.Hdop = 50
+				}
 			} else if ns > 0 {
 				b.Fix = 1
+				b.Hdop = 800
 			} else {
 				b.Fix = 0
+				b.Hdop = 999
 			}
 		}
 
@@ -401,6 +422,15 @@ func get_otx_line(r []string) (types.LogItem, uint8) {
 				cse += 360.0
 			}
 			b.Cse = uint32(cse)
+		}
+
+		if s, _, ok := get_rec_value(r, "Ptch"); ok {
+			v1, _ := strconv.ParseFloat(s, 64)
+			b.Pitch = int16(to_degrees(v1))
+		}
+		if s, _, ok := get_rec_value(r, "Roll"); ok {
+			v1, _ := strconv.ParseFloat(s, 64)
+			b.Roll = int16(to_degrees(v1))
 		}
 	}
 	b.Fmode = md
@@ -429,7 +459,9 @@ func get_otx_line(r []string) (types.LogItem, uint8) {
 			}
 		}
 	}
-	return b, status
+	b.Throttle = 100 * (b.Throttle + 1024) / 2048
+	b.Status = status
+	return b
 }
 
 func to_degrees(rad float64) float64 {
@@ -452,7 +484,13 @@ func calc_speed(b types.LogItem, tdiff time.Duration, llat, llon float64) float6
 	return spd
 }
 
-func (lg *OTXLOG) Reader(m types.FlightMeta) (types.MapRec, bool) {
+func acc_to_ah(ax, ay, az float64) (pitch int16, roll int16) {
+	pitch = -int16((180.0 * math.Atan2(ax, math.Sqrt(ay*ay+az*az)) / math.Pi))
+	roll = int16((180.0 * math.Atan2(ay, math.Sqrt(ax*ax+az*az)) / math.Pi))
+	return pitch, roll
+}
+
+func (lg *OTXLOG) Reader(m types.FlightMeta) (types.LogSegment, bool) {
 	var stats types.LogStats
 
 	llat := 0.0
@@ -487,8 +525,8 @@ func (lg *OTXLOG) Reader(m types.FlightMeta) (types.MapRec, bool) {
 		}
 		if i >= m.Start && i <= m.End {
 			rec.Cap = dataCapability()
-			b, status := get_otx_line(record)
-			if (status&is_ARMED) == 0 && b.Alt < 10 && b.Spd < 7 {
+			b := get_otx_line(record)
+			if (b.Status&types.Is_ARMED) == 0 && b.Alt < 10 && b.Spd < 7 {
 				continue
 			}
 
@@ -499,13 +537,6 @@ func (lg *OTXLOG) Reader(m types.FlightMeta) (types.MapRec, bool) {
 
 			if homes.Flags == 0 {
 				if b.Fix > 1 && b.Numsat > 5 {
-					if frobing {
-						geo.Frobnicate_set(b.Lat, b.Lon, b.GAlt)
-						b.Lat, b.Lon, b.GAlt = geo.Frobnicate_move(b.Lat, b.Lon, b.GAlt)
-						ttmp := time.Now().Add(time.Hour * 24 * 42)
-						froboff = ttmp.Sub(b.Utc)
-						b.Utc = ttmp
-					}
 					homes.HomeLat = b.Lat
 					homes.HomeLon = b.Lon
 					homes.Flags = types.HOME_ARM
@@ -522,6 +553,15 @@ func (lg *OTXLOG) Reader(m types.FlightMeta) (types.MapRec, bool) {
 							homes.Flags |= types.HOME_ALT
 						}
 					}
+
+					if frobing {
+						geo.Frobnicate_set(homes.HomeLat, homes.HomeLon, b.GAlt)
+						homes.HomeLat, homes.HomeLon, homes.HomeAlt = geo.Frobnicate_move(homes.HomeLat, homes.HomeLon, homes.HomeAlt)
+						ttmp := time.Now().Add(time.Hour * 24 * 42)
+						froboff = ttmp.Sub(b.Utc)
+						b.Utc = ttmp
+					}
+
 					llat = b.Lat
 					llon = b.Lon
 				}
@@ -533,7 +573,7 @@ func (lg *OTXLOG) Reader(m types.FlightMeta) (types.MapRec, bool) {
 			}
 
 			tdiff := b.Utc.Sub(lt)
-			if (status & is_CRSF) == is_CRSF {
+			if (b.Status & types.Is_CRSF) == types.Is_CRSF {
 				b.Spd = calc_speed(b, tdiff, llat, llon)
 			}
 
@@ -595,12 +635,13 @@ func (lg *OTXLOG) Reader(m types.FlightMeta) (types.MapRec, bool) {
 			os.Exit(-1)
 		}
 	}
-
-	if homes.Flags > 0 && len(rec.Items) > 0 {
-		outfn := kmlgen.GenKmlName(m.Logname, m.Index)
-		srec := stats.Summary(uint64(lt.Sub(st).Microseconds()))
-		kmlgen.GenerateKML(homes, rec, outfn, m, srec)
-		return srec, true
+	srec := stats.Summary(uint64(lt.Sub(st).Microseconds()))
+	ok := homes.Flags != 0 && len(rec.Items) > 0
+	ls := types.LogSegment{}
+	if ok {
+		ls.L = rec
+		ls.H = homes
+		ls.M = srec
 	}
-	return types.MapRec{}, false
+	return ls, ok
 }

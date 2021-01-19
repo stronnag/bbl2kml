@@ -92,7 +92,7 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 	for np, r := range rec.Items {
 		tfmt := r.Utc.Format("2006‑01‑02T15:04:05.99MST")
 		fmtxt := r.Fmtext
-		if r.Fs {
+		if (r.Status & types.Is_FAIL) == types.Is_FAIL {
 			fmtxt = fmtxt + " FAILSAFE"
 		}
 		var alt float64
@@ -172,7 +172,7 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 				),
 			)
 		}
-		if r.Fs {
+		if (r.Status & types.Is_FAIL) == types.Is_FAIL {
 			se.Add(
 				kml.IconStyle(
 					kml.Icon(
@@ -182,7 +182,7 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 			)
 		}
 
-		if options.Extrude || r.Fs {
+		if options.Extrude || (r.Status & types.Is_FAIL) == types.Is_FAIL {
 			k.Add(se)
 		}
 		k.Add(po)
