@@ -141,30 +141,40 @@ The MQTT option (BulletGCSS) requires two or three comma separated parameters:
 ```
 $ fl2mqtt --help
 Usage of fl2mqtt [options] file...
+  -cafile string
+    	CA file for TLS broker
   -dump
     	Dump log headers and exit
   -index int
     	Log index
   -interval int
     	Sampling Interval (ms) (default 1000)
+  -mission string
+    	Optional mission file name
   -mqtt string
     	Mqtt options [broker,topic,port]
-
-fl2mqtt 0.8.6-rc1, commit: d524fa7 / 2021-01-19
 ```
 
 The [BulletGCSS wiki](https://github.com/danarrib/BulletGCSS/wiki) describes how these values are chosen; in general:
 
 * It is safe to use `broker.emqx.io` as the MQTT broker, this is default is nothing appears before the comma in the `-mqtt` option.
 * You should use a unique topic for publishing your own data, this is slash separated string, for example `foo/bar/quux/demo', which should include at least three elements.
+* If you want to use a TLS (encrypted) connection to the broker, you must supply the broker's CA CRT (PEM) file. A reputable test broker will provide this via their web sites.
 
 Example:
 
 ```
+## the default broker is used ##
 $ fl2mqtt -mqtt ",org/mwptools/mqtt/playotx" openTXlog.csv`
 $ fl2mqtt -mqtt ",org/mwptools/mqtt/playbbl" blackbox.TXT`
-## the default broker is used ##
+
+## broker is test.mosquitto.org, over TLS,
+## note the TLS port is also given (8883 in this case)
+$ /fl2mqtt -cafile mosquitto.org.crt  --mqtt test.mosquitto.org,fl2mqtt/fl2mtqq/test,8883 -mission simple_jump.mission BBL_102629.TXT
 ```
+
+If a mission file is given, this will aslo be displayed by BulletGCSS, albeit incorrectly if there WP contains types other than `WAYPOINT` and `RTH`.
+
 
 ## `mission2kml`
 

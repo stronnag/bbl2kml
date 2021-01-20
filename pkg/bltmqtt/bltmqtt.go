@@ -1,14 +1,21 @@
 package bltmqtt
 
 import (
-	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"fmt"
+	"crypto/tls"
+	"crypto/x509"
 	"time"
 	"strings"
 	"strconv"
+	"log"
+	"io/ioutil"
 	"math/rand"
 	"os"
 	types "github.com/stronnag/bbl2kml/pkg/api/types"
+	geo "github.com/stronnag/bbl2kml/pkg/geo"
+	options "github.com/stronnag/bbl2kml/pkg/options"
+	mission "github.com/stronnag/bbl2kml/pkg/mission"
 )
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
@@ -28,7 +35,39 @@ type MQTTClient struct {
 	topic  string
 }
 
-func NewMQTTClient(broker string, topic string, port int) *MQTTClient {
+func NewTlsConfig() (*tls.Config, string) {
+	if len(options.Cafile) == 0 {
+		return &tls.Config{InsecureSkipVerify: true, ClientAuth: tls.NoClientCert}, "tcp"
+	} else {
+		certpool := x509.NewCertPool()
+		ca, err := ioutil.ReadFile(options.Cafile)
+		if err != nil {
+			log.Fatalln(err.Error())
+		}
+		certpool.AppendCertsFromPEM(ca)
+		return &tls.Config{
+			RootCAs:            certpool,
+			InsecureSkipVerify: true, ClientAuth: tls.NoClientCert,
+		},
+			"ssl"
+	}
+}
+
+func NewMQTTClient() *MQTTClient {
+	var broker string
+	var topic string
+	var port int
+
+	mq := strings.Split(options.Mqttopts, ",")
+	if len(mq) > 1 {
+		broker = mq[0]
+		if len(mq) >= 2 {
+			topic = mq[1]
+		}
+		if len(mq) >= 3 {
+			port, _ = strconv.Atoi(mq[2])
+		}
+	}
 
 	if broker == "" {
 		broker = "broker.emqx.io"
@@ -41,15 +80,20 @@ func NewMQTTClient(broker string, topic string, port int) *MQTTClient {
 	if port == 0 {
 		port = 1883
 	}
+
+	tlsconf, scheme := NewTlsConfig()
 	clientid := fmt.Sprintf("mwp_%x", rand.Int())
 	opts := mqtt.NewClientOptions()
-	opts.AddBroker(fmt.Sprintf("tcp://%s:%d", broker, port))
+	opts.AddBroker(fmt.Sprintf("%s://%s:%d", scheme, broker, port))
+	opts.SetTLSConfig(tlsconf)
 	opts.SetClientID(clientid)
 	opts.SetUsername("")
 	opts.SetPassword("")
 	opts.SetDefaultPublishHandler(messagePubHandler)
+
 	opts.OnConnect = connectHandler
 	opts.OnConnectionLost = connectLostHandler
+
 	client := mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		panic(token.Error())
@@ -70,13 +114,13 @@ func (m *MQTTClient) sub() {
 
 
 /* Test brokers
-   mqtt.eclipse.org
+   mqtt.eclipse.org  1883, 8333 8081 (ws)
    test.mosquitto.org
    broker.hivemq.com
    mqtt.flespi.io
    mqtt.dioty.co
    mqtt.fluux.io
-   broker.emqx.io
+   broker.emqx.io    1883 , 8084 (ws)
 */
 
 func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int) string {
@@ -225,13 +269,49 @@ func get_cells(vbat float64) int {
 	return ncell
 }
 
-func MQTTGen(broker string, topic string, port int, s types.LogSegment) {
+func MQTTGen(s types.LogSegment) {
 	ncells := 0
-	c := NewMQTTClient(broker, topic, port)
+	c := NewMQTTClient()
 	var lastm time.Time
-
-	laststat := uint8(0)
+	laststat := uint8(255)
 	fmode := ""
+	mstrs := []string{}
+	wps := ""
+
+	if len(options.Mission) > 0 {
+		_, ms, err := mission.Read_Mission_File(options.Mission)
+		if err == nil {
+			var sb strings.Builder
+			for k, mi := range ms.MissionItems {
+				if geo.Getfrobnication() && mi.Is_GeoPoint() {
+					ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, _ = geo.Frobnicate_move(ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, 0)
+				}
+				act, ok := mission.ActionMap[mi.Action]
+				if !ok {
+					act = 1
+				}
+				sb.Reset()
+				sb.WriteString(fmt.Sprintf("wpno:%d,la:%.8f,lo:%.8f,al:%d,ac:%d,", mi.No,
+					ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, mi.Alt, act))
+				if mi.P1 != 0 {
+					sb.WriteString(fmt.Sprintf("p1:%d,", mi.P1))
+				}
+				if mi.P2 != 0 {
+					sb.WriteString(fmt.Sprintf("p2:%d,", mi.P2))
+				}
+				if mi.P3 != 0 {
+					sb.WriteString(fmt.Sprintf("p3:%d,", mi.P3))
+				}
+				if k == len(ms.MissionItems)-1 {
+					sb.WriteString("f:165")
+				}
+				mstrs = append(mstrs, sb.String())
+			}
+			wps = fmt.Sprintf("wpc:%d,wpv:1,cwn:1", len(ms.MissionItems))
+		} else {
+			fmt.Fprintf(os.Stderr, "* Failed to read mission file %s\n", options.Mission)
+		}
+	}
 
 	st := time.Now()
 	for i, b := range s.L.Items {
@@ -244,7 +324,7 @@ func MQTTGen(broker string, topic string, port int, s types.LogSegment) {
 		}
 
 		if b.Fmode != laststat {
-			switch stat {
+			switch b.Fmode {
 			case types.FM_MANUAL:
 				fmode = "MANU"
 			case types.FM_ANGLE:
@@ -268,7 +348,10 @@ func MQTTGen(broker string, topic string, port int, s types.LogSegment) {
 			default:
 				fmode = "ACRO"
 			}
-			laststat = stat
+			if stat != 0 {
+				fmode = "!FS!"
+			}
+			laststat = b.Fmode
 			msg := make_bullet_mode(fmode, ncells)
 			c.publish(msg)
 		}
@@ -278,6 +361,12 @@ func MQTTGen(broker string, topic string, port int, s types.LogSegment) {
 			c.publish(msg)
 			msg = make_bullet_home(s.H.HomeLat, s.H.HomeLon, s.H.HomeAlt)
 			c.publish(msg)
+			if len(mstrs) > 0 && i%100 == 0 {
+				for _, str := range mstrs {
+					c.publish(str)
+				}
+				c.publish(wps)
+			}
 		}
 
 		msg := make_bullet_msg(b, s.H.HomeAlt, et)

@@ -4,8 +4,6 @@ import (
 	"os"
 	"fmt"
 	"log"
-	"strconv"
-	"strings"
 	"path/filepath"
 	otx "github.com/stronnag/bbl2kml/pkg/otx"
 	bbl "github.com/stronnag/bbl2kml/pkg/bbl"
@@ -24,26 +22,9 @@ func getVersion() string {
 
 func main() {
 	files := options.ParseCLI(getVersion)
-	if len(files) == 0 {
+	if len(files) == 0 || len(options.Mqttopts) == 0 {
 		options.Usage()
 		os.Exit(1)
-	}
-
-	broker := ""
-	topic := ""
-	port := 0
-
-	if options.Mqttopts != "" {
-		mq := strings.Split(options.Mqttopts, ",")
-		if len(mq) > 1 {
-			broker = mq[0]
-			if len(mq) >= 2 {
-				topic = mq[1]
-			}
-			if len(mq) >= 3 {
-				port, _ = strconv.Atoi(mq[3])
-			}
-		}
 	}
 
 	if options.Idx == 0 {
@@ -76,7 +57,7 @@ func main() {
 					}
 					ls, res := lfr.Reader(metas[options.Idx-1])
 					if res {
-						mqttgen.MQTTGen(broker, topic, port, ls)
+						mqttgen.MQTTGen(ls)
 					} else {
 						fmt.Fprintf(os.Stderr, "*** skipping generation for log  with no valid geospatial data\n")
 					}

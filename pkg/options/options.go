@@ -25,6 +25,7 @@ var (
 	Gradset         string
 	Outdir          string
 	Mqttopts        string
+	Cafile          string
 )
 
 func isFlagSet(name string) bool {
@@ -83,8 +84,10 @@ func ParseCLI(gv func() string) []string {
 	flag.IntVar(&Idx, "index", 0, "Log index")
 	flag.IntVar(&Intvl, "interval", 1000, "Sampling Interval (ms)")
 	flag.BoolVar(&Dump, "dump", false, "Dump log headers and exit")
+	flag.StringVar(&Mission, "mission", "", "Optional mission file name")
 	if app == "fl2mqtt" {
 		flag.StringVar(&Mqttopts, "mqtt", "", "Mqtt options [broker,topic,port]")
+		flag.StringVar(&Cafile, "cafile", "", "CA file for TLS broker")
 	} else {
 		flag.BoolVar(&Kml, "kml", Kml, "Generate KML (vice default KMZ)")
 		flag.BoolVar(&Rssi, "rssi", Rssi, "Set RSSI view as default")
@@ -92,7 +95,6 @@ func ParseCLI(gv func() string) []string {
 		flag.BoolVar(&Efficiency, "efficiency", Efficiency, "Include efficiency layer in KML/Z")
 		flag.StringVar(&Gradset, "gradient", Gradset, "Specific colour gradient [red,rdgn,yor]")
 		flag.BoolVar(&Dms, "dms", Dms, "Show positions as DD:MM:SS.s (vice decimal degrees)")
-		flag.StringVar(&Mission, "mission", "", "Optional mission file name")
 		flag.StringVar(&Outdir, "outdir", "", "Output directory for generated KML")
 		flag.IntVar(&SplitTime, "split-time", 120, "[OTX] Time(s) determining log split, 0 disables")
 		flag.IntVar(&HomeAlt, "home-alt", 0, "[OTX] home altitude")

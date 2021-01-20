@@ -57,6 +57,16 @@ type Mission struct {
 	MissionItems []MissionItem
 }
 
+var ActionMap = map[string]int{
+	"WAYPOINT": wp_WAYPOINT,
+	"POSHOLD_UNLIM": wp_POSHOLD_UNLIM,
+	"POSHOLD_TIME": wp_POSHOLD_TIME,
+	"RTH": wp_RTH,
+	"SET_POI": wp_SET_POI,
+	"JUMP": wp_JUMP,
+	"SET_HEAD": wp_SET_HEAD,
+	"LAND": wp_LAND,
+}
 
 func read_gpx(dat []byte) *Mission {
 	items := []MissionItem{}
