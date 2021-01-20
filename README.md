@@ -157,9 +157,9 @@ Usage of fl2mqtt [options] file...
 
 The [BulletGCSS wiki](https://github.com/danarrib/BulletGCSS/wiki) describes how these values are chosen; in general:
 
-* It is safe to use `broker.emqx.io` as the MQTT broker, this is default is nothing appears before the comma in the `-mqtt` option.
-* You should use a unique topic for publishing your own data, this is slash separated string, for example `foo/bar/quux/demo', which should include at least three elements.
-* If you want to use a TLS (encrypted) connection to the broker, you must supply the broker's CA CRT (PEM) file. A reputable test broker will provide this via their web sites.
+* It is safe to use `broker.emqx.io` as the MQTT broker, this is default if nothing appears before the comma in the `-mqtt` option.
+* You should use a unique topic for publishing your own data, this is slash separated string, for example `foo/bar/quux/demo`; the topic should include at least three elements.
+* If you want to use a TLS (encrypted) connection to the broker, you must supply the broker's CA CRT (PEM) file. A reputable test broker will provide this via their web site.
 
 Example:
 
@@ -173,7 +173,7 @@ $ fl2mqtt -mqtt ",org/mwptools/mqtt/playbbl" blackbox.TXT`
 $ /fl2mqtt -cafile mosquitto.org.crt  --mqtt test.mosquitto.org,fl2mqtt/fl2mtqq/test,8883 -mission simple_jump.mission BBL_102629.TXT
 ```
 
-If a mission file is given, this will aslo be displayed by BulletGCSS, albeit incorrectly if there WP contains types other than `WAYPOINT` and `RTH`.
+If a mission file is given, this will also be displayed by BulletGCSS, albeit incorrectly if there WP contains types other than `WAYPOINT` and `RTH`.
 
 
 ## `mission2kml`
