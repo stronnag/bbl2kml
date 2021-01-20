@@ -114,15 +114,13 @@ func metas(otxfile string) ([]types.FlightMeta, error) {
 			sb.WriteByte(' ')
 			sb.WriteString(record[tindex])
 			t_utc, _ := time.Parse(LOGTIMEPARSE, sb.String())
-			if options.SplitTime > 0 {
-				if t_utc.Sub(lasttm).Seconds() > (time.Duration(options.SplitTime) * time.Second).Seconds() {
-					if idx > 0 {
-						metas[idx-1].End = i - 1
-					}
-					idx += 1
-					mt := types.FlightMeta{Logname: basefile, Date: t_utc.Format(TIMEDATE), Index: idx, Start: i}
-					metas = append(metas, mt)
+			if i == 2 || (options.SplitTime > 0 && t_utc.Sub(lasttm).Seconds() > (time.Duration(options.SplitTime)*time.Second).Seconds()) {
+				if idx > 0 {
+					metas[idx-1].End = i - 1
 				}
+				idx += 1
+				mt := types.FlightMeta{Logname: basefile, Date: t_utc.Format(TIMEDATE), Index: idx, Start: i}
+				metas = append(metas, mt)
 			}
 			lasttm = t_utc
 		}

@@ -85,6 +85,9 @@ func ParseCLI(gv func() string) []string {
 	flag.IntVar(&Intvl, "interval", 1000, "Sampling Interval (ms)")
 	flag.BoolVar(&Dump, "dump", false, "Dump log headers and exit")
 	flag.StringVar(&Mission, "mission", "", "Optional mission file name")
+	flag.IntVar(&SplitTime, "split-time", 120, "[OTX] Time(s) determining log split, 0 disables")
+	flag.IntVar(&HomeAlt, "home-alt", 0, "[OTX] home altitude")
+
 	if app == "fl2mqtt" {
 		flag.StringVar(&Mqttopts, "mqtt", "", "Mqtt options [broker,topic,port]")
 		flag.StringVar(&Cafile, "cafile", "", "CA file for TLS broker")
@@ -96,8 +99,6 @@ func ParseCLI(gv func() string) []string {
 		flag.StringVar(&Gradset, "gradient", Gradset, "Specific colour gradient [red,rdgn,yor]")
 		flag.BoolVar(&Dms, "dms", Dms, "Show positions as DD:MM:SS.s (vice decimal degrees)")
 		flag.StringVar(&Outdir, "outdir", "", "Output directory for generated KML")
-		flag.IntVar(&SplitTime, "split-time", 120, "[OTX] Time(s) determining log split, 0 disables")
-		flag.IntVar(&HomeAlt, "home-alt", 0, "[OTX] home altitude")
 	}
 
 	flag.Parse()
