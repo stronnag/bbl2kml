@@ -32,8 +32,7 @@ all: $(_CAPP) $(_MAPP) $(_QAPP)
 
 gui: $(_FAPP) $(_GAPP)
 
-PKGCOMMON = $(wildcard pkg/api/*/*.go) $(wildcard pkg/mission/*.go) $(wildcard pkg/geo/*.go)
-PKGOPT = $(wildcard pkg/options/*.go)
+PKGCOMMON = $(wildcard pkg/api/*/*.go) $(wildcard pkg/mission/*.go) $(wildcard pkg/geo/*.go) $(wildcard pkg/options/*.go)
 PKGBBL = $(wildcard pkg/bbl/*.go)
 PKGOTX = $(wildcard pkg/otx/*.go)
 PKGINAV = $(wildcard pkg/inav/*.go)
@@ -68,10 +67,10 @@ clean:
 	@rm -f $(CAPP)$(EXT) $(MAPP)$(EXT) $(GAPP)$(EXT) $(FAPP)$(EXT) $(QAPP)$(EXT)
 	@go clean
 
-install: $(CAPP)$(EXE) $(MAPP)$(EXE) $(GAPP)$(EXE)
+install: $(CAPP)$(EXE) $(MAPP)$(EXE) $(GAPP)$(EXE) $(QAPP)$(EXE)
 	@ install -d $(prefix)/bin
-	install -s $(CAPP)$(EXE) $(MAPP)$(EXE) $(GAPP)$(EXE) $(prefix)/bin
+	install -s $(CAPP)$(EXE) $(MAPP)$(EXE) $(GAPP)$(EXE) $(QAPP)$(EXE) $(prefix)/bin
 
-install-local: $(CAPP) $(MAPP) $(GAPP)
+install-local: $(CAPP) $(MAPP) $(GAPP) $(QAPP)
 	install -d $(HOME)/bin
 	install -s $(CAPP)$(EXE) $(MAPP)$(EXE) $(GAPP)$(EXE) $(HOME)/bin/
