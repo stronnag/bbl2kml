@@ -307,12 +307,13 @@ func MQTTGen(s types.LogSegment) {
 				}
 				mstrs = append(mstrs, sb.String())
 			}
-			wps = fmt.Sprintf("wpc:%d,wpv:1,cwn:1", len(ms.MissionItems))
+			wps = fmt.Sprintf("wpc:%d,wpv:1,", len(ms.MissionItems))
 		} else {
 			fmt.Fprintf(os.Stderr, "* Failed to read mission file %s\n", options.Mission)
 		}
 	}
 
+	c.publish("wpc:0,wpv:0,flt:0,ont:0")
 	st := time.Now()
 	for i, b := range s.L.Items {
 		now := time.Now()
@@ -361,7 +362,7 @@ func MQTTGen(s types.LogSegment) {
 			c.publish(msg)
 			msg = make_bullet_home(s.H.HomeLat, s.H.HomeLon, s.H.HomeAlt)
 			c.publish(msg)
-			if len(mstrs) > 0 && i%100 == 0 {
+			if len(mstrs) > 0 && i%20 == 0 {
 				for _, str := range mstrs {
 					c.publish(str)
 				}

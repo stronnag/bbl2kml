@@ -26,6 +26,7 @@ var (
 	Outdir          string
 	Mqttopts        string
 	Cafile          string
+	Offset          string
 )
 
 func isFlagSet(name string) bool {
@@ -87,7 +88,7 @@ func ParseCLI(gv func() string) []string {
 	flag.StringVar(&Mission, "mission", "", "Optional mission file name")
 	flag.IntVar(&SplitTime, "split-time", 120, "[OTX] Time(s) determining log split, 0 disables")
 	flag.IntVar(&HomeAlt, "home-alt", 0, "[OTX] home altitude")
-
+	flag.StringVar(&Offset, "offset", "", "offset")
 	if app == "fl2mqtt" {
 		flag.StringVar(&Mqttopts, "mqtt", "", "Mqtt options [broker,topic,port]")
 		flag.StringVar(&Cafile, "cafile", "", "CA file for TLS broker")

@@ -2,8 +2,8 @@ package geo
 
 import (
 	"strings"
-	"os"
 	"strconv"
+	options "github.com/stronnag/bbl2kml/pkg/options"
 )
 
 var (
@@ -17,10 +17,21 @@ var (
 	dlon      float64
 )
 
+func Msplit(s string, separators []rune) []string {
+	f := func(r rune) bool {
+		for _, s := range separators {
+			if r == s {
+				return true
+			}
+		}
+		return false
+	}
+	return strings.FieldsFunc(s, f)
+}
+
 func Frobnicate_init() bool {
-	fob := os.Getenv("BBL2KML_SHIFT")
-	if fob != "" {
-		parts := strings.Split(fob, ",")
+	if len(options.Offset) != 0 {
+		parts := Msplit(options.Offset, []rune{'/', ':', ';', ' ', ','})
 		if len(parts) > 1 {
 			jlat, _ = strconv.ParseFloat(parts[0], 64)
 			jlon, _ = strconv.ParseFloat(parts[1], 64)
