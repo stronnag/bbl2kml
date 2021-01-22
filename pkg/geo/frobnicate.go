@@ -12,7 +12,7 @@ var (
 	jmp_up    float64 = 0.0
 	jlat      float64
 	jlon      float64
-	frobinit  bool
+	frobinit  bool = false
 	dlat      float64
 	dlon      float64
 )
@@ -30,8 +30,8 @@ func Msplit(s string, separators []rune) []string {
 }
 
 func Frobnicate_init() bool {
-	if len(options.Offset) != 0 {
-		parts := Msplit(options.Offset, []rune{'/', ':', ';', ' ', ','})
+	if len(options.Rebase) != 0 {
+		parts := Msplit(options.Rebase, []rune{'/', ':', ';', ' ', ','})
 		if len(parts) > 1 {
 			jlat, _ = strconv.ParseFloat(parts[0], 64)
 			jlon, _ = strconv.ParseFloat(parts[1], 64)
