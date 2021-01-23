@@ -170,7 +170,7 @@ $ fl2mqtt -mqtt ",org/mwptools/mqtt/playbbl" blackbox.TXT`
 
 ## broker is test.mosquitto.org, over TLS,
 ## note the TLS port is also given (8883 in this case)
-$ /fl2mqtt -cafile mosquitto.org.crt  --mqtt test.mosquitto.org,fl2mqtt/fl2mtqq/test,8883 -mission simple_jump.mission BBL_102629.TXT
+$ fl2mqtt -cafile mosquitto.org.crt  --mqtt test.mosquitto.org,fl2mqtt/fl2mtqq/test,8883 -mission simple_jump.mission BBL_102629.TXT
 ```
 
 If a mission file is given, this will also be displayed by BulletGCSS, albeit incorrectly if there WP contains types other than `WAYPOINT` and `RTH`.
