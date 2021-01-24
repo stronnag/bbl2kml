@@ -123,7 +123,7 @@ func (m *MQTTClient) sub() {
    broker.emqx.io    1883 , 8084 (ws)
 */
 
-func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int) string {
+func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int) string {
 	var sb strings.Builder
 
 	sb.WriteString("flt:")
@@ -164,6 +164,11 @@ func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int) string {
 
 	sb.WriteString("bpv:")
 	sb.WriteString(fmt.Sprintf("%.2f", float64(b.Volts)))
+	sb.WriteByte(',')
+
+	avc := b.Volts / float64(ncells)
+	sb.WriteString("acv:")
+	sb.WriteString(fmt.Sprintf("%.2f", avc))
 	sb.WriteByte(',')
 
 	sb.WriteString("cad:")
@@ -243,7 +248,7 @@ func make_bullet_home(hlat float64, hlon float64, halt float64) string {
 	return sb.String()
 }
 
-func make_bullet_mode(mode string, ncells int) string {
+func make_bullet_mode(mode string, ncells int, hwfail bool) string {
 	var sb strings.Builder
 	if ncells > 0 {
 		sb.WriteString("bcc:")
@@ -253,16 +258,21 @@ func make_bullet_mode(mode string, ncells int) string {
 
 	sb.WriteString("ftm:")
 	sb.WriteString(mode)
-	sb.WriteString(",css:1")
+	hwok := 1
+	if hwfail {
+		hwok = 0
+	}
+	sb.WriteString(fmt.Sprintf(",css:3,hwh:%d,", hwok))
 	return sb.String()
 }
 
 func get_cells(vbat float64) int {
 	ncell := 0
 	for i := 1; i < 10; i++ {
-		v := 3.0 * float64(i)
-		if vbat < v {
-			ncell = i - 1
+		vmin := 3.0 * float64(i)
+		vmax := 4.22 * float64(i)
+		if vbat < vmax && vbat > vmin {
+			ncell = i
 			break
 		}
 	}
@@ -353,12 +363,12 @@ func MQTTGen(s types.LogSegment) {
 				fmode = "!FS!"
 			}
 			laststat = b.Fmode
-			msg := make_bullet_mode(fmode, ncells)
+			msg := make_bullet_mode(fmode, ncells, b.HWfail)
 			c.publish(msg)
 		}
 
 		if i%10 == 0 {
-			msg := make_bullet_mode(fmode, ncells)
+			msg := make_bullet_mode(fmode, ncells, b.HWfail)
 			c.publish(msg)
 			msg = make_bullet_home(s.H.HomeLat, s.H.HomeLon, s.H.HomeAlt)
 			c.publish(msg)
@@ -370,7 +380,7 @@ func MQTTGen(s types.LogSegment) {
 			}
 		}
 
-		msg := make_bullet_msg(b, s.H.HomeAlt, et)
+		msg := make_bullet_msg(b, s.H.HomeAlt, et, ncells)
 		c.publish(msg)
 		if !lastm.IsZero() {
 			tdiff := b.Utc.Sub(lastm)

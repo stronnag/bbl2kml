@@ -65,6 +65,7 @@ type LogItem struct {
 	Pitch    int16
 	Status   uint8
 	Hdop     uint16
+	HWfail   bool
 }
 
 type LogRec struct {

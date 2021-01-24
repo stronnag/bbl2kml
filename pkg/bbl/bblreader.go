@@ -420,6 +420,19 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 		b.Throttle = (b.Throttle - 1000) / 10
 	}
 
+	s, ok = get_rec_value(r, "hwHealthStatus")
+	if ok {
+		b.HWfail = false
+		val, _ := strconv.Atoi(s)
+		for n := 0; n < 7; n++ {
+			sv := val & 3
+			if sv > 1 || ((n < 2 || n == 4) && sv != 1) {
+				b.HWfail = true
+				break
+			}
+			val = (val >> 2)
+		}
+	}
 	return b
 }
 
@@ -475,6 +488,7 @@ func (lg *BBLOG) Reader(meta types.FlightMeta) (types.LogSegment, bool) {
 		}
 		if i == 0 {
 			rec.Cap = dataCapability()
+			continue
 		}
 
 		b := get_bbl_line(record, have_origin)
