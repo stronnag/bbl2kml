@@ -131,33 +131,32 @@ There are a few issues with OpenTX logs, the first of which needs OpenTX 2.3.11 
 
 ## `fl2mqtt`
 
-The MQTT option (BulletGCSS) requires two or three comma separated parameters:
-
-* A MQTT broker
-* A MQTT topic
-* The broker port, defaults to 1883
-
+The MQTT option (BulletGCSS) requires a MQTT broker URI, which may include a username/password and cafile if you require authentication and/or encryption.
 
 ```
 $ fl2mqtt --help
 Usage of fl2mqtt [options] file...
-  -cafile string
-    	CA file for TLS broker
+  -broker string
+    	Mqtt URI (mqtt://[user[:pass]@]broker[:port]/topic[?cafile=file]
   -dump
     	Dump log headers and exit
+  -home-alt int
+    	[OTX] home altitude
   -index int
     	Log index
   -interval int
     	Sampling Interval (ms) (default 1000)
   -mission string
     	Optional mission file name
-  -mqtt string
-    	Mqtt options [broker,topic,port]
+  -rebase string
+    	rebase all positions on lat,lon[,alt]
+  -split-time int
+    	[OTX] Time(s) determining log split, 0 disables (default 120)
 ```
 
 The [BulletGCSS wiki](https://github.com/danarrib/BulletGCSS/wiki) describes how these values are chosen; in general:
 
-* It is safe to use `broker.emqx.io` as the MQTT broker, this is default if nothing appears before the comma in the `-mqtt` option.
+* It is safe to use `broker.emqx.io` as the MQTT broker, this is default if no broker host is defined in the URI.
 * You should use a unique topic for publishing your own data, this is slash separated string, for example `foo/bar/quux/demo`; the topic should include at least three elements.
 * If you want to use a TLS (encrypted) connection to the broker, you must supply the broker's CA CRT (PEM) file. A reputable test broker will provide this via their web site.
 
@@ -165,12 +164,12 @@ Example:
 
 ```
 ## the default broker is used ##
-$ fl2mqtt -mqtt ",org/mwptools/mqtt/playotx" openTXlog.csv`
-$ fl2mqtt -mqtt ",org/mwptools/mqtt/playbbl" blackbox.TXT`
+$ fl2mqtt -broker mqtt://broker.emqx.io/org/mwptools/mqtt/playotx openTXlog.csv
+$ fl2mqtt -broker mqtt:///org/mwptools/mqtt/playbbl blackbox.TXT
 
 ## broker is test.mosquitto.org, over TLS,
 ## note the TLS port is also given (8883 in this case)
-$ fl2mqtt -cafile mosquitto.org.crt  --mqtt test.mosquitto.org,fl2mqtt/fl2mtqq/test,8883 -mission simple_jump.mission BBL_102629.TXT
+$ fl2mqtt -broker mqtt://test.mosquitto.org:8883/fl2mqtt/fl2mtqq/test?cafile=mosquitto.org.crt -mission simple_jump.mission BBL_102629.TXT
 ```
 
 If a mission file is given, this will also be displayed by BulletGCSS, albeit incorrectly if there WP contains types other than `WAYPOINT` and `RTH`.

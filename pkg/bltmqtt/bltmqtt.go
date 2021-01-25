@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"net/url"
 	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	geo "github.com/stronnag/bbl2kml/pkg/geo"
 	options "github.com/stronnag/bbl2kml/pkg/options"
@@ -35,12 +36,12 @@ type MQTTClient struct {
 	topic  string
 }
 
-func NewTlsConfig() (*tls.Config, string) {
-	if len(options.Cafile) == 0 {
+func NewTlsConfig(cafile string) (*tls.Config, string) {
+	if len(cafile) == 0 {
 		return &tls.Config{InsecureSkipVerify: true, ClientAuth: tls.NoClientCert}, "tcp"
 	} else {
 		certpool := x509.NewCertPool()
-		ca, err := ioutil.ReadFile(options.Cafile)
+		ca, err := ioutil.ReadFile(cafile)
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
@@ -57,21 +58,32 @@ func NewMQTTClient() *MQTTClient {
 	var broker string
 	var topic string
 	var port int
+	var cafile string
+	var user string
+	var passwd string
 
-	mq := strings.Split(options.Mqttopts, ",")
-	if len(mq) > 1 {
-		broker = mq[0]
-		if len(mq) >= 2 {
-			topic = mq[1]
-		}
-		if len(mq) >= 3 {
-			port, _ = strconv.Atoi(mq[2])
-		}
+	u, err := url.Parse(options.Mqttopts)
+	if err != nil {
+		log.Fatal(err)
 	}
 
+	topic = u.Path[1:]
+	port, _ = strconv.Atoi(u.Port())
+	broker = u.Hostname()
+
+	up := u.User
+	user = up.Username()
+	passwd, _ = up.Password()
+
+	q := u.Query()
+	ca := q["cafile"]
+	if len(ca) > 0 {
+		cafile = ca[0]
+	}
 	if broker == "" {
 		broker = "broker.emqx.io"
 	}
+
 	if topic == "" {
 		topic = fmt.Sprintf("org/mwptools/mqtt/loglayer/_%x", rand.Int())
 		fmt.Fprintf(os.Stderr, "using random topic \"%s\"", topic)
@@ -81,14 +93,14 @@ func NewMQTTClient() *MQTTClient {
 		port = 1883
 	}
 
-	tlsconf, scheme := NewTlsConfig()
+	tlsconf, scheme := NewTlsConfig(cafile)
 	clientid := fmt.Sprintf("mwp_%x", rand.Int())
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(fmt.Sprintf("%s://%s:%d", scheme, broker, port))
 	opts.SetTLSConfig(tlsconf)
 	opts.SetClientID(clientid)
-	opts.SetUsername("")
-	opts.SetPassword("")
+	opts.SetUsername(user)
+	opts.SetPassword(passwd)
 	opts.SetDefaultPublishHandler(messagePubHandler)
 
 	opts.OnConnect = connectHandler
