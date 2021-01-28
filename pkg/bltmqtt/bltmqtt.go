@@ -97,7 +97,7 @@ func NewMQTTClient() *MQTTClient {
 	}
 
 	tlsconf, scheme := NewTlsConfig(cafile)
-	clientid := fmt.Sprintf("mwp_%x", rand.Int())
+	clientid := fmt.Sprintf("%x", rand.Int63())
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(fmt.Sprintf("%s://%s:%d", scheme, broker, port))
 	opts.SetTLSConfig(tlsconf)
