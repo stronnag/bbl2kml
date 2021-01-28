@@ -96,6 +96,7 @@ func NewMQTTClient() *MQTTClient {
 		port = 1883
 	}
 
+	rand.Seed(time.Now().UnixNano())
 	tlsconf, scheme := NewTlsConfig(cafile)
 	clientid := fmt.Sprintf("%x", rand.Int63())
 	opts := mqtt.NewClientOptions()
