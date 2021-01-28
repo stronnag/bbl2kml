@@ -67,9 +67,12 @@ func NewMQTTClient() *MQTTClient {
 		log.Fatal(err)
 	}
 
-	topic = u.Path[1:]
-	port, _ = strconv.Atoi(u.Port())
 	broker = u.Hostname()
+	port, _ = strconv.Atoi(u.Port())
+
+	if len(u.Path) > 0 {
+		topic = u.Path[1:]
+	}
 
 	up := u.User
 	user = up.Username()
@@ -147,11 +150,11 @@ func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int)
 	sb.WriteByte(',')
 
 	sb.WriteString("ran:")
-	sb.WriteString(strconv.Itoa(int(b.Roll) * 10))
+	sb.WriteString(strconv.Itoa(int(b.Roll)))
 	sb.WriteByte(',')
 
 	sb.WriteString("pan:")
-	sb.WriteString(strconv.Itoa(int(b.Pitch) * 10))
+	sb.WriteString(strconv.Itoa(int(b.Pitch)))
 	sb.WriteByte(',')
 
 	sb.WriteString("hea:")
