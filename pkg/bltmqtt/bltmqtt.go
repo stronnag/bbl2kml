@@ -99,9 +99,23 @@ func NewMQTTClient() *MQTTClient {
 	}
 
 	tlsconf, scheme := NewTlsConfig(cafile)
+	if u.Scheme == "ws" {
+		scheme = "ws"
+	}
+	if u.Scheme == "wss" {
+		tlsconf = &tls.Config{RootCAs: nil, ClientAuth: tls.NoClientCert}
+		scheme = "wss"
+	}
 	clientid := fmt.Sprintf("%x", rand.Int63())
 	opts := mqtt.NewClientOptions()
-	opts.AddBroker(fmt.Sprintf("%s://%s:%d", scheme, broker, port))
+
+	mpath := ""
+	if scheme == "ws" || scheme == "wss" {
+		mpath = "/mqtt"
+	}
+	hpath := fmt.Sprintf("%s://%s:%d%s", scheme, broker, port, mpath)
+
+	opts.AddBroker(hpath)
 	opts.SetTLSConfig(tlsconf)
 	opts.SetClientID(clientid)
 	opts.SetUsername(user)
