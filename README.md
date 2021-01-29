@@ -163,13 +163,11 @@ The [BulletGCSS wiki](https://github.com/danarrib/BulletGCSS/wiki) describes how
 Note that the scheme (**mqtt**:// in the `--help` text) is interpreted as:
 
 * ws - Websocket (vice TCP socket), ensure the websocket port is also specificed
-* wss - Encrypted websocket, ensure the TLS websocket port is also specificed. TLS validation is performed using the system CA files.
-* mqtts - Secure (TLS) TCP connection. Ensure the TLS port is specified. TLS validation is performed using the system CA files.
+* wss - Encrypted websocket, ensure the TLS websocket port is also specificed. TLS validation is performed using the operating system.
+* mqtts - Secure (TLS) TCP connection. Ensure the TLS port is specified. TLS validation is performed using the operating system.
 * mqtt (or anyother scheme) - TCP connection. If `?cafile=file` is specified, then that is used for TLS validation (and the TLS port should be specified).
 
-
 Example:
-
 ```
 ## the default broker is used ##
 $ fl2mqtt -broker mqtt://broker.emqx.io/org/mwptools/mqtt/playotx openTXlog.csv
