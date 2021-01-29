@@ -62,6 +62,8 @@ func NewMQTTClient() *MQTTClient {
 	var user string
 	var passwd string
 
+	rand.Seed(time.Now().UnixNano())
+
 	u, err := url.Parse(options.Mqttopts)
 	if err != nil {
 		log.Fatal(err)
@@ -96,7 +98,6 @@ func NewMQTTClient() *MQTTClient {
 		port = 1883
 	}
 
-	rand.Seed(time.Now().UnixNano())
 	tlsconf, scheme := NewTlsConfig(cafile)
 	clientid := fmt.Sprintf("%x", rand.Int63())
 	opts := mqtt.NewClientOptions()
@@ -130,13 +131,9 @@ func (m *MQTTClient) sub() {
 
 
 /* Test brokers
-   mqtt.eclipse.org  1883, 8333 8081 (ws)
-   test.mosquitto.org
-   broker.hivemq.com
-   mqtt.flespi.io
-   mqtt.dioty.co
-   mqtt.fluux.io
-   broker.emqx.io    1883 , 8084 (ws)
+   test.mosquitto.org 1883, 8883 8080, 8081 (ws)
+   broker.hivemq.com  1883, 8000 (ws)
+   broker.emqx.io    1883, 8883, 8083, 8084 (ws)
 */
 
 func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int) string {
@@ -151,11 +148,11 @@ func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int)
 	sb.WriteByte(',')
 
 	sb.WriteString("ran:")
-	sb.WriteString(strconv.Itoa(int(b.Roll)))
+	sb.WriteString(strconv.Itoa(int(b.Roll * 10)))
 	sb.WriteByte(',')
 
 	sb.WriteString("pan:")
-	sb.WriteString(strconv.Itoa(int(b.Pitch)))
+	sb.WriteString(strconv.Itoa(int(b.Pitch * 10)))
 	sb.WriteByte(',')
 
 	sb.WriteString("hea:")
