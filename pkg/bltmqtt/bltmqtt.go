@@ -106,6 +106,12 @@ func NewMQTTClient() *MQTTClient {
 		tlsconf = &tls.Config{RootCAs: nil, ClientAuth: tls.NoClientCert}
 		scheme = "wss"
 	}
+
+	if u.Scheme == "mqtts" {
+		tlsconf = &tls.Config{RootCAs: nil, ClientAuth: tls.NoClientCert}
+		scheme = "ssl"
+	}
+
 	clientid := fmt.Sprintf("%x", rand.Int63())
 	opts := mqtt.NewClientOptions()
 

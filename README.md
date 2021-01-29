@@ -158,7 +158,15 @@ The [BulletGCSS wiki](https://github.com/danarrib/BulletGCSS/wiki) describes how
 
 * It is safe to use `broker.emqx.io` as the MQTT broker, this is default if no broker host is defined in the URI.
 * You should use a unique topic for publishing your own data, this is slash separated string, for example `foo/bar/quux/demo`; the topic should include at least three elements.
-* If you want to use a TLS (encrypted) connection to the broker, you must supply the broker's CA CRT (PEM) file. A reputable test broker will provide this via their web site.
+* If you want to use a TLS (encrypted) connection to the broker, you may need to supply the broker's CA CRT (PEM) file. A reputable test broker will provide this via their web site.
+
+Note that the scheme (**mqtt**:// in the `--help` text) is interpreted as:
+
+* ws - Websocket (vice TCP socket), ensure the websocket port is also specificed
+* wss - Encrypted websocket, ensure the TLS websocket port is also specificed. TLS validation is performed using the system CA files.
+* mqtts - Secure (TLS) TCP connection. Ensure the TLS port is specified. TLS validation is performed using the system CA files.
+* mqtt (or anyother scheme) - TCP connection. If `?cafile=file` is specified, then that is used for TLS validation (and the TLS port should be specified).
+
 
 Example:
 
@@ -170,6 +178,10 @@ $ fl2mqtt -broker mqtt:///org/mwptools/mqtt/playbbl blackbox.TXT
 ## broker is test.mosquitto.org, over TLS,
 ## note the TLS port is also given (8883 in this case)
 $ fl2mqtt -broker mqtt://test.mosquitto.org:8883/fl2mqtt/fl2mtqq/test?cafile=mosquitto.org.crt -mission simple_jump.mission BBL_102629.TXT
+$ fl2mqtt -broker mqtts://test.mosquitto.org:8883/fl2mqtt/fl2mtqq/test -mission simple_jump.mission BBL_102629.TXT
+## Web sockets (plain text / TLS)
+$ fl2mqtt -broker ws://test.mosquitto.org:8080/fl2mqtt/fl2mtqq/test -mission simple_jump.mission BBL_102629.TXT
+$ fl2mqtt -broker wss://test.mosquitto.org:8081/fl2mqtt/fl2mtqq/test -mission simple_jump.mission BBL_102629.TXT
 ```
 
 If a mission file is given, this will also be displayed by BulletGCSS, albeit incorrectly if there WP contains types other than `WAYPOINT` and `RTH`.
