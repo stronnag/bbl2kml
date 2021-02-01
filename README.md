@@ -164,7 +164,7 @@ Note that the scheme (**mqtt**:// in the `--help` text) is interpreted as:
 
 * ws - Websocket (vice TCP socket), ensure the websocket port is also specificed
 * wss - Encrypted websocket, ensure the TLS websocket port is also specificed. TLS validation is performed using the operating system.
-* mqtts - Secure (TLS) TCP connection. Ensure the TLS port is specified. TLS validation is performed using the operating system.
+* mqtts,ssl - Secure (TLS) TCP connection. Ensure the TLS port is specified. TLS validation is performed using the operating system, unless `?cafile=file` is specified.
 * mqtt (or anyother scheme) - TCP connection. If `?cafile=file` is specified, then that is used for TLS validation (and the TLS port should be specified).
 
 Example:
@@ -184,6 +184,7 @@ $ fl2mqtt -broker wss://test.mosquitto.org:8081/fl2mqtt/fl2mtqq/test -mission si
 
 If a mission file is given, this will also be displayed by BulletGCSS, albeit incorrectly if there WP contains types other than `WAYPOINT` and `RTH`.
 
+[mwp](https://github.com/stronnag/mwptools) can also process / display the BulletGCSS MQTT protocol, using a similar [URI definition](https://github.com/stronnag/mwptools/wiki/mqtt---bulletgcss-telemetry).
 
 ## `mission2kml`
 

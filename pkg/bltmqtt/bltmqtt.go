@@ -38,7 +38,7 @@ type MQTTClient struct {
 
 func NewTlsConfig(cafile string) (*tls.Config, string) {
 	if len(cafile) == 0 {
-		return &tls.Config{InsecureSkipVerify: true, ClientAuth: tls.NoClientCert}, "tcp"
+		return nil, "tcp"
 	} else {
 		certpool := x509.NewCertPool()
 		ca, err := ioutil.ReadFile(cafile)
@@ -107,9 +107,13 @@ func NewMQTTClient() *MQTTClient {
 		scheme = "wss"
 	}
 
-	if u.Scheme == "mqtts" {
+	if tlsconf == nil && (u.Scheme == "mqtts" || u.Scheme == "ssl") {
 		tlsconf = &tls.Config{RootCAs: nil, ClientAuth: tls.NoClientCert}
 		scheme = "ssl"
+	}
+
+	if len(os.Getenv("NOVERIFYSSL")) > 0 && tlsconf != nil {
+		tlsconf.InsecureSkipVerify = true
 	}
 
 	clientid := fmt.Sprintf("%x", rand.Int63())
@@ -142,13 +146,6 @@ func (m *MQTTClient) publish(msg string) {
 	token := m.client.Publish(m.topic, 0, false, msg)
 	token.Wait()
 }
-
-func (m *MQTTClient) sub() {
-	token := m.client.Subscribe(m.topic, 1, nil)
-	token.Wait()
-	fmt.Printf("Subscribed to topic: %s\n", m.topic)
-}
-
 
 /* Test brokers
    test.mosquitto.org 1883, 8883 8080, 8081 (ws)
