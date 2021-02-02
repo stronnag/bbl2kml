@@ -1,5 +1,10 @@
 package main
 
+// #cgo CFLAGS: -O2 -Wall
+// #cgo pkg-config: gio-2.0
+// #include "resources.h"
+import "C"
+
 import (
 	"log"
 	"os"
@@ -30,16 +35,29 @@ func main() {
 
 	gtk.Init(nil)
 
+	C.resources_register_resource()
+
 	files := options.ParseCLI(getVersion)
 	if options.Dump {
 		fmt.Fprintln(os.Stderr, "Dump only supported via CLI")
 		return
 	}
 
-	b, err := gtk.BuilderNewFromString(GetUIString())
+	b, err := gtk.BuilderNew()
 	if err != nil {
-		log.Fatal("glade file:", err)
+		log.Fatal("builder:", err)
 	}
+	img, err := gtk.ImageNewFromResource("/org/bbl2kml/fl2kmlgtk/logo.svg")
+	if err != nil {
+		log.Fatal("pix lookup:", err)
+	}
+	pbuf := img.GetPixbuf()
+
+	err = b.AddFromResource("/org/bbl2kml/fl2kmlgtk/logkml.ui")
+	if err != nil {
+		log.Fatal("glade ui:", err)
+	}
+
 	obj, err := b.GetObject("appwin")
 	if err != nil {
 		log.Fatal("lookup:", err)
@@ -48,6 +66,8 @@ func main() {
 	win.Connect("destroy", func() {
 		gtk.MainQuit()
 	})
+
+	win.SetIcon(pbuf)
 
 	obj, err = b.GetObject("runbtn")
 	runbtn := obj.(*gtk.Button)

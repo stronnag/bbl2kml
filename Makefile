@@ -28,6 +28,10 @@ else
  EXT=
 endif
 
+export LDFLAGS
+export EXT
+
+
 all: $(_CAPP) $(_MAPP) $(_QAPP)
 
 gui: $(_FAPP) $(_GAPP)
@@ -51,8 +55,11 @@ $(_CAPP): $(CSRCS)
 $(_MAPP): $(MSRCS)
 	go build -ldflags "$(LDFLAGS)" -o $(MAPP)$(EXT) cmd/mission2kml/main.go
 
-$(_GAPP): $(GSRCS) cmd/fl2kmlgtk/res.go
-	go build -ldflags "$(LDFLAGS) $(LDEXTRA)" -o $(GAPP)$(EXT) cmd/fl2kmlgtk/main.go cmd/fl2kmlgtk/res.go
+$(_GAPP): $(GSRCS)
+	make -C cmd/fl2kmlgtk
+	mv cmd/fl2kmlgtk/fl2kmlgtk $(GAPP)
+
+#	go build -ldflags "$(LDFLAGS) $(LDEXTRA)" -o $(GAPP)$(EXT) cmd/fl2kmlgtk/main.go cmd/fl2kmlgtk/res.go
 
 $(_FAPP): $(FSRCS)
 	go build -ldflags "$(LDFLAGS) $(LDEXTRA)" -o $(FAPP)$(EXT) cmd/fl2kmlfyne/main.go
@@ -65,6 +72,7 @@ cmd/fl2kmlgtk/res.go: cmd/fl2kmlgtk/logkml.ui
 
 clean:
 	@rm -f $(CAPP)$(EXT) $(MAPP)$(EXT) $(GAPP)$(EXT) $(FAPP)$(EXT) $(QAPP)$(EXT)
+	make -C  cmd/fl2kmlgtk clean
 	@go clean
 
 install: $(CAPP)$(EXE) $(MAPP)$(EXE) $(GAPP)$(EXE) $(QAPP)$(EXE)
