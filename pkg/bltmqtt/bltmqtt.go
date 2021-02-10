@@ -260,7 +260,11 @@ func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int)
 	sb.WriteByte(',')
 
 	sb.WriteString("3df:")
-	sb.WriteString(strconv.Itoa(int(b.Fix)))
+	if b.Fix != 0 {
+		sb.WriteString("1")
+	} else {
+		sb.WriteString("0")
+	}
 	sb.WriteByte(',')
 
 	sb.WriteString("hds:")
