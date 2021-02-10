@@ -211,7 +211,7 @@ func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int)
 
 	sb.WriteString("cad:")
 	if options.Bulletvers == 2 {
-		sb.WriteString(strconv.Itoa(int(b.Energy * 100)))
+		sb.WriteString(strconv.Itoa(int(b.Energy)))
 	} else {
 		sb.WriteString(fmt.Sprintf("%.0f", b.Energy))
 	}
@@ -369,8 +369,9 @@ func MQTTGen(s types.LogSegment) {
 					act = 1
 				}
 				sb.Reset()
-				sb.WriteString(fmt.Sprintf("wpno:%d,la:%.8f,lo:%.8f,al:%d,ac:%d,", mi.No,
-					ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, mi.Alt, act))
+				sb.WriteString(fmt.Sprintf("wpno:%d,la:%d,lo:%d,al:%d,ac:%d,", mi.No,
+					int(10000000*ms.MissionItems[k].Lat), int(10000000*ms.MissionItems[k].Lon),
+					mi.Alt*100, act))
 				if mi.P1 != 0 {
 					sb.WriteString(fmt.Sprintf("p1:%d,", mi.P1))
 				}
