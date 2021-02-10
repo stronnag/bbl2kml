@@ -25,6 +25,7 @@ var (
 	Gradset         string
 	Outdir          string
 	Mqttopts        string
+	Bulletvers      int = 2
 	Rebase          string
 )
 
@@ -90,6 +91,7 @@ func ParseCLI(gv func() string) []string {
 	flag.StringVar(&Rebase, "rebase", "", "rebase all positions on lat,lon[,alt]")
 	if app == "fl2mqtt" {
 		flag.StringVar(&Mqttopts, "broker", "", "Mqtt URI (mqtt://[user[:pass]@]broker[:port]/topic[?cafile=file]")
+		flag.IntVar(&Bulletvers, "blt-vers", 2, "[MQTT] BulletGCSS version")
 	} else {
 		flag.BoolVar(&Kml, "kml", Kml, "Generate KML (vice default KMZ)")
 		flag.BoolVar(&Rssi, "rssi", Rssi, "Set RSSI view as default")

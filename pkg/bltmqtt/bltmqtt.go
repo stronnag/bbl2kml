@@ -181,7 +181,7 @@ func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int)
 	sb.WriteByte(',')
 
 	sb.WriteString("alt:")
-	sb.WriteString(strconv.Itoa(int(b.Alt) * 100))
+	sb.WriteString(strconv.Itoa(int(b.Alt * 100)))
 	sb.WriteByte(',')
 
 	sb.WriteString("asl:")
@@ -189,24 +189,40 @@ func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int)
 	sb.WriteByte(',')
 
 	sb.WriteString("gsp:")
-	sb.WriteString(strconv.Itoa(int(b.Spd) * 100))
+	sb.WriteString(strconv.Itoa(int(b.Spd * 100)))
 	sb.WriteByte(',')
 
 	sb.WriteString("bpv:")
-	sb.WriteString(fmt.Sprintf("%.2f", float64(b.Volts)))
+	if options.Bulletvers == 2 {
+		sb.WriteString(strconv.Itoa(int(b.Volts * 100)))
+	} else {
+		sb.WriteString(fmt.Sprintf("%.2f", float64(b.Volts)))
+	}
 	sb.WriteByte(',')
 
 	avc := b.Volts / float64(ncells)
 	sb.WriteString("acv:")
-	sb.WriteString(fmt.Sprintf("%.2f", avc))
+	if options.Bulletvers == 2 {
+		sb.WriteString(strconv.Itoa(int(avc * 100)))
+	} else {
+		sb.WriteString(fmt.Sprintf("%.2f", avc))
+	}
 	sb.WriteByte(',')
 
 	sb.WriteString("cad:")
-	sb.WriteString(fmt.Sprintf("%.0f", b.Energy))
+	if options.Bulletvers == 2 {
+		sb.WriteString(strconv.Itoa(int(b.Energy * 100)))
+	} else {
+		sb.WriteString(fmt.Sprintf("%.0f", b.Energy))
+	}
 	sb.WriteByte(',')
 
 	sb.WriteString("cud:")
-	sb.WriteString(fmt.Sprintf("%.2f", b.Amps))
+	if options.Bulletvers == 2 {
+		sb.WriteString(strconv.Itoa(int(b.Amps * 100)))
+	} else {
+		sb.WriteString(fmt.Sprintf("%.2f", b.Amps))
+	}
 	sb.WriteByte(',')
 
 	//	rssi := 100 * int(b.Rssi) / 255
@@ -215,11 +231,19 @@ func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int)
 	sb.WriteByte(',')
 
 	sb.WriteString("gla:")
-	sb.WriteString(fmt.Sprintf("%.8f", b.Lat))
+	if options.Bulletvers == 2 {
+		sb.WriteString(strconv.Itoa(int(b.Lat * 10000000)))
+	} else {
+		sb.WriteString(fmt.Sprintf("%.8f", b.Lat))
+	}
 	sb.WriteByte(',')
 
 	sb.WriteString("glo:")
-	sb.WriteString(fmt.Sprintf("%.8f", b.Lon))
+	if options.Bulletvers == 2 {
+		sb.WriteString(strconv.Itoa(int(b.Lon * 10000000)))
+	} else {
+		sb.WriteString(fmt.Sprintf("%.8f", b.Lon))
+	}
 	sb.WriteByte(',')
 
 	sb.WriteString("gsc:")
@@ -227,8 +251,12 @@ func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int)
 	sb.WriteByte(',')
 
 	sb.WriteString("ghp:")
-	hdop := float64(b.Hdop) / 100.0
-	sb.WriteString(fmt.Sprintf("%.1f", hdop))
+	if options.Bulletvers == 2 {
+		sb.WriteString(strconv.Itoa(int(b.Hdop)))
+	} else {
+		hdop := float64(b.Hdop) / 100.0
+		sb.WriteString(fmt.Sprintf("%.1f", hdop))
+	}
 	sb.WriteByte(',')
 
 	sb.WriteString("3df:")
@@ -266,15 +294,25 @@ func make_bullet_home(hlat float64, hlon float64, halt float64) string {
 	var sb strings.Builder
 	sb.WriteString("cs:JRandomUAV,")
 	sb.WriteString("hla:")
-	sb.WriteString(fmt.Sprintf("%.8f", hlat))
+	if options.Bulletvers == 2 {
+		sb.WriteString(strconv.Itoa(int(hlat * 10000000)))
+	} else {
+		sb.WriteString(fmt.Sprintf("%.8f", hlat))
+	}
 	sb.WriteByte(',')
-
 	sb.WriteString("hlo:")
-	sb.WriteString(fmt.Sprintf("%.8f", hlon))
+	if options.Bulletvers == 2 {
+		sb.WriteString(strconv.Itoa(int(hlon * 10000000)))
+	} else {
+		sb.WriteString(fmt.Sprintf("%.8f", hlon))
+	}
 	sb.WriteByte(',')
 	sb.WriteString("hal:")
-	sb.WriteString(fmt.Sprintf("%.0f", halt))
-
+	if options.Bulletvers == 2 {
+		sb.WriteString(strconv.Itoa(int(halt * 100)))
+	} else {
+		sb.WriteString(fmt.Sprintf("%.0f", halt))
+	}
 	return sb.String()
 }
 
@@ -365,32 +403,59 @@ func MQTTGen(s types.LogSegment) {
 		}
 
 		if b.Fmode != laststat {
-			switch b.Fmode {
-			case types.FM_MANUAL:
-				fmode = "MANU"
-			case types.FM_ANGLE:
-				fmode = "ANGL"
-			case types.FM_HORIZON:
-				fmode = "HOR"
-			case types.FM_ACRO:
-				fmode = "ACRO"
-			case types.FM_AH:
-				fmode = "A H"
-			case types.FM_PH:
-				fmode = "P H"
-			case types.FM_WP:
-				fmode = "WP"
-			case types.FM_RTH:
-				fmode = "RTH"
-			case types.FM_CRUISE3D:
-				fmode = "3CRS"
-			case types.FM_LAUNCH:
-				fmode = "LNCH"
-			default:
-				fmode = "ACRO"
-			}
-			if stat != 0 {
-				fmode = "!FS!"
+			if options.Bulletvers == 2 {
+				switch b.Fmode {
+				case types.FM_MANUAL:
+					fmode = "1"
+				case types.FM_ANGLE:
+					fmode = "9"
+				case types.FM_HORIZON:
+					fmode = "10"
+				case types.FM_ACRO:
+					fmode = "11"
+				case types.FM_AH:
+					fmode = "8"
+				case types.FM_PH:
+					fmode = "4"
+				case types.FM_WP:
+					fmode = "7"
+				case types.FM_RTH:
+					fmode = "2"
+				case types.FM_CRUISE3D:
+					fmode = "5"
+				case types.FM_LAUNCH:
+					fmode = "9"
+				default:
+					fmode = "11"
+				}
+			} else {
+				switch b.Fmode {
+				case types.FM_MANUAL:
+					fmode = "MANU"
+				case types.FM_ANGLE:
+					fmode = "ANGL"
+				case types.FM_HORIZON:
+					fmode = "HOR"
+				case types.FM_ACRO:
+					fmode = "ACRO"
+				case types.FM_AH:
+					fmode = "A H"
+				case types.FM_PH:
+					fmode = "P H"
+				case types.FM_WP:
+					fmode = "WP"
+				case types.FM_RTH:
+					fmode = "RTH"
+				case types.FM_CRUISE3D:
+					fmode = "3CRS"
+				case types.FM_LAUNCH:
+					fmode = "LNCH"
+				default:
+					fmode = "ACRO"
+				}
+				if stat != 0 {
+					fmode = "!FS!"
+				}
 			}
 			laststat = b.Fmode
 			msg := make_bullet_mode(fmode, ncells, b.HWfail)
