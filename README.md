@@ -136,6 +136,8 @@ The MQTT option (BulletGCSS) requires a MQTT broker URI, which may include a use
 ```
 $ fl2mqtt --help
 Usage of fl2mqtt [options] file...
+  -blt-vers int
+    	[MQTT] BulletGCSS version (default 2)
   -broker string
     	Mqtt URI (mqtt://[user[:pass]@]broker[:port]/topic[?cafile=file]
   -dump
