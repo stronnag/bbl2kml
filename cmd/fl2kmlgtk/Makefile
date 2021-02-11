@@ -13,7 +13,7 @@ resources.c: resources.xml  logkml.ui logo.svg
 #	go build -ldflags="-s -w"
 
 $(_GAPP): $(SRC)
-	go build -ldflags "$(LDFLAGS) $(LDEXTRA)" -o $(GAPP)$(EXT)
+	go build $(LDF) "$(LDFLAGS) $(LDEXTRA)" -o $(GAPP)$(EXT)
 
 clean:
 	rm -f $(GAPP)
