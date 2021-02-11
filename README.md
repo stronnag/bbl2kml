@@ -175,11 +175,12 @@ Example:
 $ fl2mqtt -broker mqtt://broker.emqx.io/org/mwptools/mqtt/playotx openTXlog.csv
 $ fl2mqtt -broker mqtt:///org/mwptools/mqtt/playbbl blackbox.TXT
 
-## broker is test.mosquitto.org, over TLS,
+## broker is test.mosquitto.org, over TLS, needs cafile with self-signed certificate
 ## note the TLS port is also given (8883 in this case)
 $ fl2mqtt -broker mqtt://test.mosquitto.org:8883/fl2mqtt/fl2mtqq/test?cafile=mosquitto.org.crt -mission simple_jump.mission BBL_102629.TXT
-$ fl2mqtt -broker mqtts://test.mosquitto.org:8883/fl2mqtt/fl2mtqq/test -mission simple_jump.mission BBL_102629.TXT
-## Web sockets (plain text / TLS)
+## No cafile needed, validated certificate
+$ fl2mqtt -broker mqtts://broker.emqx.io:8883/fl2mqtt/fl2mtqq/test -mission simple_jump.mission BBL_102629.TXT
+## Web sockets (plain text / TLS); mosquitto:8081 has valid Lets Encrypt cert.
 $ fl2mqtt -broker ws://test.mosquitto.org:8080/fl2mqtt/fl2mtqq/test -mission simple_jump.mission BBL_102629.TXT
 $ fl2mqtt -broker wss://test.mosquitto.org:8081/fl2mqtt/fl2mtqq/test -mission simple_jump.mission BBL_102629.TXT
 ```
