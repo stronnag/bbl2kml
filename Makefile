@@ -28,9 +28,20 @@ else
  EXT=
 endif
 
-ifeq (, $(shell which gccgo 2>/dev/null))
+USE_GCCGO ?= 0
+ifneq (, $(shell which gccgo 2>/dev/null))
+  USE_GCCGO=1
+endif
+
+ifneq (, $(USE_GC))
+  USE_GCCGO=0
+endif
+
+ifeq (0,$(USE_GCCGO))
  LDF=-ldflags
+ GOFLAGS += -compiler=gc
 else
+ GOFLAGS += -compiler=gccgo
  LDEXTRA=-pthread
  LDF=-gccgoflags
 endif
@@ -39,6 +50,7 @@ export LDFLAGS
 export LDEXTRA
 export EXT
 export LDF
+export GOFLAGS
 
 all: $(_CAPP) $(_MAPP) $(_QAPP)
 
@@ -61,6 +73,7 @@ $(_CAPP): $(CSRCS)
 	go build $(LDF) "$(LDFLAGS)" -o $(CAPP)$(EXT) cmd/flightlog2kml/main.go
 
 $(_MAPP): $(MSRCS)
+	  echo $(GOFLAGS)
 	go build $(LDF) "$(LDFLAGS)" -o $(MAPP)$(EXT) cmd/mission2kml/main.go
 
 $(_GAPP): $(GSRCS)
