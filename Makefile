@@ -91,9 +91,14 @@ clean:
 	make -C  cmd/fl2kmlgtk clean
 	@go clean
 
-install: $(CAPP)$(EXE) $(MAPP)$(EXE) $(GAPP)$(EXE) $(QAPP)$(EXE)
+install: $(CAPP)$(EXE) $(MAPP)$(EXE) $(QAPP)$(EXE)
+	@ install -d $(prefix)/bin
+	install -s $(CAPP)$(EXE) $(MAPP)$(EXE) $(QAPP)$(EXE) $(prefix)/bin
+
+install-all: $(CAPP)$(EXE) $(MAPP)$(EXE) $(GAPP)$(EXE) $(QAPP)$(EXE)
 	@ install -d $(prefix)/bin
 	install -s $(CAPP)$(EXE) $(MAPP)$(EXE) $(GAPP)$(EXE) $(QAPP)$(EXE) $(prefix)/bin
+
 
 install-local: $(CAPP) $(MAPP) $(GAPP) $(QAPP)
 	install -d $(HOME)/bin

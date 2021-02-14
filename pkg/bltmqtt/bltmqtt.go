@@ -271,11 +271,7 @@ func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int)
 	sb.WriteString(strconv.Itoa(int(b.Vrange)))
 	sb.WriteByte(',')
 
-	bearing := 180 - b.Bearing
-	if bearing < 0 {
-		bearing += 360
-	}
-
+	bearing := (b.Bearing + 180) % 360
 	sb.WriteString("hdr:")
 	sb.WriteString(strconv.Itoa(int(bearing)))
 	sb.WriteByte(',')
