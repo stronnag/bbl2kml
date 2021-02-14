@@ -73,7 +73,6 @@ $(_CAPP): $(CSRCS)
 	go build $(LDF) "$(LDFLAGS)" -o $(CAPP)$(EXT) cmd/flightlog2kml/main.go
 
 $(_MAPP): $(MSRCS)
-	  echo $(GOFLAGS)
 	go build $(LDF) "$(LDFLAGS)" -o $(MAPP)$(EXT) cmd/mission2kml/main.go
 
 $(_GAPP): $(GSRCS)
