@@ -536,7 +536,7 @@ func (lg *BBLOG) Reader(meta types.FlightMeta) (types.LogSegment, bool) {
 				var d float64
 				var c float64
 				// Do the plot every 100ms
-				if (us - dt) > 1000*uint64(options.Intvl) {
+				if (us - dt) >= 1000*uint64(options.Intvl) {
 					if b.Utc.IsZero() {
 						b.Utc = basetime.Add(time.Duration(us) * time.Microsecond)
 					}

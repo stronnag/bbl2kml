@@ -528,105 +528,107 @@ func (lg *OTXLOG) Reader(m types.FlightMeta) (types.LogSegment, bool) {
 				continue
 			}
 
-			if st.IsZero() {
-				st = b.Utc
-				lt = st
-			}
-
-			if homes.Flags == 0 {
-				if b.Fix > 1 && b.Numsat > 5 {
-					homes.HomeLat = b.Lat
-					homes.HomeLon = b.Lon
-					homes.Flags = types.HOME_ARM
-					if options.HomeAlt != -999999 {
-						homes.HomeAlt = float64(options.HomeAlt)
-						homes.Flags |= types.HOME_ALT
-					} else if b.GAlt > -999999 {
-						homes.HomeAlt = b.GAlt
-						homes.Flags |= types.HOME_ALT
-					} else {
-						bingelev, err := geo.GetElevation(homes.HomeLat, homes.HomeLon)
-						if err == nil {
-							homes.HomeAlt = bingelev
-							homes.Flags |= types.HOME_ALT
-						}
-					}
-
-					if frobing {
-						geo.Frobnicate_set(homes.HomeLat, homes.HomeLon, b.GAlt)
-						homes.HomeLat, homes.HomeLon, homes.HomeAlt = geo.Frobnicate_move(homes.HomeLat, homes.HomeLon, homes.HomeAlt)
-						ttmp := time.Now().Add(time.Hour * 24 * 42)
-						froboff = ttmp.Sub(b.Utc)
-						b.Utc = ttmp
-					}
-
-					llat = b.Lat
-					llon = b.Lon
-				}
-			} else {
-				if frobing {
-					b.Utc = b.Utc.Add(froboff)
-					b.Lat, b.Lon, _ = geo.Frobnicate_move(b.Lat, b.Lon, 0)
-				}
-			}
-
 			tdiff := b.Utc.Sub(lt)
-			if (b.Status & types.Is_CRSF) == types.Is_CRSF {
-				b.Spd = calc_speed(b, tdiff, llat, llon)
-			}
-
-			var c, d float64
-			if homes.Flags != 0 {
-				c, d = geo.Csedist(homes.HomeLat, homes.HomeLon, b.Lat, b.Lon)
-				b.Bearing = int32(c)
-				b.Vrange = d * 1852.0
-
-				if d > stats.Max_range {
-					stats.Max_range = d
-					stats.Max_range_time = uint64(b.Utc.Sub(st).Microseconds())
+			if tdiff.Milliseconds() >= int64(options.Intvl) {
+				if st.IsZero() {
+					st = b.Utc
+					lt = st
 				}
 
-				if b.Alt > stats.Max_alt {
-					stats.Max_alt = b.Alt
-					stats.Max_alt_time = uint64(b.Utc.Sub(st).Microseconds())
-				}
+				if homes.Flags == 0 {
+					if b.Fix > 1 && b.Numsat > 5 {
+						homes.HomeLat = b.Lat
+						homes.HomeLon = b.Lon
+						homes.Flags = types.HOME_ARM
+						if options.HomeAlt != -999999 {
+							homes.HomeAlt = float64(options.HomeAlt)
+							homes.Flags |= types.HOME_ALT
+						} else if b.GAlt > -999999 {
+							homes.HomeAlt = b.GAlt
+							homes.Flags |= types.HOME_ALT
+						} else {
+							bingelev, err := geo.GetElevation(homes.HomeLat, homes.HomeLon)
+							if err == nil {
+								homes.HomeAlt = bingelev
+								homes.Flags |= types.HOME_ALT
+							}
+						}
 
-				if b.Spd < 400 && b.Spd > stats.Max_speed {
-					stats.Max_speed = b.Spd
-					stats.Max_speed_time = uint64(b.Utc.Sub(st).Microseconds())
-				}
+						if frobing {
+							geo.Frobnicate_set(homes.HomeLat, homes.HomeLon, b.GAlt)
+							homes.HomeLat, homes.HomeLon, homes.HomeAlt = geo.Frobnicate_move(homes.HomeLat, homes.HomeLon, homes.HomeAlt)
+							ttmp := time.Now().Add(time.Hour * 24 * 42)
+							froboff = ttmp.Sub(b.Utc)
+							b.Utc = ttmp
+						}
 
-				if b.Amps > stats.Max_current {
-					stats.Max_current = b.Amps
-					stats.Max_current_time = uint64(b.Utc.Sub(st).Microseconds())
-				}
-
-				if llat != b.Lat || llon != b.Lon {
-					_, d = geo.Csedist(llat, llon, b.Lat, b.Lon)
-					stats.Distance += d
-				}
-			}
-
-			b.Tdist = stats.Distance * 1852.0
-			if (rec.Cap & types.CAP_AMPS) == types.CAP_AMPS {
-				if d > 0 {
-					deltat := tdiff.Seconds()
-					aspd := d * 1852 / deltat              // m/s
-					b.Effic = b.Amps * 1000 / (3.6 * aspd) // efficiency
-					leffic = b.Effic
+						llat = b.Lat
+						llon = b.Lon
+					}
 				} else {
-					b.Effic = leffic
+					if frobing {
+						b.Utc = b.Utc.Add(froboff)
+						b.Lat, b.Lon, _ = geo.Frobnicate_move(b.Lat, b.Lon, 0)
+					}
 				}
-			}
 
-			if b.Rssi > 0 {
-				rec.Cap |= types.CAP_RSSI_VALID
-			}
+				if (b.Status & types.Is_CRSF) == types.Is_CRSF {
+					b.Spd = calc_speed(b, tdiff, llat, llon)
+				}
 
-			rec.Items = append(rec.Items, b)
-			llat = b.Lat
-			llon = b.Lon
-			lt = b.Utc
+				var c, d float64
+				if homes.Flags != 0 {
+					c, d = geo.Csedist(homes.HomeLat, homes.HomeLon, b.Lat, b.Lon)
+					b.Bearing = int32(c)
+					b.Vrange = d * 1852.0
+
+					if d > stats.Max_range {
+						stats.Max_range = d
+						stats.Max_range_time = uint64(b.Utc.Sub(st).Microseconds())
+					}
+
+					if b.Alt > stats.Max_alt {
+						stats.Max_alt = b.Alt
+						stats.Max_alt_time = uint64(b.Utc.Sub(st).Microseconds())
+					}
+
+					if b.Spd < 400 && b.Spd > stats.Max_speed {
+						stats.Max_speed = b.Spd
+						stats.Max_speed_time = uint64(b.Utc.Sub(st).Microseconds())
+					}
+
+					if b.Amps > stats.Max_current {
+						stats.Max_current = b.Amps
+						stats.Max_current_time = uint64(b.Utc.Sub(st).Microseconds())
+					}
+
+					if llat != b.Lat || llon != b.Lon {
+						_, d = geo.Csedist(llat, llon, b.Lat, b.Lon)
+						stats.Distance += d
+					}
+				}
+
+				b.Tdist = stats.Distance * 1852.0
+				if (rec.Cap & types.CAP_AMPS) == types.CAP_AMPS {
+					if d > 0 {
+						deltat := tdiff.Seconds()
+						aspd := d * 1852 / deltat              // m/s
+						b.Effic = b.Amps * 1000 / (3.6 * aspd) // efficiency
+						leffic = b.Effic
+					} else {
+						b.Effic = leffic
+					}
+				}
+
+				if b.Rssi > 0 {
+					rec.Cap |= types.CAP_RSSI_VALID
+				}
+
+				rec.Items = append(rec.Items, b)
+				llat = b.Lat
+				llon = b.Lon
+				lt = b.Utc
+			}
 		}
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "reader %s\n", err)
