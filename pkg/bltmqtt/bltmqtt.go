@@ -13,7 +13,6 @@ import (
 	"math/rand"
 	"os"
 	"net/url"
-	"io"
 	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	geo "github.com/stronnag/bbl2kml/pkg/geo"
 	options "github.com/stronnag/bbl2kml/pkg/options"
@@ -352,7 +351,7 @@ func get_cells(vbat float64) int {
 	return ncell
 }
 
-func output_message(c *MQTTClient, wfh io.WriteCloser, msg string, et time.Time) {
+func output_message(c *MQTTClient, wfh *os.File, msg string, et time.Time) {
 	if c != nil {
 		c.publish(msg)
 	}
@@ -364,7 +363,7 @@ func output_message(c *MQTTClient, wfh io.WriteCloser, msg string, et time.Time)
 
 func MQTTGen(s types.LogSegment) {
 	ncells := 0
-	var wfh io.WriteCloser
+	var wfh *os.File
 
 	c := NewMQTTClient()
 	var err error
@@ -516,5 +515,12 @@ func MQTTGen(s types.LogSegment) {
 			time.Sleep(tdiff)
 		}
 		lastm = b.Utc
+	}
+	// bizarrely, BulletGCSS expects the log to be "\n" line endings, apart from the last one
+	if wfh != nil {
+		fi, err := wfh.Stat()
+		if err == nil {
+			wfh.Truncate(fi.Size() - 1)
+		}
 	}
 }
