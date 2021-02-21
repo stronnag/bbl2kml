@@ -13,6 +13,7 @@ import (
 	"math/rand"
 	"os"
 	"net/url"
+	"io"
 	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	geo "github.com/stronnag/bbl2kml/pkg/geo"
 	options "github.com/stronnag/bbl2kml/pkg/options"
@@ -63,6 +64,10 @@ func NewMQTTClient() *MQTTClient {
 	var passwd string
 
 	rand.Seed(time.Now().UnixNano())
+
+	if options.Mqttopts == "" {
+		return nil
+	}
 
 	u, err := url.Parse(options.Mqttopts)
 	if err != nil {
@@ -137,7 +142,7 @@ func NewMQTTClient() *MQTTClient {
 
 	client := mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		panic(token.Error())
+		log.Fatal(token.Error())
 	}
 	return &MQTTClient{client: client, topic: topic}
 }
@@ -347,9 +352,33 @@ func get_cells(vbat float64) int {
 	return ncell
 }
 
+func output_message(c *MQTTClient, wfh io.WriteCloser, msg string, et time.Time) {
+	if c != nil {
+		c.publish(msg)
+	}
+	if wfh != nil {
+		lt := et.UnixNano() / 1000000
+		fmt.Fprintf(wfh, "%d|%s\n", lt, msg)
+	}
+}
+
 func MQTTGen(s types.LogSegment) {
 	ncells := 0
+	var wfh io.WriteCloser
+
 	c := NewMQTTClient()
+	var err error
+	if options.Outdir != "" {
+		wfh, err = os.Create(options.Outdir)
+		if err == nil {
+			defer wfh.Close()
+		}
+	}
+
+	if wfh == nil && c == nil {
+		log.Fatal("Need at least a broker or log file")
+	}
+
 	var lastm time.Time
 	laststat := uint8(255)
 	fmode := ""
@@ -392,11 +421,15 @@ func MQTTGen(s types.LogSegment) {
 		}
 	}
 
-	c.publish("wpc:0,wpv:0,flt:0,ont:0")
-	st := time.Now()
+	var st time.Time
 	for i, b := range s.L.Items {
-		now := time.Now()
-		et := int(now.Sub(st).Seconds())
+		if i == 0 {
+			st = b.Utc
+			output_message(c, wfh, "Connected to flmqtt - pseudo/bullet/log/generator", b.Utc)
+			output_message(c, wfh, "wpc:0,wpv:0,flt:0,ont:60", b.Utc)
+		}
+
+		et := int(b.Utc.Sub(st).Seconds())
 		stat := b.Status >> 2
 
 		if ncells == 0 {
@@ -460,25 +493,25 @@ func MQTTGen(s types.LogSegment) {
 			}
 			laststat = b.Fmode
 			msg := make_bullet_mode(fmode, ncells, b.HWfail)
-			c.publish(msg)
+			output_message(c, wfh, msg, b.Utc)
 		}
 
 		if i%10 == 0 {
 			msg := make_bullet_mode(fmode, ncells, b.HWfail)
-			c.publish(msg)
+			output_message(c, wfh, msg, b.Utc)
 			msg = make_bullet_home(s.H.HomeLat, s.H.HomeLon, s.H.HomeAlt)
-			c.publish(msg)
+			output_message(c, wfh, msg, b.Utc)
 			if len(mstrs) > 0 && i%20 == 0 {
 				for _, str := range mstrs {
-					c.publish(str)
+					output_message(c, wfh, str, b.Utc)
 				}
-				c.publish(wps)
+				output_message(c, wfh, wps, b.Utc)
 			}
 		}
 
 		msg := make_bullet_msg(b, s.H.HomeAlt, et, ncells)
-		c.publish(msg)
-		if !lastm.IsZero() {
+		output_message(c, wfh, msg, b.Utc)
+		if c != nil && !lastm.IsZero() {
 			tdiff := b.Utc.Sub(lastm)
 			time.Sleep(tdiff)
 		}

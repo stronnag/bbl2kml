@@ -92,6 +92,7 @@ func ParseCLI(gv func() string) []string {
 	if app == "fl2mqtt" {
 		flag.StringVar(&Mqttopts, "broker", "", "Mqtt URI (mqtt://[user[:pass]@]broker[:port]/topic[?cafile=file]")
 		flag.IntVar(&Bulletvers, "blt-vers", 2, "[MQTT] BulletGCSS version")
+		flag.StringVar(&Outdir, "logfile", "", "Log file for browser replay")
 	} else {
 		flag.BoolVar(&Kml, "kml", Kml, "Generate KML (vice default KMZ)")
 		flag.BoolVar(&Rssi, "rssi", Rssi, "Set RSSI view as default")
