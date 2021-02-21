@@ -131,7 +131,7 @@ There are a few issues with OpenTX logs, the first of which needs OpenTX 2.3.11 
 
 ## `fl2mqtt`
 
-The MQTT option (BulletGCSS) requires a MQTT broker URI, which may include a username/password and cafile if you require authentication and/or encryption.
+The MQTT option (BulletGCSS) uses a MQTT broker URI, which may include a username/password and cafile if you require authentication and/or encryption. It can also generate compatible log files that may be replayed by BulletGCSS' internal log palyer (without requiring a MQTT broker).
 
 ```
 $ fl2mqtt --help
@@ -148,6 +148,8 @@ Usage of fl2mqtt [options] file...
     	Log index
   -interval int
     	Sampling Interval (ms) (default 1000)
+  -logfile string
+    	Log file for browser replay
   -mission string
     	Optional mission file name
   -rebase string
