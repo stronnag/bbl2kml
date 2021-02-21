@@ -131,6 +131,9 @@ func metas(fn string) ([]types.FlightMeta, error) {
 
 				if loffset != 0 {
 					bes[nbes].Size = offset - loffset
+					if bes[nbes].Size > 4096 {
+						bes[nbes].Flags |= types.Is_Valid
+					}
 				}
 				loffset = offset
 				be := types.FlightMeta{Disarm: "NONE", Size: 0,
