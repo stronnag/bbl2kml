@@ -540,9 +540,9 @@ func MQTTGen(s types.LogSegment) {
 			cdist := 1.50 * b.Spd * float64(options.Intvl/1000.0) / 1852.0
 			for k, mi := range ms.MissionItems {
 				if mi.Is_GeoPoint() {
-					c, d := geo.Csedist(b.Lat, b.Lon, mi.Lat, mi.Lon)
+					cse, d := geo.Csedist(b.Lat, b.Lon, mi.Lat, mi.Lon)
 					if d < cdist {
-						relb := math.Abs(c - float64(b.Cse))
+						relb := math.Abs(cse - float64(b.Cse))
 						/* fmt.Fprintf(os.Stderr, "Around WP %d brg=%.0f cse=%d d=%.1f (%.f) [%.1f]\n",
 						mi.No, c, b.Cse, d*1852, relb, cdist*1852)*/
 						if relb > 90 {
