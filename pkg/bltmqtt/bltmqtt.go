@@ -13,7 +13,6 @@ import (
 	"math/rand"
 	"os"
 	"net/url"
-	"math"
 	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	geo "github.com/stronnag/bbl2kml/pkg/geo"
 	options "github.com/stronnag/bbl2kml/pkg/options"
@@ -537,28 +536,36 @@ func MQTTGen(s types.LogSegment) {
 		}
 
 		if b.Fmode == types.FM_WP && ms != nil {
-			cdist := 1.50 * b.Spd * float64(options.Intvl/1000.0) / 1852.0
-			for k, mi := range ms.MissionItems {
+			cdist := 1.25 * b.Spd * float64(options.Intvl/1000.0) / 1852.0
+			/* check for passing a WP */
+			for k := tgt - 1; k < len(ms.MissionItems); k++ {
+				mi := ms.MissionItems[k]
 				if mi.Is_GeoPoint() {
-					cse, d := geo.Csedist(b.Lat, b.Lon, mi.Lat, mi.Lon)
+					brg, d := geo.Csedist(b.Lat, b.Lon, mi.Lat, mi.Lon)
 					if d < cdist {
-						relb := math.Abs(cse - float64(b.Cse))
-						/* fmt.Fprintf(os.Stderr, "Around WP %d brg=%.0f cse=%d d=%.1f (%.f) [%.1f]\n",
-						mi.No, c, b.Cse, d*1852, relb, cdist*1852)*/
-						if relb > 90 {
+						// relative heading, independent of which is greaer & 359<->0
+						// sign depends on whether target is to port or starboard
+						bdiff := (int(brg)-int(b.Cse)+540)%360 - 180
+						if bdiff < 0 {
+							bdiff = -bdiff
+						}
+						//						fmt.Fprintf(os.Stderr, "Around WP %d brg=%.0f cse=%d d=%.1f (%d) [%.1f] @%d\n", mi.No, brg, b.Cse, d*1852, bdiff, cdist*1852, int(et))
+						if bdiff > 90 {
 							if mi.No >= tgt { // may not have start of mission ....
 								if k < len(ms.MissionItems)-1 {
-									tgt += 1
-									if ms.MissionItems[k+1].Action == "JUMP" {
+									switch ms.MissionItems[k+1].Action {
+									case "JUMP":
 										tgt = int(ms.MissionItems[k+1].P1)
-									}
-									if ms.MissionItems[k+1].Action == "RTH" {
+									case "RTH":
 										nvs = 4
-									} else {
+										tgt += 1
+									case "SET_HEAD", "SET_POI":
+										tgt += 2
+									default:
+										tgt += 1
 										nvs = 5
 									}
-									/* fmt.Fprintf(os.Stderr, "New target WP %d %d (%s)\n", tgt, k,
-									ms.MissionItems[k+1].Action) */
+									//									fmt.Fprintf(os.Stderr, "New target WP %d %d (%s)\n", tgt, k, ms.MissionItems[k+1].Action)
 								} else {
 									tgt = 0
 									nvs = 0
