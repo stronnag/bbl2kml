@@ -458,6 +458,7 @@ func MQTTGen(s types.LogSegment) {
 			if laststat == types.FM_WP {
 				tgt = 0
 				nvs = 0
+				output_message(c, wfh, "cwn:0,nvs:0", b.Utc)
 			}
 			if options.Bulletvers == 2 {
 				switch b.Fmode {
@@ -561,6 +562,7 @@ func MQTTGen(s types.LogSegment) {
 								} else {
 									tgt = 0
 									nvs = 0
+									output_message(c, wfh, "cwn:0,nvs:0", b.Utc)
 								}
 								break
 							}
