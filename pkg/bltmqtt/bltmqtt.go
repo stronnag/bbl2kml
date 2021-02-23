@@ -366,6 +366,32 @@ func output_message(c *MQTTClient, wfh *os.File, msg string, et time.Time) {
 	}
 }
 
+func get_next_wp(ms *mission.Mission, k int) (int, int) {
+	nvs := 0
+	tgt := 0
+	if k < len(ms.MissionItems)-1 {
+		switch ms.MissionItems[k+1].Action {
+		case "JUMP":
+			if ms.MissionItems[k+1].P2 != 0 {
+				tgt = int(ms.MissionItems[k+1].P1)
+				ms.MissionItems[k+1].P2 -= 1
+			} else {
+				tgt = int(ms.MissionItems[k+2].No)
+			}
+			nvs = 5
+		case "RTH":
+			nvs = 1
+			tgt += 1
+		case "SET_HEAD", "SET_POI":
+			tgt += 2
+		default:
+			tgt = int(ms.MissionItems[k+1].No)
+			nvs = 5
+		}
+	}
+	return tgt, nvs
+}
+
 func MQTTGen(s types.LogSegment) {
 	ncells := 0
 	var wfh *os.File
@@ -536,43 +562,36 @@ func MQTTGen(s types.LogSegment) {
 		}
 
 		if b.Fmode == types.FM_WP && ms != nil {
-			cdist := 1.25 * b.Spd * float64(options.Intvl/1000.0) / 1852.0
-			/* check for passing a WP */
-			for k := tgt - 1; k < len(ms.MissionItems); k++ {
-				mi := ms.MissionItems[k]
-				if mi.Is_GeoPoint() {
-					brg, d := geo.Csedist(b.Lat, b.Lon, mi.Lat, mi.Lon)
-					if d < cdist {
-						// relative heading, independent of which is greaer & 359<->0
-						// sign depends on whether target is to port or starboard
-						bdiff := (int(brg)-int(b.Cse)+540)%360 - 180
-						if bdiff < 0 {
-							bdiff = -bdiff
-						}
-						//						fmt.Fprintf(os.Stderr, "Around WP %d brg=%.0f cse=%d d=%.1f (%d) [%.1f] @%d\n", mi.No, brg, b.Cse, d*1852, bdiff, cdist*1852, int(et))
-						if bdiff > 90 {
-							if mi.No >= tgt { // may not have start of mission ....
-								if k < len(ms.MissionItems)-1 {
-									switch ms.MissionItems[k+1].Action {
-									case "JUMP":
-										tgt = int(ms.MissionItems[k+1].P1)
-									case "RTH":
-										nvs = 4
-										tgt += 1
-									case "SET_HEAD", "SET_POI":
-										tgt += 2
-									default:
-										tgt += 1
-										nvs = 5
-									}
-									//									fmt.Fprintf(os.Stderr, "New target WP %d %d (%s)\n", tgt, k, ms.MissionItems[k+1].Action)
-								} else {
-									tgt = 0
-									nvs = 0
-									output_message(c, wfh, "cwn:0,nvs:0", b.Utc)
-								}
-								break
-							}
+			cdist := 1.25 * b.Spd * float64(options.Intvl/1000.0)
+			if cdist < 30 {
+				cdist = 30
+			}
+			cdist /= 1852.0
+
+			k := tgt - 1
+			mi := ms.MissionItems[k]
+			if mi.Is_GeoPoint() {
+				brg, d := geo.Csedist(b.Lat, b.Lon, mi.Lat, mi.Lon)
+				//					fmt.Fprintf(os.Stderr, "C: %d %d %.1f %d\n", tgt, k, d*1852, b.Cse)
+				if d < cdist {
+					// relative heading, independent of which is greaer & 359<->0
+					// sign depends on whether target is to port or starboard
+					bdiff := (int(brg)-int(b.Cse)+540)%360 - 180
+					if bdiff < 0 {
+						bdiff = -bdiff
+					}
+					//						fmt.Fprintf(os.Stderr, "Around WP %d brg=%.0f cse=%d d=%.1f (%d) [%.1f] @%d\n", mi.No, brg, b.Cse, d*1852, bdiff, cdist*1852, int(et))
+					if bdiff > 90 {
+						if ms.MissionItems[k].Action == "POSHOLD_TIME" {
+							nvs = 4
+							phtimer := time.NewTimer(time.Duration(ms.MissionItems[k].P1) * time.Second)
+							go func() {
+								<-phtimer.C
+								tgt, nvs = get_next_wp(ms, k)
+							}()
+						} else {
+							tgt, nvs = get_next_wp(ms, k)
+							fmt.Fprintf(os.Stderr, "New target WP %d %d (%s)\n", tgt, k, ms.MissionItems[k+1].Action)
 						}
 					}
 				}
