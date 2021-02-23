@@ -381,7 +381,7 @@ func get_next_wp(ms *mission.Mission, k int) (int, int) {
 			nvs = 5
 		case "RTH":
 			nvs = 1
-			tgt += 1
+			tgt = int(ms.MissionItems[k+1].No)
 		case "SET_HEAD", "SET_POI":
 			tgt += 2
 		default:
@@ -412,6 +412,7 @@ func MQTTGen(s types.LogSegment) {
 	}
 
 	var lastm time.Time
+	var phtime time.Time
 	laststat := uint8(255)
 	fmode := ""
 	mstrs := []string{}
@@ -562,42 +563,47 @@ func MQTTGen(s types.LogSegment) {
 		}
 
 		if b.Fmode == types.FM_WP && ms != nil {
-			cdist := 1.25 * b.Spd * float64(options.Intvl/1000.0)
-			if cdist < 30 {
-				cdist = 30
-			}
-			cdist /= 1852.0
-
 			k := tgt - 1
-			mi := ms.MissionItems[k]
-			if mi.Is_GeoPoint() {
-				brg, d := geo.Csedist(b.Lat, b.Lon, mi.Lat, mi.Lon)
-				//					fmt.Fprintf(os.Stderr, "C: %d %d %.1f %d\n", tgt, k, d*1852, b.Cse)
-				if d < cdist {
-					// relative heading, independent of which is greaer & 359<->0
-					// sign depends on whether target is to port or starboard
-					bdiff := (int(brg)-int(b.Cse)+540)%360 - 180
-					if bdiff < 0 {
-						bdiff = -bdiff
-					}
-					//						fmt.Fprintf(os.Stderr, "Around WP %d brg=%.0f cse=%d d=%.1f (%d) [%.1f] @%d\n", mi.No, brg, b.Cse, d*1852, bdiff, cdist*1852, int(et))
-					if bdiff > 90 {
-						if ms.MissionItems[k].Action == "POSHOLD_TIME" {
-							nvs = 4
-							phtimer := time.NewTimer(time.Duration(ms.MissionItems[k].P1) * time.Second)
-							go func() {
-								<-phtimer.C
+			if nvs == 4 {
+				//				fmt.Fprintf(os.Stderr, "Wait PH at %d %v\n", k, et)
+				if b.Utc.After(phtime) {
+					tgt, nvs = get_next_wp(ms, k)
+					//					phtime = time.Time(0)
+					fmt.Fprintf(os.Stderr, "After PHT (%d), %d %d\n", k, tgt, nvs)
+				}
+			} else {
+				cdist := 1.25 * b.Spd * float64(options.Intvl/1000.0)
+				if cdist < 30 {
+					cdist = 30
+				}
+				cdist /= 1852.0
+				mi := ms.MissionItems[k]
+				if mi.Is_GeoPoint() {
+					brg, d := geo.Csedist(b.Lat, b.Lon, mi.Lat, mi.Lon)
+					//					fmt.Fprintf(os.Stderr, "C: %d %d %.1f %d\n", tgt, k, d*1852, b.Cse)
+					if d < cdist {
+						// relative heading, independent of which is greaer & 359<->0
+						// sign depends on whether target is to port or starboard
+						bdiff := (int(brg)-int(b.Cse)+540)%360 - 180
+						if bdiff < 0 {
+							bdiff = -bdiff
+						}
+						//						fmt.Fprintf(os.Stderr, "Around WP %d brg=%.0f cse=%d d=%.1f (%d) [%.1f] @%d\n", mi.No, brg, b.Cse, d*1852, bdiff, cdist*1852, int(et))
+						if bdiff > 90 {
+							fmt.Fprintf(os.Stderr, "Reached %d %v %s\n", k, et, ms.MissionItems[k].Action)
+							if ms.MissionItems[k].Action == "POSHOLD_TIME" {
+								nvs = 4
+								fmt.Fprintf(os.Stderr, "SET PH at %d %v\n", k, et)
+								phtime = b.Utc.Add((time.Duration(ms.MissionItems[k].P1) * time.Second))
+							} else {
 								tgt, nvs = get_next_wp(ms, k)
-							}()
-						} else {
-							tgt, nvs = get_next_wp(ms, k)
-							fmt.Fprintf(os.Stderr, "New target WP %d %d (%s)\n", tgt, k, ms.MissionItems[k+1].Action)
+								fmt.Fprintf(os.Stderr, "New target WP %d %d (%s)\n", tgt, k, ms.MissionItems[k+1].Action)
+							}
 						}
 					}
 				}
 			}
 		}
-
 		msg := make_bullet_msg(b, s.H.HomeAlt, et, ncells, tgt, nvs)
 		output_message(c, wfh, msg, b.Utc)
 		if c != nil && !lastm.IsZero() {
