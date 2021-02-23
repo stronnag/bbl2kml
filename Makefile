@@ -33,7 +33,7 @@ ifneq (, $(shell which gccgo 2>/dev/null))
   USE_GCCGO=1
 endif
 
-ifneq (, $(USE_GC))
+ifeq (, $(USE_GC))
   USE_GCCGO=0
 endif
 
@@ -45,6 +45,7 @@ else
  LDEXTRA=-pthread
  LDF=-gccgoflags
 endif
+
 
 export LDFLAGS
 export LDEXTRA
@@ -70,10 +71,10 @@ GSRCS = cmd/fl2kmlgtk/main.go cmd/fl2kmlgtk/logkml.ui $(PKGCOMMON) $(PKGBBL) $(P
 FSRCS = cmd/fl2kmlfyne/main.go $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGKML)
 
 $(_CAPP): $(CSRCS)
-	go build $(LDF) "$(LDFLAGS)" -o $(CAPP)$(EXT) cmd/flightlog2kml/main.go
+	CGO_ENABLED=0 go build $(LDF) "$(LDFLAGS) -extldflags -static" -o $(CAPP)$(EXT) cmd/flightlog2kml/main.go
 
 $(_MAPP): $(MSRCS)
-	go build $(LDF) "$(LDFLAGS)" -o $(MAPP)$(EXT) cmd/mission2kml/main.go
+	CGO_ENABLED=0 go build $(LDF) "$(LDFLAGS) -extldflags -static" -o $(MAPP)$(EXT) cmd/mission2kml/main.go
 
 $(_GAPP): $(GSRCS)
 	make -C cmd/fl2kmlgtk
@@ -83,7 +84,7 @@ $(_FAPP): $(FSRCS)
 	go build $(LDF) "$(LDFLAGS) $(LDEXTRA)" -o $(FAPP)$(EXT) cmd/fl2kmlfyne/main.go
 
 $(_QAPP): $(QSRCS)
-	go build $(LDF) "$(LDFLAGS)" -o $(QAPP)$(EXT) cmd/fl2mqtt/main.go
+	CGO_ENABLED=0 go build $(LDF) "$(LDFLAGS) -extldflags -static" -o $(QAPP)$(EXT) cmd/fl2mqtt/main.go
 
 clean:
 	@rm -f $(CAPP)$(EXT) $(MAPP)$(EXT) $(GAPP)$(EXT) $(FAPP)$(EXT) $(QAPP)$(EXT)

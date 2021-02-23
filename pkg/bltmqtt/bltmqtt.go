@@ -13,6 +13,7 @@ import (
 	"math/rand"
 	"os"
 	"net/url"
+	"math"
 	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	geo "github.com/stronnag/bbl2kml/pkg/geo"
 	options "github.com/stronnag/bbl2kml/pkg/options"
@@ -157,7 +158,7 @@ func (m *MQTTClient) publish(msg string) {
    broker.emqx.io    1883, 8883, 8083, 8084 (ws)
 */
 
-func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int) string {
+func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int, tgt int, nvs int) string {
 	var sb strings.Builder
 
 	sb.WriteString("flt:")
@@ -289,8 +290,13 @@ func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int)
 	sb.WriteString(strconv.Itoa(int(fs)))
 	sb.WriteByte(',')
 
+	if tgt != 0 {
+		sb.WriteString(fmt.Sprintf("cwn:%d,nvs:%d,", tgt, nvs))
+	}
+
 	armed := b.Status & 1
 	sb.WriteString(fmt.Sprintf("arm:%d", armed))
+
 	return sb.String()
 }
 
@@ -364,6 +370,8 @@ func output_message(c *MQTTClient, wfh *os.File, msg string, et time.Time) {
 func MQTTGen(s types.LogSegment) {
 	ncells := 0
 	var wfh *os.File
+	tgt := 0
+	nvs := 0
 
 	c := NewMQTTClient()
 	var err error
@@ -382,10 +390,11 @@ func MQTTGen(s types.LogSegment) {
 	laststat := uint8(255)
 	fmode := ""
 	mstrs := []string{}
+	var ms *mission.Mission
 	wps := ""
-
 	if len(options.Mission) > 0 {
-		_, ms, err := mission.Read_Mission_File(options.Mission)
+		var err error
+		_, ms, err = mission.Read_Mission_File(options.Mission)
 		if err == nil {
 			var sb strings.Builder
 			for k, mi := range ms.MissionItems {
@@ -409,6 +418,7 @@ func MQTTGen(s types.LogSegment) {
 				if mi.P3 != 0 {
 					sb.WriteString(fmt.Sprintf("p3:%d,", mi.P3))
 				}
+				sb.WriteString(fmt.Sprintf("el:%d,", int32(s.H.HomeAlt)+mi.Alt))
 				if k == len(ms.MissionItems)-1 {
 					sb.WriteString("f:165")
 				}
@@ -417,6 +427,15 @@ func MQTTGen(s types.LogSegment) {
 			wps = fmt.Sprintf("wpc:%d,wpv:1,", len(ms.MissionItems))
 		} else {
 			fmt.Fprintf(os.Stderr, "* Failed to read mission file %s\n", options.Mission)
+		}
+	}
+
+	miscout := 10
+	// ensure once / minute or one two minues foe low prio data
+	if options.Intvl > 6000 {
+		miscout = 60 * 1000 / options.Intvl
+		if miscout < 1 {
+			miscout = 1
 		}
 	}
 
@@ -436,6 +455,10 @@ func MQTTGen(s types.LogSegment) {
 		}
 
 		if b.Fmode != laststat {
+			if laststat == types.FM_WP {
+				tgt = 0
+				nvs = 0
+			}
 			if options.Bulletvers == 2 {
 				switch b.Fmode {
 				case types.FM_MANUAL:
@@ -452,6 +475,10 @@ func MQTTGen(s types.LogSegment) {
 					fmode = "4"
 				case types.FM_WP:
 					fmode = "7"
+					if ms != nil {
+						tgt = 1
+						nvs = 5
+					}
 				case types.FM_RTH:
 					fmode = "2"
 				case types.FM_CRUISE3D:
@@ -495,12 +522,12 @@ func MQTTGen(s types.LogSegment) {
 			output_message(c, wfh, msg, b.Utc)
 		}
 
-		if i%10 == 0 {
+		if i%miscout == 0 {
 			msg := make_bullet_mode(fmode, ncells, b.HWfail)
 			output_message(c, wfh, msg, b.Utc)
 			msg = make_bullet_home(s.H.HomeLat, s.H.HomeLon, s.H.HomeAlt)
 			output_message(c, wfh, msg, b.Utc)
-			if len(mstrs) > 0 && i%20 == 0 {
+			if len(mstrs) > 0 && i%2*miscout == 0 {
 				for _, str := range mstrs {
 					output_message(c, wfh, str, b.Utc)
 				}
@@ -508,7 +535,42 @@ func MQTTGen(s types.LogSegment) {
 			}
 		}
 
-		msg := make_bullet_msg(b, s.H.HomeAlt, et, ncells)
+		if b.Fmode == types.FM_WP && ms != nil {
+			cdist := 1.50 * b.Spd * float64(options.Intvl/1000.0) / 1852.0
+			for k, mi := range ms.MissionItems {
+				if mi.Is_GeoPoint() {
+					c, d := geo.Csedist(b.Lat, b.Lon, mi.Lat, mi.Lon)
+					if d < cdist {
+						relb := math.Abs(c - float64(b.Cse))
+						/* fmt.Fprintf(os.Stderr, "Around WP %d brg=%.0f cse=%d d=%.1f (%.f) [%.1f]\n",
+						mi.No, c, b.Cse, d*1852, relb, cdist*1852)*/
+						if relb > 90 {
+							if mi.No >= tgt { // may not have start of mission ....
+								if k < len(ms.MissionItems)-1 {
+									tgt += 1
+									if ms.MissionItems[k+1].Action == "JUMP" {
+										tgt = int(ms.MissionItems[k+1].P1)
+									}
+									if ms.MissionItems[k+1].Action == "RTH" {
+										nvs = 4
+									} else {
+										nvs = 5
+									}
+									/* fmt.Fprintf(os.Stderr, "New target WP %d %d (%s)\n", tgt, k,
+									ms.MissionItems[k+1].Action) */
+								} else {
+									tgt = 0
+									nvs = 0
+								}
+								break
+							}
+						}
+					}
+				}
+			}
+		}
+
+		msg := make_bullet_msg(b, s.H.HomeAlt, et, ncells, tgt, nvs)
 		output_message(c, wfh, msg, b.Utc)
 		if c != nil && !lastm.IsZero() {
 			tdiff := b.Utc.Sub(lastm)
