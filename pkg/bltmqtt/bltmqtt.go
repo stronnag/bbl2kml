@@ -372,18 +372,28 @@ func get_next_wp(ms *mission.Mission, k int) (int, int) {
 	if k < len(ms.MissionItems)-1 {
 		switch ms.MissionItems[k+1].Action {
 		case "JUMP":
-			if ms.MissionItems[k+1].P2 != 0 {
+			if ms.MissionItems[k+1].P3 == -1 {
 				tgt = int(ms.MissionItems[k+1].P1)
-				ms.MissionItems[k+1].P2 -= 1
 			} else {
-				tgt = int(ms.MissionItems[k+2].No)
+				if ms.MissionItems[k+1].P3 == 0 {
+					if k < len(ms.MissionItems)-2 {
+						tgt = int(ms.MissionItems[k+2].No)
+						ms.MissionItems[k+1].P3 = ms.MissionItems[k+1].P2
+					}
+				} else {
+					tgt = int(ms.MissionItems[k+1].P1)
+					ms.MissionItems[k+1].P3 -= 1
+				}
 			}
 			nvs = 5
 		case "RTH":
 			nvs = 1
 			tgt = int(ms.MissionItems[k+1].No)
 		case "SET_HEAD", "SET_POI":
-			tgt += 2
+			if k < len(ms.MissionItems)-1 {
+				tgt = int(ms.MissionItems[k+2].No)
+			}
+			nvs = 5
 		default:
 			tgt = int(ms.MissionItems[k+1].No)
 			nvs = 5
@@ -449,6 +459,9 @@ func MQTTGen(s types.LogSegment) {
 					sb.WriteString("f:165")
 				}
 				mstrs = append(mstrs, sb.String())
+				if mi.Action == "JUMP" {
+					ms.MissionItems[k].P3 = ms.MissionItems[k].P2
+				}
 			}
 			wps = fmt.Sprintf("wpc:%d,wpv:1,", len(ms.MissionItems))
 		} else {
@@ -457,7 +470,7 @@ func MQTTGen(s types.LogSegment) {
 	}
 
 	miscout := 10
-	// ensure once / minute or one two minues foe low prio data
+	// ensure once / minute or one two minues for low prio data
 	if options.Intvl > 6000 {
 		miscout = 60 * 1000 / options.Intvl
 		if miscout < 1 {
@@ -565,11 +578,8 @@ func MQTTGen(s types.LogSegment) {
 		if b.Fmode == types.FM_WP && ms != nil {
 			k := tgt - 1
 			if nvs == 4 {
-				//				fmt.Fprintf(os.Stderr, "Wait PH at %d %v\n", k, et)
 				if b.Utc.After(phtime) {
 					tgt, nvs = get_next_wp(ms, k)
-					//					phtime = time.Time(0)
-					fmt.Fprintf(os.Stderr, "After PHT (%d), %d %d\n", k, tgt, nvs)
 				}
 			} else {
 				cdist := 1.25 * b.Spd * float64(options.Intvl/1000.0)
@@ -580,24 +590,26 @@ func MQTTGen(s types.LogSegment) {
 				mi := ms.MissionItems[k]
 				if mi.Is_GeoPoint() {
 					brg, d := geo.Csedist(b.Lat, b.Lon, mi.Lat, mi.Lon)
-					//					fmt.Fprintf(os.Stderr, "C: %d %d %.1f %d\n", tgt, k, d*1852, b.Cse)
 					if d < cdist {
 						// relative heading, independent of which is greaer & 359<->0
 						// sign depends on whether target is to port or starboard
 						bdiff := (int(brg)-int(b.Cse)+540)%360 - 180
-						if bdiff < 0 {
-							bdiff = -bdiff
-						}
 						//						fmt.Fprintf(os.Stderr, "Around WP %d brg=%.0f cse=%d d=%.1f (%d) [%.1f] @%d\n", mi.No, brg, b.Cse, d*1852, bdiff, cdist*1852, int(et))
-						if bdiff > 90 {
-							fmt.Fprintf(os.Stderr, "Reached %d %v %s\n", k, et, ms.MissionItems[k].Action)
+						if bdiff > 90 || bdiff < -90 {
+							//							fmt.Fprintf(os.Stderr, "Reached %d %v %s\n", k, et, ms.MissionItems[k].Action)
 							if ms.MissionItems[k].Action == "POSHOLD_TIME" {
 								nvs = 4
-								fmt.Fprintf(os.Stderr, "SET PH at %d %v\n", k, et)
-								phtime = b.Utc.Add((time.Duration(ms.MissionItems[k].P1) * time.Second))
+								var phwait time.Duration
+								mwaitms := int(ms.MissionItems[k].P1) * 1000
+								if mwaitms > options.Intvl/2000 {
+									phwait = time.Duration(mwaitms-options.Intvl/2) * time.Millisecond
+								} else {
+									phwait = time.Duration(ms.MissionItems[k].P1) * time.Second
+								}
+								phtime = b.Utc.Add(phwait)
 							} else {
 								tgt, nvs = get_next_wp(ms, k)
-								fmt.Fprintf(os.Stderr, "New target WP %d %d (%s)\n", tgt, k, ms.MissionItems[k+1].Action)
+								//								fmt.Fprintf(os.Stderr, "New target WP %d %d (%s)\n", tgt, k, ms.MissionItems[k+1].Action)
 							}
 						}
 					}
