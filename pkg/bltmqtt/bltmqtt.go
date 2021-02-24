@@ -565,7 +565,16 @@ func MQTTGen(s types.LogSegment) {
 		if i%miscout == 0 {
 			msg := make_bullet_mode(fmode, ncells, b.HWfail)
 			output_message(c, wfh, msg, b.Utc)
-			msg = make_bullet_home(s.H.HomeLat, s.H.HomeLon, s.H.HomeAlt)
+			var hlat, hlon float64
+			if s.H.Flags&types.HOME_SAFE != 0 {
+				hlat = s.H.SafeLat
+				hlon = s.H.SafeLon
+			} else {
+				hlat = s.H.HomeLat
+				hlon = s.H.HomeLon
+			}
+
+			msg = make_bullet_home(hlat, hlon, s.H.HomeAlt)
 			output_message(c, wfh, msg, b.Utc)
 			if len(mstrs) > 0 && i%2*miscout == 0 {
 				for _, str := range mstrs {

@@ -515,6 +515,7 @@ func (lg *BBLOG) Reader(meta types.FlightMeta) (types.LogSegment, bool) {
 				homes.Flags = types.HOME_ARM | types.HOME_ALT
 				if b.Bearing == -2 {
 					_, dh := geo.Csedist(b.Hlat, b.Hlon, b.Lat, b.Lon)
+
 					if dh > 2.0/1852.0 {
 						homes.SafeLat = b.Hlat
 						homes.SafeLon = b.Hlon
