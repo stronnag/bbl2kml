@@ -63,9 +63,11 @@ PKGOTX = $(wildcard pkg/otx/*.go)
 PKGINAV = $(wildcard pkg/inav/*.go)
 PKGKML = $(wildcard pkg/kmlgen/*.go)
 PKGMQTT = $(wildcard pkg/bltmqtt/*.go)
+PKGLTM = $(wildcard pkg/ltmgen/*.go)
 
 CSRCS = $(wildcard cmd/flightlog2kml/*.go) $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGKML)
-QSRCS = $(wildcard cmd/fl2mqtt/*.go) $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGMQTT)
+QSRCS = $(wildcard cmd/fl2mqtt/*.go) $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGMQTT) $(PKGLTM)
+#LSRCS = $(wildcard cmd/fl2ltm/*.go) $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGLTM)
 MSRCS = $(wildcard cmd/mission2kml/*.go) $(PKGCOMMON)
 GSRCS = cmd/fl2kmlgtk/main.go cmd/fl2kmlgtk/logkml.ui $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGKML)
 FSRCS = cmd/fl2kmlfyne/main.go $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGKML)
@@ -85,6 +87,7 @@ $(_FAPP): $(FSRCS)
 
 $(_QAPP): $(QSRCS)
 	CGO_ENABLED=0 go build $(LDF) "$(LDFLAGS) -extldflags -static" -o $(QAPP)$(EXT) cmd/fl2mqtt/main.go
+	ln -f fl2mqtt fl2ltm
 
 clean:
 	@rm -f $(CAPP)$(EXT) $(MAPP)$(EXT) $(GAPP)$(EXT) $(FAPP)$(EXT) $(QAPP)$(EXT)
@@ -94,6 +97,8 @@ clean:
 install: $(CAPP)$(EXE) $(MAPP)$(EXE) $(QAPP)$(EXE)
 	@ install -d $(prefix)/bin
 	install -s $(CAPP)$(EXE) $(MAPP)$(EXE) $(QAPP)$(EXE) $(prefix)/bin
+	@rm -f $(prefix)/bin/fl2ltm
+	@ln -f $(prefix)/bin/fl2mqtt $(prefix)/bin/fl2ltm
 
 install-all: $(CAPP)$(EXE) $(MAPP)$(EXE) $(GAPP)$(EXE) $(QAPP)$(EXE)
 	@ install -d $(prefix)/bin

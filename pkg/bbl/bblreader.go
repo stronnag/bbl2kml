@@ -47,16 +47,6 @@ func (o *BBLOG) Dump() {
 	dump_headers()
 }
 
-type reason int
-
-func (r reason) String() string {
-	var reasons = [...]string{"None", "Timeout", "Sticks", "Switch_3d", "Switch", "Killswitch", "Failsafe", "Navigation"}
-	if r < 0 || int(r) >= len(reasons) {
-		r = 0
-	}
-	return reasons[r]
-}
-
 func get_headers(fn string) {
 	cmd := exec.Command(options.Blackbox_decode,
 		"--datetime", "--merge-gps", "--stdout", "--index", "1", fn)
@@ -136,9 +126,9 @@ func metas(fn string) ([]types.FlightMeta, error) {
 					}
 				}
 				loffset = offset
-				be := types.FlightMeta{Disarm: "NONE", Size: 0,
-					Date: "<no date>", Fwdate: "<no date>",
-					Flags: types.Has_Disarm | types.Has_Size}
+				be := types.FlightMeta{Disarm: 0, Size: 0,
+					Fwdate: "<no date>",
+					Flags:  types.Has_Disarm | types.Has_Size}
 				bes = append(bes, be)
 				nbes = len(bes) - 1
 				bes[nbes].Logname = base
@@ -160,7 +150,7 @@ func metas(fn string) ([]types.FlightMeta, error) {
 				if n := strings.Index(string(l), ":"); n != -1 {
 					date := string(l)[n+1:]
 					if len(date) > 0 {
-						bes[nbes].Date = date
+						bes[nbes].Date, _ = time.Parse(time.RFC3339, date)
 					}
 				}
 
@@ -173,16 +163,79 @@ func metas(fn string) ([]types.FlightMeta, error) {
 					bes[nbes].Flags |= types.Has_Craft
 				}
 
+			case strings.HasPrefix(string(l), "H Field I name:"):
+				// check for motors and servos
+				if strings.Contains(l, "motor[7]") {
+					bes[nbes].Motors = 8
+				} else if strings.Contains(l, "motor[5]") {
+					bes[nbes].Motors = 6
+				} else if strings.Contains(l, "motor[3]") {
+					bes[nbes].Motors = 4
+				} else if strings.Contains(l, "motor[2]") {
+					bes[nbes].Motors = 3
+				} else if strings.Contains(l, "motor[1]") {
+					bes[nbes].Motors = 2
+				} else if strings.Contains(l, "motor[0]") {
+					bes[nbes].Motors = 1
+				}
+
+				if strings.Contains(l, "servo[7]") {
+					bes[nbes].Servos = 1
+				}
+
+			case strings.HasPrefix(string(l), "H acc_hardware:"):
+				if n := strings.Index(string(l), ":"); n != -1 {
+					fstr := string(l)[n+1:]
+					if len(fstr) > 0 {
+						fs, _ := strconv.Atoi(fstr)
+						if fs != 0 {
+							bes[nbes].Sensors |= types.Has_Acc
+						}
+					}
+				}
+			case strings.HasPrefix(string(l), "H baro_hardware:"):
+				if n := strings.Index(string(l), ":"); n != -1 {
+					fstr := string(l)[n+1:]
+					if len(fstr) > 0 {
+						fs, _ := strconv.Atoi(fstr)
+						if fs != 0 {
+							bes[nbes].Sensors |= types.Has_Baro
+						}
+					}
+				}
+			case strings.HasPrefix(string(l), "H mag_hardware:"):
+				if n := strings.Index(string(l), ":"); n != -1 {
+					fstr := string(l)[n+1:]
+					if len(fstr) > 0 {
+						fs, _ := strconv.Atoi(fstr)
+						if fs != 0 {
+							bes[nbes].Sensors |= types.Has_Mag
+						}
+					}
+				}
+
+			case strings.HasPrefix(string(l), "H features:"):
+				if n := strings.Index(string(l), ":"); n != -1 {
+					fstr := string(l)[n+1:]
+					if len(fstr) > 0 {
+						fs, _ := strconv.Atoi(fstr)
+						if (fs & types.Feature_GPS) != 0 {
+							bes[nbes].Sensors |= types.Has_GPS
+						}
+					}
+				}
+
 			case strings.Contains(string(l), "reason:"):
 				if n := strings.Index(string(l), ":"); n != -1 {
 					dindx, _ := strconv.Atoi(string(l)[n+1 : n+2])
-					bes[nbes].Disarm = reason(dindx).String()
+					bes[nbes].Disarm = types.Reason(dindx)
 				}
 			}
 			if err = scanner.Err(); err != nil {
 				return bes, err
 			}
 		}
+		r.Close()
 		if len(bes) > 0 {
 			if bes[nbes].Size == 0 {
 				offset, _ := r.Seek(0, io.SeekCurrent)
@@ -193,11 +246,44 @@ func metas(fn string) ([]types.FlightMeta, error) {
 					}
 				}
 			}
+			for i := 0; i < len(bes); i++ {
+				bes[i].Duration = get_bb_duration(fn, fmt.Sprintf("%d", i+1))
+			}
 		}
 	} else {
 		err = errors.New("No records in BBL")
 	}
 	return bes, err
+}
+
+func get_bb_duration(bbfile string, idx string) time.Duration {
+	cmd := exec.Command("blackbox_decode", "--stdout", "--index", idx, bbfile)
+	out, err := cmd.StdoutPipe()
+	defer cmd.Wait()
+	defer out.Close()
+	err = cmd.Start()
+	scanner := bufio.NewScanner(out)
+	i := 0
+	var ssec string
+	var lsec string
+	for scanner.Scan() {
+		line := scanner.Text()
+		if n := strings.Index(line, ","); n != -1 {
+			lsec = line[0:n]
+			if i == 1 {
+				ssec = lsec
+			}
+		}
+		i += 1
+	}
+	ilsec, _ := strconv.ParseInt(lsec, 10, 64)
+	issec, _ := strconv.ParseInt(ssec, 10, 64)
+	sdiff := ilsec - issec
+	diff := time.Duration(sdiff) * time.Millisecond
+	if err = scanner.Err(); err != nil {
+		fmt.Fprintln(os.Stderr, "reading standard input:", err)
+	}
+	return diff
 }
 
 func get_rec_value(r []string, key string) (string, bool) {
@@ -238,8 +324,7 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 		b.Numsat = uint8(i64)
 	}
 
-	s, ok = get_rec_value(r, "GPS_hdop")
-	if ok {
+	if s, ok = get_rec_value(r, "GPS_hdop"); ok {
 		i64, _ := strconv.Atoi(s)
 		b.Hdop = uint16(i64)
 	}
@@ -250,14 +335,12 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 		b.Volts, _ = strconv.ParseFloat(s, 64)
 	}
 
-	s, ok = get_rec_value(r, "navPos[2]")
-	if ok {
+	if s, ok = get_rec_value(r, "navPos[2]"); ok {
 		b.Alt, _ = strconv.ParseFloat(s, 64)
 		b.Alt = b.Alt / 100.0
 	}
 
-	s, ok = get_rec_value(r, "GPS_fixType")
-	if ok {
+	if s, ok = get_rec_value(r, "GPS_fixType"); ok {
 		i64, _ := strconv.Atoi(s)
 		b.Fix = uint8(i64)
 	} else {
@@ -269,35 +352,33 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 			b.Fix = 0
 		}
 	}
-	s, ok = get_rec_value(r, "GPS_coord[0]")
-	if ok {
+
+	if s, ok = get_rec_value(r, "GPS_coord[0]"); ok {
 		b.Lat, _ = strconv.ParseFloat(s, 64)
 	}
-	s, ok = get_rec_value(r, "GPS_coord[1]")
-	if ok {
+
+	if s, ok = get_rec_value(r, "GPS_coord[1]"); ok {
 		b.Lon, _ = strconv.ParseFloat(s, 64)
 	}
 
-	s, ok = get_rec_value(r, "GPS_altitude")
-	if ok {
+	if s, ok = get_rec_value(r, "GPS_altitude"); ok {
 		b.GAlt, _ = strconv.ParseFloat(s, 64)
 	}
 
-	s, ok = get_rec_value(r, "GPS_speed (m/s)")
-	if ok {
+	if s, ok = get_rec_value(r, "GPS_speed (m/s)"); ok {
 		b.Spd, _ = strconv.ParseFloat(s, 64)
 	}
-	s, ok = get_rec_value(r, "time (us)")
-	if ok {
+
+	if s, ok = get_rec_value(r, "time (us)"); ok {
 		i64, _ := strconv.ParseInt(s, 10, 64)
 		b.Stamp = uint64(i64)
 	}
 
 	md := uint8(0)
-	s0, ok := get_rec_value(r, "flightModeFlags (flags)")
-	s, ok = get_rec_value(r, "navState")
-	if ok {
+	s0, sok := get_rec_value(r, "flightModeFlags (flags)")
+	if s, ok = get_rec_value(r, "navState"); ok {
 		i64, _ := strconv.ParseInt(s, 10, 64)
+		b.NavState = int(i64)
 		if inav.IsCruise3d(inav_vers, int(i64)) {
 			md = types.FM_CRUISE3D
 		} else if inav.IsCruise2d(inav_vers, int(i64)) {
@@ -323,17 +404,18 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 				md = types.FM_HORIZON
 			}
 		}
+	} else {
+		b.NavState = -1
 	}
 	// fallback for old inav bug
-	if strings.Contains(s0, "NAVRTH") {
+	if sok && strings.Contains(s0, "NAVRTH") {
 		md = types.FM_RTH
 	}
 
 	b.Fmode = md
 	b.Fmtext = types.Mnames[md]
 
-	s, ok = get_rec_value(r, "failsafePhase (flags)")
-	if ok {
+	if s, ok = get_rec_value(r, "failsafePhase (flags)"); ok {
 		if !strings.Contains(s, "IDLE") {
 			status |= types.Is_FAIL
 		}
@@ -346,69 +428,61 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 		b.Hlon = 0
 		b.Vrange = -1
 		b.Bearing = -1
-		s, ok = get_rec_value(r, "GPS_home_lat")
-		if ok {
+		if s, ok = get_rec_value(r, "GPS_home_lat"); ok {
 			b.Hlat, _ = strconv.ParseFloat(s, 64)
 		}
-		s, ok = get_rec_value(r, "GPS_home_lon")
-		if ok {
+		if s, ok = get_rec_value(r, "GPS_home_lon"); ok {
 			b.Hlon, _ = strconv.ParseFloat(s, 64)
 			b.Bearing = -2
 		} else {
-			s, ok = get_rec_value(r, "homeDirection")
-			if ok {
+			if s, ok = get_rec_value(r, "homeDirection"); ok {
 				i64, _ := strconv.Atoi(s)
 				b.Bearing = int32(i64)
 			} else {
-				s, ok = get_rec_value(r, "Azimuth")
-				if ok {
+				if s, ok = get_rec_value(r, "Azimuth"); ok {
 					i64, _ := strconv.Atoi(s)
 					b.Bearing = int32((i64 + 180) % 360)
 				}
 			}
 
 			if b.Bearing != -1 {
-				s, ok = get_rec_value(r, "Distance (m)")
-				if ok {
+				if s, ok = get_rec_value(r, "Distance (m)"); ok {
 					b.Vrange, _ = strconv.ParseFloat(s, 64)
 				}
 			}
 		}
 	}
 
-	s, ok = get_rec_value(r, "attitude[0]")
-	if ok {
+	if s, ok = get_rec_value(r, "attitude[0]"); ok {
 		i64, _ := strconv.Atoi(s)
 		b.Roll = int16(i64 / 10)
 	}
-	s, ok = get_rec_value(r, "attitude[1]")
-	if ok {
+
+	if s, ok = get_rec_value(r, "attitude[1]"); ok {
 		i64, _ := strconv.Atoi(s)
 		b.Pitch = int16(i64 / 10)
 	}
-	s, ok = get_rec_value(r, "attitude[2]")
-	if ok {
+
+	if s, ok = get_rec_value(r, "attitude[2]"); ok {
 		i64, _ := strconv.Atoi(s)
 		b.Cse = uint32(i64 / 10)
 	}
-	s, ok = get_rec_value(r, "GPS_ground_course")
-	if ok {
+
+	if s, ok = get_rec_value(r, "GPS_ground_course"); ok {
 		v, _ := strconv.ParseFloat(s, 64)
 		b.Cog = uint32(v)
 	}
-	s, ok = get_rec_value(r, "rssi")
-	if ok {
+
+	if s, ok = get_rec_value(r, "rssi"); ok {
 		i64, _ := strconv.Atoi(s)
 		b.Rssi = uint8(i64 * 100 / 1023)
 	}
 
-	s, ok = get_rec_value(r, "dateTime")
-	if ok {
+	if s, ok = get_rec_value(r, "dateTime"); ok {
 		b.Utc, _ = time.Parse(time.RFC3339Nano, s)
 	}
 
-	s, ok = get_rec_value(r, "amperage (A)")
-	if ok {
+	if s, ok = get_rec_value(r, "amperage (A)"); ok {
 		b.Amps, _ = strconv.ParseFloat(s, 64)
 	}
 
@@ -416,15 +490,13 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 		b.Energy, _ = strconv.ParseFloat(s, 64)
 	}
 
-	s, ok = get_rec_value(r, "rcData[3]")
-	if ok {
+	if s, ok = get_rec_value(r, "rcData[3]"); ok {
 		i64, _ := strconv.Atoi(s)
 		b.Throttle = int(i64)
 		b.Throttle = (b.Throttle - 1000) / 10
 	}
 
-	s, ok = get_rec_value(r, "hwHealthStatus")
-	if ok {
+	if s, ok = get_rec_value(r, "hwHealthStatus"); ok {
 		b.HWfail = false
 		val, _ := strconv.Atoi(s)
 		for n := 0; n < 7; n++ {

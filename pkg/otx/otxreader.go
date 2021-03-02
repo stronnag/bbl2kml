@@ -93,6 +93,7 @@ func metas(otxfile string) ([]types.FlightMeta, error) {
 		record, err := r.Read()
 		if err == io.EOF {
 			metas[idx-1].End = (i - 1)
+			metas[idx-1].Duration = lasttm.Sub(metas[idx-1].Date)
 			break
 		}
 		if i == 1 {
@@ -117,9 +118,10 @@ func metas(otxfile string) ([]types.FlightMeta, error) {
 			if i == 2 || (options.SplitTime > 0 && t_utc.Sub(lasttm).Seconds() > (time.Duration(options.SplitTime)*time.Second).Seconds()) {
 				if idx > 0 {
 					metas[idx-1].End = i - 1
+					metas[idx-1].Duration = lasttm.Sub(metas[idx-1].Date)
 				}
 				idx += 1
-				mt := types.FlightMeta{Logname: basefile, Date: t_utc.Format(TIMEDATE), Index: idx, Start: i}
+				mt := types.FlightMeta{Logname: basefile, Date: t_utc, Index: idx, Start: i}
 				metas = append(metas, mt)
 			}
 			lasttm = t_utc
@@ -459,6 +461,7 @@ func get_otx_line(r []string) types.LogItem {
 	}
 	b.Throttle = 100 * (b.Throttle + 1024) / 2048
 	b.Status = status
+	b.NavState = -1
 	return b
 }
 

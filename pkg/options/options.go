@@ -16,6 +16,7 @@ var (
 	Kml             bool   = false
 	Rssi            bool   = false
 	Efficiency      bool   = false
+	Metas           bool   = false
 	Intvl           int    = 1000
 	Idx             int    = 0
 	SplitTime       int    = 0
@@ -25,6 +26,7 @@ var (
 	Gradset         string
 	Outdir          string
 	Mqttopts        string
+	LTMdev          string
 	Bulletvers      int = 2
 	Rebase          string
 )
@@ -82,8 +84,8 @@ func ParseCLI(gv func() string) []string {
 		Blackbox_decode = *bbldec
 	}
 
+	var intvl = int(1000)
 	flag.IntVar(&Idx, "index", 0, "Log index")
-	flag.IntVar(&Intvl, "interval", 1000, "Sampling Interval (ms)")
 	flag.BoolVar(&Dump, "dump", false, "Dump log headers and exit")
 	flag.StringVar(&Mission, "mission", "", "Optional mission file name")
 	flag.IntVar(&SplitTime, "split-time", 120, "[OTX] Time(s) determining log split, 0 disables")
@@ -93,6 +95,10 @@ func ParseCLI(gv func() string) []string {
 		flag.StringVar(&Mqttopts, "broker", "", "Mqtt URI (mqtt://[user[:pass]@]broker[:port]/topic[?cafile=file]")
 		flag.IntVar(&Bulletvers, "blt-vers", 2, "[MQTT] BulletGCSS version")
 		flag.StringVar(&Outdir, "logfile", "", "Log file for browser replay")
+	} else if app == "fl2ltm" {
+		flag.StringVar(&LTMdev, "device", "", "LTM device")
+		flag.BoolVar(&Metas, "metas", false, "list metadata and exit")
+		intvl = 100
 	} else {
 		flag.BoolVar(&Kml, "kml", Kml, "Generate KML (vice default KMZ)")
 		flag.BoolVar(&Rssi, "rssi", Rssi, "Set RSSI view as default")
@@ -102,7 +108,7 @@ func ParseCLI(gv func() string) []string {
 		flag.BoolVar(&Dms, "dms", Dms, "Show positions as DD:MM:SS.s (vice decimal degrees)")
 		flag.StringVar(&Outdir, "outdir", "", "Output directory for generated KML")
 	}
-
+	flag.IntVar(&Intvl, "interval", intvl, "Sampling Interval (ms)")
 	flag.Parse()
 
 	if !isFlagSet("home-alt") {

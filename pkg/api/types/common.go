@@ -35,6 +35,16 @@ const (
 	Is_CRSF  uint8 = 4
 )
 
+type Reason int
+
+func (r Reason) String() string {
+	var reasons = [...]string{"None", "Timeout", "Sticks", "Switch_3d", "Switch", "Killswitch", "Failsafe", "Navigation"}
+	if r < 0 || int(r) >= len(reasons) {
+		r = 0
+	}
+	return reasons[r]
+}
+
 type LogItem struct {
 	Stamp    uint64
 	Lat      float64
@@ -66,6 +76,7 @@ type LogItem struct {
 	Status   uint8
 	Hdop     uint16
 	HWfail   bool
+	NavState int
 }
 
 type LogRec struct {
@@ -160,18 +171,38 @@ const (
 	Has_Start
 )
 
+const (
+	Has_Acc = 1 << iota
+	Has_Baro
+	Has_Mag
+	Has_GPS
+	Has_Sonar
+	Has_Opflow
+	Has_Pitot
+)
+
+const (
+	Feature_GPS     = (1 << 7)
+	Feature_VBAT    = (1 << 1)
+	Feature_CURRENT = (1 << 11)
+)
+
 type FlightMeta struct {
 	Logname  string
-	Date     string
+	Date     time.Time
+	Duration time.Duration
 	Craft    string
 	Firmware string
 	Fwdate   string
-	Disarm   string
+	Disarm   Reason
 	Size     int64
 	Index    int
 	Start    int
 	End      int
 	Flags    uint8
+	Motors   uint8
+	Servos   uint8
+	Sensors  uint16
 }
 
 func (b *FlightMeta) LogName() string {
@@ -203,7 +234,7 @@ func (b *FlightMeta) ShowDisarm() (string, bool) {
 	if b.Flags&Has_Disarm == 0 {
 		return "", false
 	} else {
-		return b.Disarm, true
+		return b.Disarm.String(), true
 	}
 }
 
@@ -221,7 +252,7 @@ func (b *FlightMeta) Flight() string {
 		sb.WriteString(b.Craft)
 		sb.WriteString(" on ")
 	}
-	sb.WriteString(b.Date)
+	sb.WriteString(b.Date.Format("2006-01-02 15:04:05"))
 	return sb.String()
 }
 
