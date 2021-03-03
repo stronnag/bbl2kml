@@ -2,7 +2,6 @@ package ltmgen
 
 import (
 	"strings"
-	"strconv"
 	"fmt"
 	"encoding/binary"
 	"time"
@@ -86,6 +85,8 @@ func (l *ltmbuf) gframe(b types.LogItem) {
 }
 
 func (l *ltmbuf) nframe(b types.LogItem, action byte, wpno byte) {
+	l.msg[5] = 0
+	l.msg[6] = 0
 	switch b.Fmode {
 	case types.FM_AH, types.FM_PH:
 		l.msg[3] = 1
@@ -93,6 +94,8 @@ func (l *ltmbuf) nframe(b types.LogItem, action byte, wpno byte) {
 		l.msg[3] = 2
 	case types.FM_WP:
 		l.msg[3] = 3
+		l.msg[5] = action
+		l.msg[6] = wpno
 	default:
 		l.msg[3] = 0
 	}
@@ -101,8 +104,6 @@ func (l *ltmbuf) nframe(b types.LogItem, action byte, wpno byte) {
 	} else {
 		l.msg[4] = 0 // synthesise
 	}
-	l.msg[5] = action
-	l.msg[6] = wpno
 	l.msg[7] = 0
 	l.msg[8] = 0
 	l.checksum()
@@ -198,44 +199,30 @@ func read_mission() *mission.Mission {
 }
 
 func LTMGen(seg types.LogSegment, meta types.FlightMeta) {
-	verbose := false
-	fast := false
 	var s *MSPSerial
 
-	typ := byte(0)
-	switch meta.Motors {
-	case 0, 1, 2:
-		typ = 8
-	case 3:
-		typ = 1
-	case 4:
-		typ = 3
-	case 6:
-		typ = 7
-	case 8:
-		typ = 11
-	}
-
-	parts := strings.Split(options.LTMdev, ",")
-	switch len(parts) {
-	case 3:
-		fast = true
-		fallthrough
-	case 2:
-		if len(parts[1]) == 1 {
-			t, _ := strconv.ParseInt(parts[1], 10, 8)
-			typ = byte(t)
+	typ := options.Type
+	if typ <= 0 {
+		switch meta.Motors {
+		case 0, 1, 2:
+			typ = 8
+		case 3:
+			typ = 1
+		case 4:
+			typ = 3
+		case 6:
+			typ = 7
+		case 8:
+			typ = 11
 		}
-		fallthrough
-	case 1:
-		s = NewMSPSerial(parts[0], 0)
-	default:
-		return
 	}
+	s = NewMSPSerial(options.LTMdev, 0)
 
 	laststat := uint8(255)
 	nvs := 0
 	tgt := 0
+	xnvs := 0
+	xtgt := 0
 
 	xcount := uint8(0)
 	ld := uint16(0)
@@ -254,7 +241,7 @@ func LTMGen(seg types.LogSegment, meta types.FlightMeta) {
 	ms := read_mission()
 
 	if meta.Flags&types.Has_Firmware != 0 {
-		s.Write(MSP_serialise_ident(typ))
+		s.Write(MSP_serialise_ident(byte(typ)))
 		s.Write(MSP_serialise_api_version())
 		parts := strings.Split(meta.Firmware, " ")
 		lp := len(parts)
@@ -284,8 +271,15 @@ func LTMGen(seg types.LogSegment, meta types.FlightMeta) {
 		s.Write(MSP_serialise_status(meta.Sensors))
 	}
 
-	for _, b := range seg.L.Items {
+	g1diff := time.Duration(250) * time.Millisecond
+	g2diff := time.Duration(500) * time.Millisecond
+	g3diff := time.Duration(2) * time.Second
+	var g1t time.Time
+	var g2t time.Time
+	var g3t time.Time
 
+	var b types.LogItem
+	for _, b = range seg.L.Items {
 		if st.IsZero() {
 			st = b.Utc
 		}
@@ -307,66 +301,58 @@ func LTMGen(seg types.LogSegment, meta types.FlightMeta) {
 				tgt = 0
 				nvs = 0
 			}
-			if b.NavState == -1 {
-				b.NavState = nvs
-			}
+			//			if b.NavState == -1 {
+			b.NavState = nvs
+			//			}
 			l := newLTM('N')
 			l.nframe(b, 0, 0)
 			s.Write(l.msg)
 			laststat = b.Fmode
 		}
 
+		tdiff := b.Utc.Sub(lt)
+
 		if b.Fmode == types.FM_WP && ms != nil {
 			act := 0
 			tgt, nvs, act = inav.WP_state(ms, b, tgt, nvs)
-			b.NavState = nvs
-			l := newLTM('N')
-			l.nframe(b, byte(act), byte(tgt))
+			if tgt != xtgt || nvs != xnvs {
+				b.NavState = nvs
+				l := newLTM('N')
+				l.nframe(b, byte(act), byte(tgt))
+				s.Write(l.msg)
+			}
+		}
+
+		if b.Utc.After(g1t) {
+			l := newLTM('A')
+			l.aframe(b)
 			s.Write(l.msg)
+			g1t = b.Utc.Add(g1diff)
 		}
 
-		tdiff := b.Utc.Sub(lt)
-
-		l := newLTM('G')
-		l.gframe(b)
-		s.Write(l.msg)
-		if verbose {
-			fmt.Fprintf(os.Stderr, "Gframe : %s\n", l)
+		if b.Utc.After(g2t) {
+			l := newLTM('G')
+			l.gframe(b)
+			s.Write(l.msg)
+			l = newLTM('S')
+			l.sframe(b)
+			s.Write(l.msg)
+			g2t = b.Utc.Add(g2diff)
 		}
 
-		l = newLTM('A')
-		l.aframe(b)
-		s.Write(l.msg)
-		if verbose {
-			fmt.Fprintf(os.Stderr, "Aframe : %s\n", l)
+		if b.Utc.After(g3t) {
+			l := newLTM('O')
+			l.oframe(b, hlat, hlon)
+			s.Write(l.msg)
+			l = newLTM('X')
+			l.xframe(b.Hdop, xcount)
+			s.Write(l.msg)
+			xcount = (xcount + 1) & 0xff
+			g3t = b.Utc.Add(g3diff)
 		}
-
-		l = newLTM('O')
-		l.oframe(b, hlat, hlon)
-		s.Write(l.msg)
-		if verbose {
-			fmt.Fprintf(os.Stderr, "Oframe : %s\n", l)
-		}
-
-		l = newLTM('S')
-		l.sframe(b)
-		s.Write(l.msg)
-		if verbose {
-			fmt.Fprintf(os.Stderr, "Sframe : %s\n", l)
-		}
-
-		l = newLTM('X')
-		l.xframe(b.Hdop, xcount)
-		s.Write(l.msg)
-		xcount = (xcount + 1) & 0xff
-		if verbose {
-			fmt.Fprintf(os.Stderr, "Xframe : %s\n", l)
-		}
-
-		// Nframe, may be BBL only
 
 		if !lt.IsZero() {
-			if fast {
+			if options.Fast {
 				time.Sleep(10 * time.Millisecond)
 			} else if tdiff > 0 {
 				time.Sleep(tdiff)
@@ -376,14 +362,18 @@ func LTMGen(seg types.LogSegment, meta types.FlightMeta) {
 		et := b.Utc.Sub(st)
 		d := uint16(et.Seconds())
 		if d != ld {
-			l = newLTM('q')
+			l := newLTM('q')
 			l.qframe(d)
 			s.Write(l.msg)
 			ld = d
 		}
 		lt = b.Utc
 	}
-	l := newLTM('x')
+	l := newLTM('S')
+	b.Status = 0
+	l.sframe(b)
+	s.Write(l.msg)
+	l = newLTM('x')
 	l.lxframe(byte(meta.Disarm))
 	s.Write(l.msg)
 	s.Close()

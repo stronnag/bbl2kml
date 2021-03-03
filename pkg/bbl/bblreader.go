@@ -235,7 +235,6 @@ func metas(fn string) ([]types.FlightMeta, error) {
 				return bes, err
 			}
 		}
-		r.Close()
 		if len(bes) > 0 {
 			if bes[nbes].Size == 0 {
 				offset, _ := r.Seek(0, io.SeekCurrent)
@@ -246,6 +245,7 @@ func metas(fn string) ([]types.FlightMeta, error) {
 					}
 				}
 			}
+			r.Close()
 			for i := 0; i < len(bes); i++ {
 				bes[i].Duration = get_bb_duration(fn, fmt.Sprintf("%d", i+1))
 			}

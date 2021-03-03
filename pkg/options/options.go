@@ -29,6 +29,8 @@ var (
 	LTMdev          string
 	Bulletvers      int = 2
 	Rebase          string
+	Type            int  = 0
+	Fast            bool = false
 )
 
 func isFlagSet(name string) bool {
@@ -98,6 +100,8 @@ func ParseCLI(gv func() string) []string {
 	} else if app == "fl2ltm" {
 		flag.StringVar(&LTMdev, "device", "", "LTM device")
 		flag.BoolVar(&Metas, "metas", false, "list metadata and exit")
+		flag.BoolVar(&Fast, "fast", false, "faster replay")
+		flag.IntVar(&Type, "type", 0, "model type")
 		intvl = 100
 	} else {
 		flag.BoolVar(&Kml, "kml", Kml, "Generate KML (vice default KMZ)")

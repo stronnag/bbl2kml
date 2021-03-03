@@ -54,22 +54,26 @@ func main() {
 				for _, mx := range metas {
 					fmt.Printf("%d,%s,%s,%d,%d,%.0f,%x\n", mx.Index, mx.Logname, mx.Date, mx.Start, mx.End, mx.Duration.Seconds(), mx.Flags)
 				}
-			} else if options.Idx <= len(metas) {
-				if metas[options.Idx-1].Flags&types.Is_Valid != 0 {
-					for k, v := range metas[options.Idx-1].Summary() {
-						fmt.Printf("%-8.8s : %s\n", k, v)
-					}
-					ls, res := lfr.Reader(metas[options.Idx-1])
-					if res {
-						if len(options.Mqttopts) > 0 {
-							mqttgen.MQTTGen(ls)
-						} else {
-							ltmgen.LTMGen(ls, metas[options.Idx-1])
+			} else {
+				if options.Idx <= len(metas) {
+					if metas[options.Idx-1].Flags&types.Is_Valid != 0 {
+						for k, v := range metas[options.Idx-1].Summary() {
+							fmt.Printf("%-8.8s : %s\n", k, v)
 						}
+						ls, res := lfr.Reader(metas[options.Idx-1])
+						if res {
+							if len(options.Mqttopts) > 0 {
+								mqttgen.MQTTGen(ls)
+							} else {
+								ltmgen.LTMGen(ls, metas[options.Idx-1])
+							}
+						} else {
+							fmt.Fprintf(os.Stderr, "*** skipping generation for log  with no valid geospatial data\n")
+						}
+						fmt.Println()
 					} else {
-						fmt.Fprintf(os.Stderr, "*** skipping generation for log  with no valid geospatial data\n")
+						fmt.Println("Not valid")
 					}
-					fmt.Println()
 				}
 			}
 		} else {
