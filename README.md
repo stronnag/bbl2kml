@@ -7,6 +7,7 @@ Generate annotated KML/KMZ files from inav blackbox logs and OpenTX log files (i
 * flightlog2kml - Generates KML/Z file(s) from Blackbox log(s) and OpenTX (OTX) logs
 * mission2kml - Generate KML file from inav mission files (and other formats)
 * fl2mqtt - Generates MQTT data to stimulate the on-line Ground Control Station [BulletGCSS](https://bulletgcss.fpvsampa.com/)
+* fl2ltm - If fl2mqtt is installed (typically by hard or soft link) as `fl2ltm` is generates LTM  (inav's Lightweight Telemetry). This is primarily for use by [mwp](https://github.com/stronnag/mwptools/) as a unified replay tool for Blackbox and Opentx logs.
 
 ```
  flightlog2kml --help
@@ -131,7 +132,7 @@ There are a few issues with OpenTX logs, the first of which needs OpenTX 2.3.11 
 
 ## `fl2mqtt`
 
-The MQTT option (BulletGCSS) uses a MQTT broker URI, which may include a username/password and cafile if you require authentication and/or encryption. It can also generate compatible log files that may be replayed by BulletGCSS' internal log palyer (without requiring a MQTT broker).
+The MQTT option (BulletGCSS) uses a MQTT broker URI, which may include a username/password and cafile if you require authentication and/or encryption. It can also generate compatible log files that may be replayed by BulletGCSS' internal log player (without requiring a MQTT broker).
 
 ```
 $ fl2mqtt --help
@@ -169,7 +170,7 @@ Note that the scheme (**mqtt**:// in the `--help` text) is interpreted as:
 * ws - Websocket (vice TCP socket), ensure the websocket port is also specificed
 * wss - Encrypted websocket, ensure the TLS websocket port is also specificed. TLS validation is performed using the operating system.
 * mqtts,ssl - Secure (TLS) TCP connection. Ensure the TLS port is specified. TLS validation is performed using the operating system, unless `?cafile=file` is specified.
-* mqtt (or anyother scheme) - TCP connection. If `?cafile=file` is specified, then that is used for TLS validation (and the TLS port should be specified).
+* mqtt (or any-other scheme) - TCP connection. If `?cafile=file` is specified, then that is used for TLS validation (and the TLS port should be specified).
 
 Example:
 ```
@@ -294,4 +295,11 @@ make
 
 `flightlog2kml` may be build for all OS for which a suitable Golang is available. It also requires inav's [blackbox_decode](https://github.com/iNavFlight/blackbox-tools); 0.4.5 (or future) is recommended; the minimum `blackbox_decode` version is 0.4.4. For Windows' users it is probably easiest to copy inav's `blackbox_decode.exe` into the same directory as `flightlog2kml.exe`.
 
-Binaries are provided for common operating systems in the [Release folder](https://github.com/stronnag/bbl2kml/releases).
+Binaries are provided for common operating systems in the [Release folder](https://github.com/stronnag/bbl2kml/releases). Note that there is no binary for `fl2ltm`; this in "installed" manually as:
+
+```
+# cd <install location>
+# ln -sf fl2mqtt fl2ltm
+```
+
+`fl2ltm` will be automatically detected by [mwp](https://github.com/stronnag/mwptools/) and used in preference to `replay_bbox_ltm.rb` and `otxlog`.
