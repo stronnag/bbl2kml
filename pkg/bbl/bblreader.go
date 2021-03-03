@@ -66,6 +66,11 @@ func get_headers(fn string) {
 	for i, s := range record {
 		hdrs[s] = i
 	}
+	if _, ok := hdrs["dateTime"]; !ok {
+		fmt.Fprintln(os.Stderr, "No \"datetime\" header, probably blackbox_decode too old or broken")
+		os.Exit(1)
+	}
+
 }
 
 func dump_headers() {
@@ -680,9 +685,6 @@ func (lg *BBLOG) Reader(meta types.FlightMeta) (types.LogSegment, bool) {
 
 	srec := stats.Summary(lt - st)
 	ok := homes.Flags != 0 && len(rec.Items) > 0
-	if !ok {
-		fmt.Fprintf(os.Stderr, "home.Flags %v, len %v\n", homes.Flags, len(rec.Items))
-	}
 	ls := types.LogSegment{}
 	if ok {
 		ls.L = rec
