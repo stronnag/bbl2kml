@@ -47,7 +47,7 @@ func Usage() {
 	flag.Usage()
 }
 
-func ParseCLI(gv func() string) []string {
+func ParseCLI(gv func() string) ([]string, string) {
 	app := filepath.Base(os.Args[0])
 
 	flag.Usage = func() {
@@ -120,5 +120,5 @@ func ParseCLI(gv func() string) []string {
 	}
 
 	files := flag.Args()
-	return files
+	return files, app
 }

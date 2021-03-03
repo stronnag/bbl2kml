@@ -28,7 +28,7 @@ func getVersion() string {
 }
 
 func main() {
-	files := options.ParseCLI(getVersion)
+	files, _ := options.ParseCLI(getVersion)
 	if options.Dump {
 		fmt.Fprintln(os.Stderr, "Dump only supported via CLI")
 		return

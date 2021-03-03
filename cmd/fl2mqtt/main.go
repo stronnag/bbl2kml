@@ -22,7 +22,7 @@ func getVersion() string {
 }
 
 func main() {
-	files := options.ParseCLI(getVersion)
+	files, app := options.ParseCLI(getVersion)
 	if len(files) == 0 || (len(options.Mqttopts) == 0 && len(options.Outdir) == 0 &&
 		options.Dump == false && len(options.LTMdev) == 0 && options.Metas == false) {
 		options.Usage()
@@ -62,7 +62,7 @@ func main() {
 						}
 						ls, res := lfr.Reader(metas[options.Idx-1])
 						if res {
-							if len(options.Mqttopts) > 0 {
+							if app == "fl2mqtt" {
 								mqttgen.MQTTGen(ls)
 							} else {
 								ltmgen.LTMGen(ls, metas[options.Idx-1])

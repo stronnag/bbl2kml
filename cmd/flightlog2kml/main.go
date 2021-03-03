@@ -21,7 +21,7 @@ func getVersion() string {
 }
 
 func main() {
-	files := options.ParseCLI(getVersion)
+	files, _ := options.ParseCLI(getVersion)
 	if len(files) == 0 {
 		options.Usage()
 		os.Exit(1)
