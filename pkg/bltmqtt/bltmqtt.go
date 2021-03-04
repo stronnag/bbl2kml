@@ -300,10 +300,11 @@ func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int,
 	return sb.String()
 }
 
-func make_bullet_home(hlat float64, hlon float64, halt float64) string {
+func make_bullet_home(hlat float64, hlon float64, halt float64, name string) string {
 	var sb strings.Builder
-	sb.WriteString("cs:JRandomUAV,")
-	sb.WriteString("hla:")
+	sb.WriteString("cs:")
+	sb.WriteString(name)
+	sb.WriteString(",hla:")
 	if options.Bulletvers == 2 {
 		sb.WriteString(strconv.Itoa(int(hlat * 10000000)))
 	} else {
@@ -367,11 +368,17 @@ func output_message(c *MQTTClient, wfh *os.File, msg string, et time.Time) {
 	}
 }
 
-func MQTTGen(s types.LogSegment) {
+func MQTTGen(s types.LogSegment, meta types.FlightMeta) {
 	ncells := 0
 	var wfh *os.File
 	tgt := 0
 	nvs := 0
+	var name string
+	if meta.Flags&types.Has_Craft != 0 {
+		name = meta.Craft
+	} else {
+		name = "JRandomUAV"
+	}
 
 	c := NewMQTTClient()
 	var err error
@@ -537,8 +544,7 @@ func MQTTGen(s types.LogSegment) {
 				hlat = s.H.HomeLat
 				hlon = s.H.HomeLon
 			}
-
-			msg = make_bullet_home(hlat, hlon, s.H.HomeAlt)
+			msg = make_bullet_home(hlat, hlon, s.H.HomeAlt, name)
 			output_message(c, wfh, msg, b.Utc)
 			if len(mstrs) > 0 && i%2*miscout == 0 {
 				for _, str := range mstrs {

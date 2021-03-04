@@ -62,9 +62,10 @@ func main() {
 						}
 						ls, res := lfr.Reader(metas[options.Idx-1])
 						if res {
-							if app == "fl2mqtt" {
-								mqttgen.MQTTGen(ls)
-							} else {
+							switch app {
+							case "fl2mqtt":
+								mqttgen.MQTTGen(ls, metas[options.Idx-1])
+							case "fl2ltm":
 								ltmgen.LTMGen(ls, metas[options.Idx-1])
 							}
 						} else {
