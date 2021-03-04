@@ -465,11 +465,8 @@ func MQTTGen(s types.LogSegment, meta types.FlightMeta) {
 		}
 
 		if b.Fmode != laststat {
-			if laststat == types.FM_WP {
-				tgt = 0
-				nvs = 0
-				output_message(c, wfh, "cwn:0,nvs:0", b.Utc)
-			}
+			tgt = 0
+			nvs = 0
 			if options.Bulletvers == 2 {
 				switch b.Fmode {
 				case types.FM_MANUAL:
@@ -484,6 +481,8 @@ func MQTTGen(s types.LogSegment, meta types.FlightMeta) {
 					fmode = "8"
 				case types.FM_PH:
 					fmode = "4"
+					tgt = 0
+					nvs = 3
 				case types.FM_WP:
 					fmode = "7"
 					if ms != nil {
@@ -492,6 +491,8 @@ func MQTTGen(s types.LogSegment, meta types.FlightMeta) {
 					}
 				case types.FM_RTH:
 					fmode = "2"
+					tgt = 0
+					nvs = 1
 				case types.FM_CRUISE3D:
 					fmode = "5"
 				case types.FM_LAUNCH:
@@ -528,9 +529,10 @@ func MQTTGen(s types.LogSegment, meta types.FlightMeta) {
 					fmode = "!FS!"
 				}
 			}
-			laststat = b.Fmode
 			msg := make_bullet_mode(fmode, ncells, b.HWfail)
 			output_message(c, wfh, msg, b.Utc)
+			output_message(c, wfh, fmt.Sprintf("cwn:%d,nvs:%d", tgt, nvs), b.Utc)
+			laststat = b.Fmode
 		}
 
 		if i%miscout == 0 {
