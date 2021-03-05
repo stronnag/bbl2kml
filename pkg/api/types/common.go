@@ -76,7 +76,7 @@ type LogItem struct {
 	Status   uint8
 	Hdop     uint16
 	HWfail   bool
-	NavState int
+	NavMode  byte
 }
 
 type LogRec struct {

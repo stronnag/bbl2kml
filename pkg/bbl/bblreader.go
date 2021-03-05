@@ -62,6 +62,10 @@ func get_headers(fn string) {
 		os.Exit(1)
 	}
 	record, err := r.Read()
+	build_headers(record)
+}
+
+func build_headers(record []string) {
 	hdrs = make(map[string]int)
 	for i, s := range record {
 		hdrs[s] = i
@@ -70,7 +74,6 @@ func get_headers(fn string) {
 		fmt.Fprintln(os.Stderr, "No \"datetime\" header, probably blackbox_decode too old or broken")
 		os.Exit(1)
 	}
-
 }
 
 func dump_headers() {
@@ -383,7 +386,6 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 	s0, sok := get_rec_value(r, "flightModeFlags (flags)")
 	if s, ok = get_rec_value(r, "navState"); ok {
 		i64, _ := strconv.ParseInt(s, 10, 64)
-		b.NavState = int(i64)
 		if inav.IsCruise3d(inav_vers, int(i64)) {
 			md = types.FM_CRUISE3D
 		} else if inav.IsCruise2d(inav_vers, int(i64)) {
@@ -409,8 +411,7 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 				md = types.FM_HORIZON
 			}
 		}
-	} else {
-		b.NavState = -1
+		b.NavMode = inav.NavMode(inav_vers, int(i64))
 	}
 	// fallback for old inav bug
 	if sok && strings.Contains(s0, "NAVRTH") {
@@ -567,6 +568,7 @@ func (lg *BBLOG) Reader(meta types.FlightMeta) (types.LogSegment, bool) {
 			break
 		}
 		if i == 0 {
+			build_headers(record)
 			rec.Cap = dataCapability()
 			continue
 		}
@@ -682,7 +684,6 @@ func (lg *BBLOG) Reader(meta types.FlightMeta) (types.LogSegment, bool) {
 			log.Fatal(err)
 		}
 	}
-
 	srec := stats.Summary(lt - st)
 	ok := homes.Flags != 0 && len(rec.Items) > 0
 	ls := types.LogSegment{}

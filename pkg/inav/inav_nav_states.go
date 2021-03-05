@@ -94,3 +94,82 @@ func IsEmerg(vers, val int) bool {
 		return contains([]int{27, 28, 29}, val)
 	}
 }
+
+func is_rth_start(vers, val int) bool {
+	return val == 8
+}
+
+func is_start_land(vers, val int) bool {
+	switch {
+	case vers > 0x10601: // For 1.6.2, hex = 0x10601
+		return contains([]int{11, 22}, val)
+	case vers > 0x105ff: // 1.6 and later
+		return contains([]int{16, 27}, val)
+	case vers > 0x101ff: // 1.2 and later
+		return contains([]int{18, 29}, val)
+	default: // prior to 1.2
+		return contains([]int{18, 27}, val)
+	}
+	return false
+}
+
+func is_landing(vers, val int) bool {
+	switch {
+	case vers > 0x10601: // For 1.6.2, hex = 0x10601
+		return contains([]int{12, 21, 23}, val)
+	case vers > 0x105ff: // 1.6 and later
+		return contains([]int{17, 26, 28}, val)
+	case vers > 0x101ff: // 1.2 and later
+		return contains([]int{19, 28, 30}, val)
+	default: // prior to 1.2
+		return contains([]int{19, 28}, val)
+	}
+	return false
+}
+
+func is_landed(vers, val int) bool {
+	switch {
+	case vers > 0x10601: // For 1.6.2
+		return val == 24
+	case vers > 0x105ff: // 1.6.0
+		return val == 29
+	case vers > 0x101ff: // For 1.2.0
+		return val == 31
+	default:
+		return val == 29
+	}
+
+}
+
+func is_hover(vers, val int) bool {
+	switch {
+	case vers > 0x206ff: // 2.7.0 and later
+		return contains([]int{11, 36, 37}, val)
+	case vers > 0x10601: // For 1.6.2
+		return val == 11
+	case vers > 0x105ff: // 1.6.0
+		return val == 16
+	default:
+		return val == 18
+	}
+}
+
+func NavMode(vers, val int) byte {
+	if is_rth_start(vers, val) {
+		return 1
+	} else if IsPH(vers, val) {
+		return 3
+	} else if IsWP(vers, val) {
+		return 5
+	} else if is_start_land(vers, val) {
+		return 8
+	} else if is_landing(vers, val) {
+		return 9
+	} else if is_landed(vers, val) {
+		return 10
+	} else if is_hover(vers, val) {
+		return 13
+	} else {
+		return 0
+	}
+}

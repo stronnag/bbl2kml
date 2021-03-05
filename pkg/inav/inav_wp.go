@@ -12,8 +12,7 @@ import (
 
 var phtime time.Time
 
-func get_next_wp(ms *mission.Mission, k int) (int, int) {
-	nvs := 0
+func get_next_wp(ms *mission.Mission, k int) int {
 	tgt := 0
 	if ms != nil && k < len(ms.MissionItems)-1 {
 		switch ms.MissionItems[k+1].Action {
@@ -31,28 +30,29 @@ func get_next_wp(ms *mission.Mission, k int) (int, int) {
 					ms.MissionItems[k+1].P3 -= 1
 				}
 			}
-			nvs = 5
 		case "RTH":
-			nvs = 1
 			tgt = int(ms.MissionItems[k+1].No)
 		case "SET_HEAD", "SET_POI":
 			if k < len(ms.MissionItems)-1 {
 				tgt = int(ms.MissionItems[k+2].No)
 			}
-			nvs = 5
 		default:
 			tgt = int(ms.MissionItems[k+1].No)
-			nvs = 5
 		}
 	}
-	return tgt, nvs
+	return tgt
 }
 
-func WP_state(ms *mission.Mission, b types.LogItem, tgt int, nvs int) (int, int, int) {
+var isTimed bool
+
+func WP_state(ms *mission.Mission, b types.LogItem, tgt int) (int, int) {
 	k := tgt - 1
-	if nvs == 4 {
+	if isTimed {
 		if b.Utc.After(phtime) {
-			tgt, nvs = get_next_wp(ms, k)
+			tgt = get_next_wp(ms, k)
+			isTimed = false
+		} else {
+			b.NavMode = 4
 		}
 	} else {
 		cdist := 1.25 * b.Spd * float64(options.Intvl/1000.0)
@@ -71,7 +71,6 @@ func WP_state(ms *mission.Mission, b types.LogItem, tgt int, nvs int) (int, int,
 				if bdiff > 90 || bdiff < -90 {
 					//					fmt.Fprintf(os.Stderr, "Reached %d %s\n", k, ms.MissionItems[k].Action)
 					if ms.MissionItems[k].Action == "POSHOLD_TIME" {
-						nvs = 4
 						var phwait time.Duration
 						mwaitms := int(ms.MissionItems[k].P1) * 1000
 						if mwaitms > options.Intvl/2000 {
@@ -80,8 +79,10 @@ func WP_state(ms *mission.Mission, b types.LogItem, tgt int, nvs int) (int, int,
 							phwait = time.Duration(ms.MissionItems[k].P1) * time.Second
 						}
 						phtime = b.Utc.Add(phwait)
+						isTimed = true
+						b.NavMode = 4
 					} else {
-						tgt, nvs = get_next_wp(ms, k)
+						tgt = get_next_wp(ms, k)
 						//						fmt.Fprintf(os.Stderr, "New target WP %d %d (%s)\n", tgt, nvs, ms.MissionItems[k+1].Action)
 					}
 				}
@@ -89,5 +90,5 @@ func WP_state(ms *mission.Mission, b types.LogItem, tgt int, nvs int) (int, int,
 		}
 	}
 	act, _ := mission.ActionMap[ms.MissionItems[k].Action]
-	return tgt, nvs, act
+	return tgt, act
 }

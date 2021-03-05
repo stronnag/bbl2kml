@@ -99,11 +99,8 @@ func (l *ltmbuf) nframe(b types.LogItem, action byte, wpno byte) {
 	default:
 		l.msg[3] = 0
 	}
-	if b.NavState != -1 {
-		l.msg[4] = byte(b.NavState)
-	} else {
-		l.msg[4] = 0 // synthesise
-	}
+
+	l.msg[4] = b.NavMode
 	l.msg[7] = 0
 	l.msg[8] = 0
 	l.checksum()
@@ -158,9 +155,13 @@ func (l *ltmbuf) sframe(b types.LogItem) {
 	l.checksum()
 }
 
-func (l *ltmbuf) xframe(hdop uint16, xcount uint8) {
-	binary.LittleEndian.PutUint16(l.msg[3:5], hdop)
-	l.msg[5] = 0
+func (l *ltmbuf) xframe(b types.LogItem, xcount uint8) {
+	binary.LittleEndian.PutUint16(l.msg[3:5], b.Hdop)
+	if b.HWfail {
+		l.msg[5] = 1
+	} else {
+		l.msg[5] = 0
+	}
 	l.msg[6] = xcount
 	l.msg[7] = 0
 	l.checksum()
@@ -219,9 +220,8 @@ func LTMGen(seg types.LogSegment, meta types.FlightMeta) {
 	s = NewMSPSerial(options.LTMdev, 0)
 
 	laststat := uint8(255)
-	nvs := 0
 	tgt := 0
-	xnvs := 0
+	xnvs := byte(0)
 	xtgt := 0
 
 	xcount := uint8(0)
@@ -289,21 +289,15 @@ func LTMGen(seg types.LogSegment, meta types.FlightMeta) {
 			case types.FM_WP:
 				if ms != nil {
 					tgt = 1
-					nvs = 5
 				}
 			case types.FM_RTH:
 				tgt = 0
-				nvs = 1
 			case types.FM_PH:
 				tgt = 0
-				nvs = 3
 			default:
 				tgt = 0
-				nvs = 0
 			}
-			//			if b.NavState == -1 {
-			b.NavState = nvs
-			//			}
+
 			l := newLTM('N')
 			l.nframe(b, 0, 0)
 			s.Write(l.msg)
@@ -314,9 +308,8 @@ func LTMGen(seg types.LogSegment, meta types.FlightMeta) {
 
 		if b.Fmode == types.FM_WP && ms != nil {
 			act := 0
-			tgt, nvs, act = inav.WP_state(ms, b, tgt, nvs)
-			if tgt != xtgt || nvs != xnvs {
-				b.NavState = nvs
+			tgt, act = inav.WP_state(ms, b, tgt)
+			if tgt != xtgt || b.NavMode != xnvs {
 				l := newLTM('N')
 				l.nframe(b, byte(act), byte(tgt))
 				s.Write(l.msg)
@@ -345,7 +338,7 @@ func LTMGen(seg types.LogSegment, meta types.FlightMeta) {
 			l.oframe(b, hlat, hlon)
 			s.Write(l.msg)
 			l = newLTM('X')
-			l.xframe(b.Hdop, xcount)
+			l.xframe(b, xcount)
 			s.Write(l.msg)
 			xcount = (xcount + 1) & 0xff
 			g3t = b.Utc.Add(g3diff)
