@@ -461,7 +461,6 @@ func get_otx_line(r []string) types.LogItem {
 	}
 	b.Throttle = 100 * (b.Throttle + 1024) / 2048
 	b.Status = status
-	b.NavState = -1
 	return b
 }
 

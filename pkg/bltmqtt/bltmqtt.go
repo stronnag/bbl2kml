@@ -158,7 +158,7 @@ func (m *MQTTClient) publish(msg string) {
    broker.emqx.io    1883, 8883, 8083, 8084 (ws)
 */
 
-func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int, tgt int, nvs int) string {
+func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int, tgt int) string {
 	var sb strings.Builder
 
 	sb.WriteString("flt:")
@@ -291,7 +291,7 @@ func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int,
 	sb.WriteByte(',')
 
 	if tgt != 0 {
-		sb.WriteString(fmt.Sprintf("cwn:%d,nvs:%d,", tgt, nvs))
+		sb.WriteString(fmt.Sprintf("cwn:%d,nvs:%d,", tgt, b.NavMode))
 	}
 
 	armed := b.Status & 1
@@ -372,7 +372,6 @@ func MQTTGen(s types.LogSegment, meta types.FlightMeta) {
 	ncells := 0
 	var wfh *os.File
 	tgt := 0
-	nvs := 0
 	var name string
 	if meta.Flags&types.Has_Craft != 0 {
 		name = meta.Craft
@@ -466,7 +465,6 @@ func MQTTGen(s types.LogSegment, meta types.FlightMeta) {
 
 		if b.Fmode != laststat {
 			tgt = 0
-			nvs = 0
 			if options.Bulletvers == 2 {
 				switch b.Fmode {
 				case types.FM_MANUAL:
@@ -482,17 +480,14 @@ func MQTTGen(s types.LogSegment, meta types.FlightMeta) {
 				case types.FM_PH:
 					fmode = "4"
 					tgt = 0
-					nvs = 3
 				case types.FM_WP:
 					fmode = "7"
 					if ms != nil {
 						tgt = 1
-						nvs = 5
 					}
 				case types.FM_RTH:
 					fmode = "2"
 					tgt = 0
-					nvs = 1
 				case types.FM_CRUISE3D:
 					fmode = "5"
 				case types.FM_LAUNCH:
@@ -531,7 +526,7 @@ func MQTTGen(s types.LogSegment, meta types.FlightMeta) {
 			}
 			msg := make_bullet_mode(fmode, ncells, b.HWfail)
 			output_message(c, wfh, msg, b.Utc)
-			output_message(c, wfh, fmt.Sprintf("cwn:%d,nvs:%d", tgt, nvs), b.Utc)
+			output_message(c, wfh, fmt.Sprintf("cwn:%d,nvs:%d", tgt, b.NavMode), b.Utc)
 			laststat = b.Fmode
 		}
 
@@ -557,9 +552,9 @@ func MQTTGen(s types.LogSegment, meta types.FlightMeta) {
 		}
 
 		if b.Fmode == types.FM_WP && ms != nil {
-			tgt, nvs, _ = inav.WP_state(ms, b, tgt, nvs)
+			tgt, _ = inav.WP_state(ms, b, tgt)
 		}
-		msg := make_bullet_msg(b, s.H.HomeAlt, et, ncells, tgt, nvs)
+		msg := make_bullet_msg(b, s.H.HomeAlt, et, ncells, tgt)
 		output_message(c, wfh, msg, b.Utc)
 		if c != nil && !lastm.IsZero() {
 			tdiff := b.Utc.Sub(lastm)
