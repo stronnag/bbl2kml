@@ -2,15 +2,15 @@
 
 ## Overview
 
-Generate annotated KML/KMZ files from inav blackbox logs and OpenTX log files (inav S.Port telemetry).
+A suite of tools to generate annotated KML/KMZ files (and other data) from inav blackbox logs and OpenTX log files (inav S.Port telemetry).
 
 * flightlog2kml - Generates KML/Z file(s) from Blackbox log(s) and OpenTX (OTX) logs
 * mission2kml - Generate KML file from inav mission files (and other formats)
 * fl2mqtt - Generates MQTT data to stimulate the on-line Ground Control Station [BulletGCSS](https://bulletgcss.fpvsampa.com/)
-* fl2ltm - If fl2mqtt is installed (typically by hard or soft link) as `fl2ltm` is generates LTM  (inav's Lightweight Telemetry). This is primarily for use by [mwp](https://github.com/stronnag/mwptools/) as a unified replay tool for Blackbox and Opentx logs.
+* fl2ltm - If fl2mqtt is installed (typically by hard or soft link) as `fl2ltm` it generates LTM  (inav's Lightweight Telemetry). This is primarily for use by [mwp](https://github.com/stronnag/mwptools/) as a unified replay tool for Blackbox and Opentx logs.
 
 ```
- flightlog2kml --help
+$ flightlog2kml --help
 Usage of flightlog2kml [options] file...
   -dms
     	Show positions as DD:MM:SS.s (vice decimal degrees) (default true)
@@ -75,7 +75,7 @@ If you use a format other than MW-XML or mwp JSON, it is recommended that you re
 
 KML/Z file defining tracks which may be displayed Google Earth. Tracks can be animated with the time slider.
 
-Both Flight Mode and RSSI tracks are generated; the default for display is Flight Mode, unless `-rssi` is specified (and RSSI data is available in the log). The log summary is displayed by double clicking on the "file name"` folder in Google Earth.
+Both Flight Mode and RSSI tracks are generated; the default for display is Flight Mode, unless `-rssi` is specified (and RSSI data is available in the log). The log summary is displayed by double clicking on the `file name` folder in Google Earth.
 
 ### Modes
 
@@ -132,7 +132,7 @@ There are a few issues with OpenTX logs, the first of which needs OpenTX 2.3.11 
 
 ## `fl2mqtt`
 
-The MQTT option (BulletGCSS) uses a MQTT broker URI, which may include a username/password and cafile if you require authentication and/or encryption. It can also generate compatible log files that may be replayed by BulletGCSS' internal log player (without requiring a MQTT broker).
+The MQTT option (for BulletGCSS) uses a MQTT broker URI, which may include a username/password and cafile if you require authentication and/or encryption. It can also generate compatible log files that may be replayed by BulletGCSS' internal log player (without requiring a MQTT broker).
 
 ```
 $ fl2mqtt --help
@@ -171,6 +171,8 @@ Note that the scheme (**mqtt**:// in the `--help` text) is interpreted as:
 * wss - Encrypted websocket, ensure the TLS websocket port is also specificed. TLS validation is performed using the operating system.
 * mqtts,ssl - Secure (TLS) TCP connection. Ensure the TLS port is specified. TLS validation is performed using the operating system, unless `?cafile=file` is specified.
 * mqtt (or any-other scheme) - TCP connection. If `?cafile=file` is specified, then that is used for TLS validation (and the TLS port should be specified).
+
+There is a [bb2kml wiki article](https://github.com/stronnag/bbl2kml/wiki/Self-Hosting-a-MQTT-server-(e.g.-for-fl2mqtt-&--BulletGCSS)) describing how to host your own MQTT broker, for reasons of convenience of better privacy.
 
 Example:
 ```
