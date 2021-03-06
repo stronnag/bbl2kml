@@ -425,7 +425,7 @@ func MQTTGen(s types.LogSegment, meta types.FlightMeta) {
 				if mi.P3 != 0 {
 					sb.WriteString(fmt.Sprintf("p3:%d,", mi.P3))
 				}
-				sb.WriteString(fmt.Sprintf("el:%d,", int32(s.H.HomeAlt)+mi.Alt))
+				//				sb.WriteString(fmt.Sprintf("el:%d,", int32(s.H.HomeAlt)+mi.Alt))
 				if k == len(ms.MissionItems)-1 {
 					sb.WriteString("f:165")
 				}
