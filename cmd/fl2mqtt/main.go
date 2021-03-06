@@ -51,6 +51,7 @@ func main() {
 			if options.Dump {
 				lfr.Dump()
 			} else if options.Metas {
+				lfr.GetDurations()
 				for _, mx := range metas {
 					fmt.Printf("%d,%s,%s,%d,%d,%.0f,%x\n", mx.Index, mx.Logname, mx.Date, mx.Start, mx.End, mx.Duration.Seconds(), mx.Flags)
 				}

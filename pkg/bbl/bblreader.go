@@ -36,7 +36,13 @@ func NewBBLReader(fn string) BBLOG {
 }
 
 func (o *BBLOG) GetMetas() ([]types.FlightMeta, error) {
-	return metas(o.name)
+	m, err := metas(o.name)
+	o.meta = m
+	return m, err
+}
+
+func (o *BBLOG) GetDurations() {
+	get_durations(o.name, o.meta)
 }
 
 func (o *BBLOG) LogType() byte {
@@ -254,14 +260,17 @@ func metas(fn string) ([]types.FlightMeta, error) {
 				}
 			}
 			r.Close()
-			for i := 0; i < len(bes); i++ {
-				bes[i].Duration = get_bb_duration(fn, fmt.Sprintf("%d", i+1))
-			}
 		}
 	} else {
 		err = errors.New("No records in BBL")
 	}
 	return bes, err
+}
+
+func get_durations(fn string, meta []types.FlightMeta) {
+	for i := 0; i < len(meta); i++ {
+		meta[i].Duration = get_bb_duration(fn, fmt.Sprintf("%d", i+1))
+	}
 }
 
 func get_bb_duration(bbfile string, idx string) time.Duration {
@@ -274,20 +283,27 @@ func get_bb_duration(bbfile string, idx string) time.Duration {
 	i := 0
 	var ssec string
 	var lsec string
+	var line string
 	for scanner.Scan() {
-		line := scanner.Text()
-		if n := strings.Index(line, ","); n != -1 {
-			lsec = line[0:n]
-			if i == 1 {
+		line = scanner.Text()
+		if i == 1 {
+			parts := strings.SplitN(line, ",", 3)
+			if len(parts) > 2 {
+				lsec = strings.TrimLeft(parts[1], " ")
 				ssec = lsec
 			}
 		}
 		i += 1
 	}
+	parts := strings.SplitN(line, ",", 3)
+	if len(parts) > 2 {
+		lsec = strings.TrimLeft(parts[1], " ")
+	}
+
 	ilsec, _ := strconv.ParseInt(lsec, 10, 64)
 	issec, _ := strconv.ParseInt(ssec, 10, 64)
 	sdiff := ilsec - issec
-	diff := time.Duration(sdiff) * time.Millisecond
+	diff := time.Duration(sdiff) * time.Microsecond
 	if err = scanner.Err(); err != nil {
 		fmt.Fprintln(os.Stderr, "reading standard input:", err)
 	}

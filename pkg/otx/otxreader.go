@@ -38,7 +38,12 @@ func (o *OTXLOG) LogType() byte {
 }
 
 func (o *OTXLOG) GetMetas() ([]types.FlightMeta, error) {
-	return metas(o.name)
+	m, err := metas(o.name)
+	o.meta = m
+	return m, err
+}
+
+func (o *OTXLOG) GetDurations() {
 }
 
 func (o *OTXLOG) Dump() {

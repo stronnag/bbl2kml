@@ -87,7 +87,7 @@ $(_FAPP): $(FSRCS)
 
 $(_QAPP): $(QSRCS)
 	CGO_ENABLED=0 go build $(LDF) "$(LDFLAGS) -extldflags -static" -o $(QAPP)$(EXT) cmd/fl2mqtt/main.go
-	ln -f fl2mqtt fl2ltm
+	ln -sf fl2mqtt fl2ltm
 
 clean:
 	@rm -f $(CAPP)$(EXT) $(MAPP)$(EXT) $(GAPP)$(EXT) $(FAPP)$(EXT) $(QAPP)$(EXT)
@@ -98,7 +98,7 @@ install: $(CAPP)$(EXE) $(MAPP)$(EXE) $(QAPP)$(EXE)
 	@ install -d $(prefix)/bin
 	install -s $(CAPP)$(EXE) $(MAPP)$(EXE) $(QAPP)$(EXE) $(prefix)/bin
 	@rm -f $(prefix)/bin/fl2ltm
-	@ln -f $(prefix)/bin/fl2mqtt $(prefix)/bin/fl2ltm
+	@ln -sf $(prefix)/bin/fl2mqtt $(prefix)/bin/fl2ltm
 
 install-all: $(CAPP)$(EXE) $(MAPP)$(EXE) $(GAPP)$(EXE) $(QAPP)$(EXE)
 	@ install -d $(prefix)/bin

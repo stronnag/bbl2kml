@@ -158,6 +158,7 @@ type LogSegment struct {
 type FlightLog interface {
 	Reader(FlightMeta) (LogSegment, bool)
 	GetMetas() ([]FlightMeta, error)
+	GetDurations()
 	Dump()
 	LogType() byte
 }
