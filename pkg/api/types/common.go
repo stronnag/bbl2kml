@@ -170,6 +170,7 @@ const (
 	Has_Disarm
 	Has_Size
 	Has_Start
+	Is_Suspect = (1 << 7)
 )
 
 const (

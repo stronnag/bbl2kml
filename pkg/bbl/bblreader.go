@@ -106,6 +106,9 @@ func metas(fn string) ([]types.FlightMeta, error) {
 	if err == nil {
 		var nbes int
 		var loffset int64
+		var has_fbat bool
+		var has_vbat bool
+		var has_intp bool
 
 		base := filepath.Base(fn)
 		scanner := bufio.NewScanner(r)
@@ -132,11 +135,13 @@ func metas(fn string) ([]types.FlightMeta, error) {
 			switch {
 			case strings.Contains(string(l), "H Product:"):
 				offset, _ := r.Seek(0, io.SeekCurrent)
-
 				if loffset != 0 {
 					bes[nbes].Size = offset - loffset
 					if bes[nbes].Size > 4096 {
 						bes[nbes].Flags |= types.Is_Valid
+					}
+					if !has_intp || (has_fbat && !has_vbat) {
+						bes[nbes].Flags |= types.Is_Suspect
 					}
 				}
 				loffset = offset
@@ -147,6 +152,9 @@ func metas(fn string) ([]types.FlightMeta, error) {
 				nbes = len(bes) - 1
 				bes[nbes].Logname = base
 				bes[nbes].Index = nbes + 1
+				has_fbat = false
+				has_vbat = false
+				has_intp = false
 			case strings.HasPrefix(string(l), "H Firmware revision:"):
 				if n := strings.Index(string(l), ":"); n != -1 {
 					fw := string(l)[n+1:]
@@ -232,12 +240,21 @@ func metas(fn string) ([]types.FlightMeta, error) {
 				if n := strings.Index(string(l), ":"); n != -1 {
 					fstr := string(l)[n+1:]
 					if len(fstr) > 0 {
-						fs, _ := strconv.Atoi(fstr)
-						if (fs & types.Feature_GPS) != 0 {
+						features, _ := strconv.Atoi(fstr)
+						if (features & types.Feature_GPS) != 0 {
 							bes[nbes].Sensors |= types.Has_GPS
+						}
+						if (features & types.Feature_VBAT) != 0 {
+							has_fbat = true
 						}
 					}
 				}
+
+			case strings.Contains(string(l), "H vbatref:"):
+				has_vbat = true
+
+			case strings.Contains(string(l), "H P interval:"):
+				has_intp = true
 
 			case strings.Contains(string(l), "reason:"):
 				if n := strings.Index(string(l), ":"); n != -1 {
@@ -258,8 +275,18 @@ func metas(fn string) ([]types.FlightMeta, error) {
 						bes[nbes].Flags |= types.Is_Valid
 					}
 				}
+				if !has_intp || (has_fbat && !has_vbat) {
+					bes[nbes].Flags |= types.Is_Suspect
+				}
 			}
 			r.Close()
+			/*
+				for i := 0; i < len(bes); i++ {
+					if bes[i].Flags&types.Is_Suspect != 0 {
+						fmt.Fprintf(os.Stderr, " * Log entry %d may be corrupt\n", i+1)
+					}
+				}
+			*/
 		}
 	} else {
 		err = errors.New("No records in BBL")

@@ -61,6 +61,9 @@ func main() {
 						for k, v := range metas[options.Idx-1].Summary() {
 							fmt.Printf("%-8.8s : %s\n", k, v)
 						}
+						if metas[options.Idx-1].Flags&types.Is_Suspect != 0 {
+							fmt.Println("Warning  : Log entry may be corrupt")
+						}
 						ls, res := lfr.Reader(metas[options.Idx-1])
 						if res {
 							switch app {
