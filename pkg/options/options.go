@@ -65,9 +65,9 @@ func parse_confile_file() {
 	data, err := ioutil.ReadFile(fn)
 	if err == nil {
 		err = json.Unmarshal(data, &Config)
-	}
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "JSON Config: %v\n", err)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "JSON Config: %v\n", err)
+		}
 	}
 }
 
