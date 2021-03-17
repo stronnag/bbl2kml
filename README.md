@@ -2,7 +2,7 @@
 
 ## Overview
 
-A suite of tools to generate annotated KML/KMZ files (and other data) from inav blackbox logs and OpenTX log files (inav S.Port telemetry).
+A suite of tools to generate annotated KML/KMZ files (and other data) from **inav** blackbox logs and OpenTX log files (inav S.Port telemetry).
 
 * flightlog2kml - Generates KML/Z file(s) from Blackbox log(s) and OpenTX (OTX) logs
 * mission2kml - Generate KML file from inav mission files (and other formats)
@@ -132,7 +132,7 @@ There are a few issues with OpenTX logs, the first of which needs OpenTX 2.3.11 
 
 ## `fl2mqtt`
 
-The MQTT option (for BulletGCSS) uses a MQTT broker URI, which may include a username/password and cafile if you require authentication and/or encryption. It can also generate compatible log files that may be replayed by BulletGCSS' internal log player (without requiring a MQTT broker).
+The MQTT option (for BulletGCSS) uses a MQTT broker URI, which may include a username/password and cafile if required for authentication and/or encryption. It can also generate compatible log files that may be replayed by BulletGCSS' internal log player (without requiring a MQTT broker).
 
 ```
 $ fl2mqtt --help
@@ -233,39 +233,38 @@ $ mission2kml -home 54.125229,-4.730443 barrule-h.mission > mtest.kml
 
 ## Setting default options
 
-It is possible to define default options using the `BBL2KML_OPTS` (sic) environment variable.
+Default settings may be set in a configuration file.
+
+* On POSIX platforms (Linux, FreeBSD, MacOS), `$HOME/.config/fl2x/config.json`
+* On Windows `%APPDIR%\fl2x\config.json`
+
+The keys in the file are the relevant command line options, the following are recognised:
+
+* `dms`
+* `extrude`
+* `kml`
+* `rssi`
+* `efficiency`
+* `split-time`
+* `home-alt`
+* `blackbox-decode`
+* `gradient`
+* `outdir`
+* `blt-vers`
+* `type`
+
+For example:
 
 ```
-BBL2KML_OPTS='-dms' flightlog2kml somelog.TXT
+{
+    "dms": true,
+    "extrude": true,
+    "gradient": "yor",
+    "efficiency": true
+}
 ```
 
-A permanent value can set in e.g. `.bashrc`, `.pam_environment` or Windows' equivalent.
-
-```
-export BBL2KML_OPTS='-dms -extrude'
-or
-export BBL2KML_OPTS='-rssi'
-```
-
-In the permanent usage case, options may be changed / inverted by command line using explicit values.
-
-```
-$ echo $BBL2KML_OPTS
--dms -extrude --gradient=yor --efficiency
-
-$ flightlog2kml -extrude=false --dms=false randomBBL.TXT
-```
-
-The following options are recognised in `$BBL2KML_OPTS`; any other values (e.g. the obsolete `--elev` will cause the application to terminate. This is a feature.
-
-* `--kml`
-* `--rssi`
-* `--extrude`
-* `--gradient=red`
-* `--decoder=blackbox_decode` The `blackbox_decode` application to use. This setting enables the use of experimental (or obsolete) decoders, mainly for testing and is thus only available via the environment.
-* `--efficiency`
-
-Note that the command interpreter allows `-flag` or `--flag` for any option.
+Note also that the command interpreter allows `-flag` or `--flag` for any option.
 
 ## Limitations, Bugs, Bug Reporting
 
@@ -304,4 +303,4 @@ Binaries are provided for common operating systems in the [Release folder](https
 # ln -sf fl2mqtt fl2ltm
 ```
 
-`fl2ltm` will be automatically detected by [mwp](https://github.com/stronnag/mwptools/) and used in preference to `replay_bbox_ltm.rb` and `otxlog`.
+`fl2ltm` will be automatically detected by [mwp](https://github.com/stronnag/mwptools/) and used in preference to its older `replay_bbox_ltm.rb` and `otxlog` helpers.

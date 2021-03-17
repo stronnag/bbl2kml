@@ -13,26 +13,26 @@ import (
 
 type Configuration struct {
 	Dms             bool   `json:"dms"`
-	Extrude         bool   `json:"extrude"`
-	Kml             bool   `json:"kml"`
-	Rssi            bool   `json:"rssi"`
+	Dump            bool   `json:"-"`
 	Efficiency      bool   `json:"efficiency"`
-	Intvl           int    `json:"interval"`
-	SplitTime       int    `json:"split-time"`
-	HomeAlt         int    `json:"home_alt"`
-	Blackbox_decode string `json:"blackbox_decode"`
-	Gradset         string `json:"gradient"`
-	Outdir          string `json:"outdir"`
+	Extrude         bool   `json:"extrude"`
+	Fast            bool   `json:"-"`
+	Kml             bool   `json:"kml"`
+	Metas           bool   `json:"-"`
+	Rssi            bool   `json:"rssi"`
 	Bulletvers      int    `json:"blt-vers"`
+	Intvl           int    `json:"-"`
+	Idx             int    `json:"-"`
+	HomeAlt         int    `json:"home-alt"`
+	SplitTime       int    `json:"split-time"`
 	Type            int    `json:"type"`
+	Blackbox_decode string `json:"blackbox-decode"`
+	Gradset         string `json:"gradient"`
+	LTMdev          string `json:"-"`
 	Mission         string `json:"-"`
 	Mqttopts        string `json:"-"`
-	LTMdev          string `json:"-"`
+	Outdir          string `json:"outdir"`
 	Rebase          string `json:"-"`
-	Idx             int    `json:"-"`
-	Metas           bool   `json:"-"`
-	Dump            bool   `json:"-"`
-	Fast            bool   `json:"-"`
 }
 
 var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120}
@@ -127,7 +127,6 @@ func ParseCLI(gv func() string) ([]string, string) {
 		flag.BoolVar(&Config.Metas, "metas", false, "list metadata and exit")
 		flag.BoolVar(&Config.Fast, "fast", false, "faster replay")
 		flag.IntVar(&Config.Type, "type", Config.Type, "model type")
-		Config.Intvl /= 10
 	} else {
 		flag.BoolVar(&Config.Kml, "kml", Config.Kml, "Generate KML (vice default KMZ)")
 		flag.BoolVar(&Config.Rssi, "rssi", Config.Rssi, "Set RSSI view as default")
