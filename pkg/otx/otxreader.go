@@ -120,7 +120,7 @@ func metas(otxfile string) ([]types.FlightMeta, error) {
 			sb.WriteByte(' ')
 			sb.WriteString(record[tindex])
 			t_utc, _ := time.Parse(LOGTIMEPARSE, sb.String())
-			if i == 2 || (options.SplitTime > 0 && t_utc.Sub(lasttm).Seconds() > (time.Duration(options.SplitTime)*time.Second).Seconds()) {
+			if i == 2 || (options.Config.SplitTime > 0 && t_utc.Sub(lasttm).Seconds() > (time.Duration(options.Config.SplitTime)*time.Second).Seconds()) {
 				if idx > 0 {
 					metas[idx-1].End = i - 1
 					metas[idx-1].Duration = lasttm.Sub(metas[idx-1].Date)
@@ -344,6 +344,20 @@ func get_otx_line(r []string) types.LogItem {
 		}
 	}
 
+	if s, _, ok := get_rec_value(r, "ARM"); ok {
+		as, _ := strconv.ParseInt(s, 10, 32)
+		if as == 100 {
+			status |= (types.Is_ARMED | types.Is_ARDU)
+			md = types.FM_ACRO
+			b.Fix = 2
+			b.Numsat = 13
+
+		} else {
+			status = types.Is_ARDU
+			b.Fix = 0
+		}
+	}
+
 	if s, _, ok := get_rec_value(r, "RSSI"); ok {
 		rssi, _ := strconv.ParseInt(s, 10, 32)
 		b.Rssi = uint8(rssi)
@@ -536,7 +550,7 @@ func (lg *OTXLOG) Reader(m types.FlightMeta) (types.LogSegment, bool) {
 			}
 
 			tdiff := b.Utc.Sub(lt)
-			if tdiff.Milliseconds() >= int64(options.Intvl) {
+			if tdiff.Milliseconds() >= int64(options.Config.Intvl) {
 				if st.IsZero() {
 					st = b.Utc
 					lt = st
@@ -547,8 +561,8 @@ func (lg *OTXLOG) Reader(m types.FlightMeta) (types.LogSegment, bool) {
 						homes.HomeLat = b.Lat
 						homes.HomeLon = b.Lon
 						homes.Flags = types.HOME_ARM
-						if options.HomeAlt != -999999 {
-							homes.HomeAlt = float64(options.HomeAlt)
+						if options.Config.HomeAlt != -999999 {
+							homes.HomeAlt = float64(options.Config.HomeAlt)
 							homes.Flags |= types.HOME_ALT
 						} else if b.GAlt > -999999 {
 							homes.HomeAlt = b.GAlt
@@ -568,7 +582,6 @@ func (lg *OTXLOG) Reader(m types.FlightMeta) (types.LogSegment, bool) {
 							froboff = ttmp.Sub(b.Utc)
 							b.Utc = ttmp
 						}
-
 						llat = b.Lat
 						llon = b.Lon
 					}
@@ -579,13 +592,18 @@ func (lg *OTXLOG) Reader(m types.FlightMeta) (types.LogSegment, bool) {
 					}
 				}
 
-				if (b.Status & types.Is_CRSF) == types.Is_CRSF {
+				if (b.Status & (types.Is_CRSF | types.Is_ARDU)) != 0 {
 					b.Spd = calc_speed(b, tdiff, llat, llon)
+				}
+
+				if b.Spd > 200 {
+					continue // sanity check, 200m/s == 720kph, 388 knots
 				}
 
 				var c, d float64
 				if homes.Flags != 0 {
 					c, d = geo.Csedist(homes.HomeLat, homes.HomeLon, b.Lat, b.Lon)
+
 					b.Bearing = int32(c)
 					b.Vrange = d * 1852.0
 

@@ -54,7 +54,7 @@ func (o *BBLOG) Dump() {
 }
 
 func get_headers(fn string) {
-	cmd := exec.Command(options.Blackbox_decode,
+	cmd := exec.Command(options.Config.Blackbox_decode,
 		"--datetime", "--merge-gps", "--stdout", "--index", "1", fn)
 	types.SetSilentProcess(cmd)
 	out, err := cmd.StdoutPipe()
@@ -561,7 +561,7 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 }
 
 func (lg *BBLOG) Reader(meta types.FlightMeta) (types.LogSegment, bool) {
-	cmd := exec.Command(options.Blackbox_decode,
+	cmd := exec.Command(options.Config.Blackbox_decode,
 		"--datetime", "--merge-gps", "--stdout", "--index",
 		strconv.Itoa(meta.Index), lg.name)
 	types.SetSilentProcess(cmd)
@@ -662,7 +662,7 @@ func (lg *BBLOG) Reader(meta types.FlightMeta) (types.LogSegment, bool) {
 				var d float64
 				var c float64
 				// Do the plot every 100ms
-				if (us - dt) >= 1000*uint64(options.Intvl) {
+				if (us - dt) >= 1000*uint64(options.Config.Intvl) {
 					if !basetime.IsZero() {
 						b.Utc = basetime.Add(time.Duration(us) * time.Microsecond)
 					}

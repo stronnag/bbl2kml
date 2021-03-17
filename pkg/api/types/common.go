@@ -33,6 +33,7 @@ const (
 	Is_ARMED uint8 = 1
 	Is_FAIL  uint8 = 2
 	Is_CRSF  uint8 = 4
+	Is_ARDU  uint8 = 8
 )
 
 type Reason int

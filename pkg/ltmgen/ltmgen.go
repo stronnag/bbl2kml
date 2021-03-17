@@ -180,9 +180,9 @@ func (l *ltmbuf) qframe(d uint16) {
 func read_mission() *mission.Mission {
 	var ms *mission.Mission
 	ms = nil
-	if len(options.Mission) > 0 {
+	if len(options.Config.Mission) > 0 {
 		var err error
-		_, ms, err = mission.Read_Mission_File(options.Mission)
+		_, ms, err = mission.Read_Mission_File(options.Config.Mission)
 		if err == nil {
 			for k, mi := range ms.MissionItems {
 				if mi.Is_GeoPoint() && geo.Getfrobnication() {
@@ -193,7 +193,7 @@ func read_mission() *mission.Mission {
 				}
 			}
 		} else {
-			fmt.Fprintf(os.Stderr, "* Failed to read mission file %s\n", options.Mission)
+			fmt.Fprintf(os.Stderr, "* Failed to read mission file %s\n", options.Config.Mission)
 		}
 	}
 	return ms
@@ -202,7 +202,7 @@ func read_mission() *mission.Mission {
 func LTMGen(seg types.LogSegment, meta types.FlightMeta) {
 	var s *MSPSerial
 
-	typ := options.Type
+	typ := options.Config.Type
 	if typ <= 0 {
 		switch meta.Motors {
 		case 0, 1, 2:
@@ -217,7 +217,7 @@ func LTMGen(seg types.LogSegment, meta types.FlightMeta) {
 			typ = 11
 		}
 	}
-	s = NewMSPSerial(options.LTMdev, 0)
+	s = NewMSPSerial(options.Config.LTMdev, 0)
 
 	laststat := uint8(255)
 	tgt := 0
@@ -345,7 +345,7 @@ func LTMGen(seg types.LogSegment, meta types.FlightMeta) {
 		}
 
 		if !lt.IsZero() {
-			if options.Fast {
+			if options.Config.Fast {
 				time.Sleep(10 * time.Millisecond)
 			} else if tdiff > 0 {
 				time.Sleep(tdiff)

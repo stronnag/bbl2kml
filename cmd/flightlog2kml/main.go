@@ -21,6 +21,7 @@ func getVersion() string {
 }
 
 func main() {
+	dump_log := os.Getenv("DUMP_LOG") != ""
 	files, _ := options.ParseCLI(getVersion)
 	if len(files) == 0 {
 		options.Usage()
@@ -43,19 +44,25 @@ func main() {
 		}
 		metas, err := lfr.GetMetas()
 		if err == nil {
-			if options.Dump {
+			if options.Config.Dump {
 				lfr.Dump()
 				os.Exit(0)
 			}
 			for _, b := range metas {
-				if (options.Idx == 0 || options.Idx == b.Index) && b.Flags&types.Is_Valid != 0 {
+				if (options.Config.Idx == 0 || options.Config.Idx == b.Index) && b.Flags&types.Is_Valid != 0 {
 					for k, v := range b.Summary() {
 						fmt.Printf("%-8.8s : %s\n", k, v)
 					}
 					ls, res := lfr.Reader(b)
 					if res {
-						outfn := kmlgen.GenKmlName(b.Logname, b.Index)
-						kmlgen.GenerateKML(ls.H, ls.L, outfn, b, ls.M)
+						if dump_log {
+							for _, b := range ls.L.Items {
+								fmt.Fprintln(os.Stderr, b)
+							}
+						} else {
+							outfn := kmlgen.GenKmlName(b.Logname, b.Index)
+							kmlgen.GenerateKML(ls.H, ls.L, outfn, b, ls.M)
+						}
 					}
 					for k, v := range ls.M {
 						fmt.Printf("%-8.8s : %s\n", k, v)

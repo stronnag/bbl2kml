@@ -28,8 +28,8 @@ func getVersion() string {
 }
 
 func main() {
-	files, _ := options.ParseCLI(getVersion)
-	if options.Dump {
+	files, _ := options.Config.ParseCLI(getVersion)
+	if options.Config.Dump {
 		fmt.Fprintln(os.Stderr, "Dump only supported via CLI")
 		return
 	}
@@ -84,7 +84,7 @@ func main() {
 			func(cb fyne.ListableURI, err error) {
 				if cb != nil {
 					odir := cb.String()
-					options.Outdir = strings.Replace(odir, "file://", "", 1)
+					options.Config.Outdir = strings.Replace(odir, "file://", "", 1)
 				}
 			},
 			w)
@@ -114,11 +114,11 @@ func main() {
 	grid1.AddObject(obut)
 
 	grid2 := fyne.NewContainerWithLayout(layout.NewGridLayout(2))
-	dmsck := widget.NewCheck("DMS", func(b bool) { options.Dms = b })
-	extck := widget.NewCheck("Extrude", func(b bool) { options.Extrude = b })
-	rssck := widget.NewCheck("RSSI is default", func(b bool) { options.Rssi = b })
-	effck := widget.NewCheck("Efficiency Layer", func(b bool) { options.Efficiency = b })
-	kmlck := widget.NewCheck("KML", func(b bool) { options.Kml = b })
+	dmsck := widget.NewCheck("DMS", func(b bool) { options.Config.Dms = b })
+	extck := widget.NewCheck("Extrude", func(b bool) { options.Config.Extrude = b })
+	rssck := widget.NewCheck("RSSI is default", func(b bool) { options.Config.Rssi = b })
+	effck := widget.NewCheck("Efficiency Layer", func(b bool) { options.Config.Efficiency = b })
+	kmlck := widget.NewCheck("KML", func(b bool) { options.Config.Kml = b })
 
 	var gopts []string = []string{"Red", "Red/Green", "Orange/Yellow/Red"}
 	gradcombo := widget.NewSelect(gopts, func(s string) {
@@ -126,7 +126,7 @@ func main() {
 	})
 
 	n := 0
-	switch options.Gradset {
+	switch options.Config.Gradset {
 	case "rdgn":
 		n = 1
 	case "yor":
@@ -144,11 +144,11 @@ func main() {
 	grid2.AddObject(effck)
 	grid2.AddObject(gradbox)
 
-	rssck.SetChecked(options.Rssi)
-	extck.SetChecked(options.Extrude)
-	effck.SetChecked(options.Efficiency)
-	kmlck.SetChecked(options.Kml)
-	dmsck.SetChecked(options.Dms)
+	rssck.SetChecked(options.Config.Rssi)
+	extck.SetChecked(options.Config.Extrude)
+	effck.SetChecked(options.Config.Efficiency)
+	kmlck.SetChecked(options.Config.Kml)
+	dmsck.SetChecked(options.Config.Dms)
 
 	tg := widget.NewTextGrid()
 	sc := widget.NewScrollContainer(tg)
@@ -163,11 +163,11 @@ func main() {
 			idx = 0
 			idxentry.SetText("0")
 		}
-		options.Idx = int(idx)
-		options.Dms = dmsck.Checked
-		options.Rssi = rssck.Checked
-		options.Extrude = extck.Checked
-		options.Efficiency = effck.Checked
+		options.Config.Idx = int(idx)
+		options.Config.Dms = dmsck.Checked
+		options.Config.Rssi = rssck.Checked
+		options.Config.Extrude = extck.Checked
+		options.Config.Efficiency = effck.Checked
 		geo.Frobnicate_init()
 		var lfr types.FlightLog
 		ftype := types.EvinceFileType(logfile)
@@ -183,7 +183,7 @@ func main() {
 		metas, err := lfr.GetMetas()
 		if err == nil {
 			for _, b := range metas {
-				if (options.Idx == 0 || options.Idx == b.Index) && b.Flags&types.Is_Valid != 0 {
+				if (options.Config.Idx == 0 || options.Config.Idx == b.Index) && b.Flags&types.Is_Valid != 0 {
 					for k, v := range b.Summary() {
 						add_textview(tg, sc, fmt.Sprintf("%-8.8s : %s\n", k, v))
 					}

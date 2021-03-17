@@ -55,7 +55,7 @@ func WP_state(ms *mission.Mission, b types.LogItem, tgt int) (int, int) {
 			b.NavMode = 4
 		}
 	} else {
-		cdist := 1.25 * b.Spd * float64(options.Intvl/1000.0)
+		cdist := 1.25 * b.Spd * float64(options.Config.Intvl/1000.0)
 		if cdist < 30 {
 			cdist = 30
 		}
@@ -73,8 +73,8 @@ func WP_state(ms *mission.Mission, b types.LogItem, tgt int) (int, int) {
 					if ms.MissionItems[k].Action == "POSHOLD_TIME" {
 						var phwait time.Duration
 						mwaitms := int(ms.MissionItems[k].P1) * 1000
-						if mwaitms > options.Intvl/2000 {
-							phwait = time.Duration(mwaitms-options.Intvl/2) * time.Millisecond
+						if mwaitms > options.Config.Intvl/2000 {
+							phwait = time.Duration(mwaitms-options.Config.Intvl/2) * time.Millisecond
 						} else {
 							phwait = time.Duration(ms.MissionItems[k].P1) * time.Second
 						}

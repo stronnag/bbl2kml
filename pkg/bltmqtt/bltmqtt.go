@@ -65,11 +65,11 @@ func NewMQTTClient() *MQTTClient {
 
 	rand.Seed(time.Now().UnixNano())
 
-	if options.Mqttopts == "" {
+	if options.Config.Mqttopts == "" {
 		return nil
 	}
 
-	u, err := url.Parse(options.Mqttopts)
+	u, err := url.Parse(options.Config.Mqttopts)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -198,7 +198,7 @@ func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int,
 	sb.WriteByte(',')
 
 	sb.WriteString("bpv:")
-	if options.Bulletvers == 2 {
+	if options.Config.Bulletvers == 2 {
 		sb.WriteString(strconv.Itoa(int(b.Volts * 100)))
 	} else {
 		sb.WriteString(fmt.Sprintf("%.2f", float64(b.Volts)))
@@ -207,7 +207,7 @@ func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int,
 
 	avc := b.Volts / float64(ncells)
 	sb.WriteString("acv:")
-	if options.Bulletvers == 2 {
+	if options.Config.Bulletvers == 2 {
 		sb.WriteString(strconv.Itoa(int(avc * 100)))
 	} else {
 		sb.WriteString(fmt.Sprintf("%.2f", avc))
@@ -215,7 +215,7 @@ func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int,
 	sb.WriteByte(',')
 
 	sb.WriteString("cad:")
-	if options.Bulletvers == 2 {
+	if options.Config.Bulletvers == 2 {
 		sb.WriteString(strconv.Itoa(int(b.Energy)))
 	} else {
 		sb.WriteString(fmt.Sprintf("%.0f", b.Energy))
@@ -223,7 +223,7 @@ func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int,
 	sb.WriteByte(',')
 
 	sb.WriteString("cud:")
-	if options.Bulletvers == 2 {
+	if options.Config.Bulletvers == 2 {
 		sb.WriteString(strconv.Itoa(int(b.Amps * 100)))
 	} else {
 		sb.WriteString(fmt.Sprintf("%.2f", b.Amps))
@@ -236,7 +236,7 @@ func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int,
 	sb.WriteByte(',')
 
 	sb.WriteString("gla:")
-	if options.Bulletvers == 2 {
+	if options.Config.Bulletvers == 2 {
 		sb.WriteString(strconv.Itoa(int(b.Lat * 10000000)))
 	} else {
 		sb.WriteString(fmt.Sprintf("%.8f", b.Lat))
@@ -244,7 +244,7 @@ func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int,
 	sb.WriteByte(',')
 
 	sb.WriteString("glo:")
-	if options.Bulletvers == 2 {
+	if options.Config.Bulletvers == 2 {
 		sb.WriteString(strconv.Itoa(int(b.Lon * 10000000)))
 	} else {
 		sb.WriteString(fmt.Sprintf("%.8f", b.Lon))
@@ -256,7 +256,7 @@ func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int,
 	sb.WriteByte(',')
 
 	sb.WriteString("ghp:")
-	if options.Bulletvers == 2 {
+	if options.Config.Bulletvers == 2 {
 		sb.WriteString(strconv.Itoa(int(b.Hdop)))
 	} else {
 		hdop := float64(b.Hdop) / 100.0
@@ -305,21 +305,21 @@ func make_bullet_home(hlat float64, hlon float64, halt float64, name string) str
 	sb.WriteString("cs:")
 	sb.WriteString(name)
 	sb.WriteString(",hla:")
-	if options.Bulletvers == 2 {
+	if options.Config.Bulletvers == 2 {
 		sb.WriteString(strconv.Itoa(int(hlat * 10000000)))
 	} else {
 		sb.WriteString(fmt.Sprintf("%.8f", hlat))
 	}
 	sb.WriteByte(',')
 	sb.WriteString("hlo:")
-	if options.Bulletvers == 2 {
+	if options.Config.Bulletvers == 2 {
 		sb.WriteString(strconv.Itoa(int(hlon * 10000000)))
 	} else {
 		sb.WriteString(fmt.Sprintf("%.8f", hlon))
 	}
 	sb.WriteByte(',')
 	sb.WriteString("hal:")
-	if options.Bulletvers == 2 {
+	if options.Config.Bulletvers == 2 {
 		sb.WriteString(strconv.Itoa(int(halt * 100)))
 	} else {
 		sb.WriteString(fmt.Sprintf("%.0f", halt))
@@ -381,8 +381,8 @@ func MQTTGen(s types.LogSegment, meta types.FlightMeta) {
 
 	c := NewMQTTClient()
 	var err error
-	if options.Outdir != "" {
-		wfh, err = os.Create(options.Outdir)
+	if options.Config.Outdir != "" {
+		wfh, err = os.Create(options.Config.Outdir)
 		if err == nil {
 			defer wfh.Close()
 		}
@@ -398,9 +398,9 @@ func MQTTGen(s types.LogSegment, meta types.FlightMeta) {
 	mstrs := []string{}
 	var ms *mission.Mission
 	wps := ""
-	if len(options.Mission) > 0 {
+	if len(options.Config.Mission) > 0 {
 		var err error
-		_, ms, err = mission.Read_Mission_File(options.Mission)
+		_, ms, err = mission.Read_Mission_File(options.Config.Mission)
 		if err == nil {
 			var sb strings.Builder
 			for k, mi := range ms.MissionItems {
@@ -435,14 +435,14 @@ func MQTTGen(s types.LogSegment, meta types.FlightMeta) {
 			}
 			wps = fmt.Sprintf("wpc:%d,wpv:1,", len(ms.MissionItems))
 		} else {
-			fmt.Fprintf(os.Stderr, "* Failed to read mission file %s\n", options.Mission)
+			fmt.Fprintf(os.Stderr, "* Failed to read mission file %s\n", options.Config.Mission)
 		}
 	}
 
 	miscout := 10
 	// ensure once / minute or one two minues for low prio data
-	if options.Intvl > 6000 {
-		miscout = 60 * 1000 / options.Intvl
+	if options.Config.Intvl > 6000 {
+		miscout = 60 * 1000 / options.Config.Intvl
 		if miscout < 1 {
 			miscout = 1
 		}
@@ -465,7 +465,7 @@ func MQTTGen(s types.LogSegment, meta types.FlightMeta) {
 
 		if b.Fmode != laststat {
 			tgt = 0
-			if options.Bulletvers == 2 {
+			if options.Config.Bulletvers == 2 {
 				switch b.Fmode {
 				case types.FM_MANUAL:
 					fmode = "1"

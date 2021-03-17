@@ -5,33 +5,37 @@ import (
 	"flag"
 	"strings"
 	"path/filepath"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 )
 
-var (
-	Dms             bool   = false
-	Dump            bool   = false
-	Extrude         bool   = false
-	Kml             bool   = false
-	Rssi            bool   = false
-	Efficiency      bool   = false
-	Metas           bool   = false
-	Intvl           int    = 1000
-	Idx             int    = 0
-	SplitTime       int    = 0
-	HomeAlt         int    = -999999
-	Blackbox_decode string = "blackbox_decode"
-	Mission         string
-	Gradset         string
-	Outdir          string
-	Mqttopts        string
-	LTMdev          string
-	Bulletvers      int = 2
-	Rebase          string
-	Type            int  = 0
-	Fast            bool = false
-)
+type Configuration struct {
+	Dms             bool   `json:"dms"`
+	Extrude         bool   `json:"extrude"`
+	Kml             bool   `json:"kml"`
+	Rssi            bool   `json:"rssi"`
+	Efficiency      bool   `json:"efficiency"`
+	Intvl           int    `json:"interval"`
+	SplitTime       int    `json:"split-time"`
+	HomeAlt         int    `json:"home_alt"`
+	Blackbox_decode string `json:"blackbox_decode"`
+	Gradset         string `json:"gradient"`
+	Outdir          string `json:"outdir"`
+	Bulletvers      int    `json:"blt-vers"`
+	Type            int    `json:"type"`
+	Mission         string `json:"-"`
+	Mqttopts        string `json:"-"`
+	LTMdev          string `json:"-"`
+	Rebase          string `json:"-"`
+	Idx             int    `json:"-"`
+	Metas           bool   `json:"-"`
+	Dump            bool   `json:"-"`
+	Fast            bool   `json:"-"`
+}
+
+var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120}
 
 func isFlagSet(name string) bool {
 	found := false
@@ -47,9 +51,28 @@ func Usage() {
 	flag.Usage()
 }
 
+func parse_confile_file() {
+	def := os.Getenv("APPDATA")
+	if def == "" {
+		def = os.Getenv("HOME")
+		if def != "" {
+			def = filepath.Join(def, ".config")
+		} else {
+			def = "./"
+		}
+	}
+	fn := filepath.Join(def, "fl2x", "config.json")
+	data, err := ioutil.ReadFile(fn)
+	if err == nil {
+		err = json.Unmarshal(data, &Config)
+	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "JSON Config: %v\n", err)
+	}
+}
+
 func ParseCLI(gv func() string) ([]string, string) {
 	app := filepath.Base(os.Args[0])
-
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of %s [options] file...\n", app)
 		flag.PrintDefaults()
@@ -57,66 +80,68 @@ func ParseCLI(gv func() string) ([]string, string) {
 		fmt.Fprintln(os.Stderr, gv())
 	}
 
+	parse_confile_file()
+
 	defs := os.Getenv("BBL2KML_OPTS")
-	_parts := strings.Split(defs, " ")
-	var parts []string
-	for _, p := range _parts {
-		if p != "" {
-			parts = append(parts, p)
+	if defs != "" {
+		_parts := strings.Split(defs, " ")
+		var parts []string
+		for _, p := range _parts {
+			if p != "" {
+				parts = append(parts, p)
+			}
+		}
+
+		envflags := flag.NewFlagSet("$BBL2KML_OPTS", flag.ExitOnError)
+		kml := envflags.Bool("kml", Config.Kml, "kml")
+		rssi := envflags.Bool("rssi", Config.Rssi, "rssi")
+		extrude := envflags.Bool("extrude", Config.Extrude, "extrude")
+		dms := envflags.Bool("dms", Config.Dms, "dms")
+		grad := envflags.String("gradient", Config.Gradset, "gradient")
+		bbldec := envflags.String("decoder", Config.Blackbox_decode, "decoder")
+		effic := envflags.Bool("efficiency", Config.Efficiency, "efficiency")
+		envflags.Parse(parts)
+		Config.Dms = *dms
+		Config.Extrude = *extrude
+		Config.Rssi = *rssi
+		Config.Kml = *kml
+		Config.Gradset = *grad
+		Config.Efficiency = *effic
+		if *bbldec != "" {
+			Config.Blackbox_decode = *bbldec
 		}
 	}
 
-	envflags := flag.NewFlagSet("$BBL2KML_OPTS", flag.ExitOnError)
-	kml := envflags.Bool("kml", false, "kml")
-	rssi := envflags.Bool("rssi", false, "rssi")
-	extrude := envflags.Bool("extrude", false, "extrude")
-	dms := envflags.Bool("dms", false, "dms")
-	grad := envflags.String("gradient", "", "gradient")
-	bbldec := envflags.String("decoder", Blackbox_decode, "decoder")
-	effic := envflags.Bool("efficiency", false, "efficiency")
-	envflags.Parse(parts)
-	Dms = *dms
-	Extrude = *extrude
-	Rssi = *rssi
-	Kml = *kml
-	Gradset = *grad
-	Efficiency = *effic
-
-	if *bbldec != "" {
-		Blackbox_decode = *bbldec
-	}
-
-	var intvl = int(1000)
-	flag.IntVar(&Idx, "index", 0, "Log index")
-	flag.BoolVar(&Dump, "dump", false, "Dump log headers and exit")
-	flag.StringVar(&Mission, "mission", "", "Optional mission file name")
-	flag.IntVar(&SplitTime, "split-time", 120, "[OTX] Time(s) determining log split, 0 disables")
-	flag.IntVar(&HomeAlt, "home-alt", 0, "[OTX] home altitude")
-	flag.StringVar(&Rebase, "rebase", "", "rebase all positions on lat,lon[,alt]")
+	flag.IntVar(&Config.Idx, "index", 0, "Log index")
+	flag.BoolVar(&Config.Dump, "dump", false, "Dump log headers and exit")
+	flag.StringVar(&Config.Mission, "mission", "", "Optional mission file name")
+	flag.IntVar(&Config.SplitTime, "split-time", Config.SplitTime, "[OTX] Time(s) determining log split, 0 disables")
+	flag.IntVar(&Config.HomeAlt, "home-alt", Config.HomeAlt, "[OTX] home altitude")
+	flag.StringVar(&Config.Rebase, "rebase", "", "rebase all positions on lat,lon[,alt]")
 	if app == "fl2mqtt" {
-		flag.StringVar(&Mqttopts, "broker", "", "Mqtt URI (mqtt://[user[:pass]@]broker[:port]/topic[?cafile=file]")
-		flag.IntVar(&Bulletvers, "blt-vers", 2, "[MQTT] BulletGCSS version")
-		flag.StringVar(&Outdir, "logfile", "", "Log file for browser replay")
+		flag.StringVar(&Config.Mqttopts, "broker", "", "Mqtt URI (mqtt://[user[:pass]@]broker[:port]/topic[?cafile=file]")
+		flag.IntVar(&Config.Bulletvers, "blt-vers", Config.Bulletvers, "[MQTT] BulletGCSS version")
+		flag.StringVar(&Config.Outdir, "logfile", Config.Outdir, "Log file for browser replay")
 	} else if app == "fl2ltm" {
-		flag.StringVar(&LTMdev, "device", "", "LTM device")
-		flag.BoolVar(&Metas, "metas", false, "list metadata and exit")
-		flag.BoolVar(&Fast, "fast", false, "faster replay")
-		flag.IntVar(&Type, "type", 0, "model type")
-		intvl = 100
+		flag.StringVar(&Config.LTMdev, "device", "", "LTM device")
+		flag.BoolVar(&Config.Metas, "metas", false, "list metadata and exit")
+		flag.BoolVar(&Config.Fast, "fast", false, "faster replay")
+		flag.IntVar(&Config.Type, "type", Config.Type, "model type")
+		Config.Intvl /= 10
 	} else {
-		flag.BoolVar(&Kml, "kml", Kml, "Generate KML (vice default KMZ)")
-		flag.BoolVar(&Rssi, "rssi", Rssi, "Set RSSI view as default")
-		flag.BoolVar(&Extrude, "extrude", Extrude, "Extends track points to ground")
-		flag.BoolVar(&Efficiency, "efficiency", Efficiency, "Include efficiency layer in KML/Z")
-		flag.StringVar(&Gradset, "gradient", Gradset, "Specific colour gradient [red,rdgn,yor]")
-		flag.BoolVar(&Dms, "dms", Dms, "Show positions as DD:MM:SS.s (vice decimal degrees)")
-		flag.StringVar(&Outdir, "outdir", "", "Output directory for generated KML")
+		flag.BoolVar(&Config.Kml, "kml", Config.Kml, "Generate KML (vice default KMZ)")
+		flag.BoolVar(&Config.Rssi, "rssi", Config.Rssi, "Set RSSI view as default")
+		flag.BoolVar(&Config.Extrude, "extrude", Config.Extrude, "Extends track points to ground")
+		flag.BoolVar(&Config.Efficiency, "efficiency", Config.Efficiency, "Include efficiency layer in KML/Z")
+		flag.StringVar(&Config.Gradset, "gradient", Config.Gradset, "Specific colour gradient [red,rdgn,yor]")
+		flag.BoolVar(&Config.Dms, "dms", Config.Dms, "Show positions as DD:MM:SS.s (vice decimal degrees)")
+		flag.StringVar(&Config.Outdir, "outdir", Config.Outdir, "Output directory for generated KML")
 	}
-	flag.IntVar(&Intvl, "interval", intvl, "Sampling Interval (ms)")
+	flag.IntVar(&Config.Intvl, "interval", Config.Intvl, "Sampling Interval (ms)")
 	flag.Parse()
 
 	if !isFlagSet("home-alt") {
-		HomeAlt = -999999 // sentinel
+		Config.HomeAlt = -999999 // sentinel
 	}
 
 	files := flag.Args()

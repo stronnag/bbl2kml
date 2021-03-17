@@ -37,8 +37,8 @@ func main() {
 
 	C.resources_register_resource()
 
-	files, _ := options.ParseCLI(getVersion)
-	if options.Dump {
+	files, _ := options.Config.ParseCLI(getVersion)
+	if options.Config.Dump {
 		fmt.Fprintln(os.Stderr, "Dump only supported via CLI")
 		return
 	}
@@ -154,8 +154,8 @@ func main() {
 	missionbtn.Connect("clicked", func() {
 		id := missionchooser.Run()
 		if id == int(gtk.RESPONSE_OK) || id == int(gtk.RESPONSE_ACCEPT) {
-			options.Mission = missionchooser.GetFilename()
-			missionlbl.SetText(filepath.Base(options.Mission))
+			options.Config.Mission = missionchooser.GetFilename()
+			missionlbl.SetText(filepath.Base(options.Config.Mission))
 		}
 		missionchooser.Hide()
 	})
@@ -170,15 +170,15 @@ func main() {
 		"Output Directory", win, gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER,
 		"OK", "Cancel")
 
-	if len(options.Outdir) > 0 {
-		outchooser.SetCurrentFolder(options.Outdir)
+	if len(options.Config.Outdir) > 0 {
+		outchooser.SetCurrentFolder(options.Config.Outdir)
 	}
 	obj, err = b.GetObject("out_btn")
 	outbtn := obj.(*gtk.Button)
 	outbtn.Connect("clicked", func() {
 		id := outchooser.Run()
 		if id == int(gtk.RESPONSE_OK) || id == int(gtk.RESPONSE_ACCEPT) {
-			options.Outdir = outchooser.GetFilename()
+			options.Config.Outdir = outchooser.GetFilename()
 		}
 		outchooser.Hide()
 	})
@@ -209,15 +209,15 @@ func main() {
 	obj, err = b.GetObject("grad_combo")
 	grad_combo := obj.(*gtk.ComboBoxText)
 
-	dms_check.SetActive(options.Dms)
-	kml_check.SetActive(options.Kml)
-	rssi_check.SetActive(options.Rssi)
-	extrude_check.SetActive(options.Extrude)
-	effic_check.SetActive(options.Efficiency)
+	dms_check.SetActive(options.Config.Dms)
+	kml_check.SetActive(options.Config.Kml)
+	rssi_check.SetActive(options.Config.Rssi)
+	extrude_check.SetActive(options.Config.Extrude)
+	effic_check.SetActive(options.Config.Efficiency)
 	gradopts := []string{"red", "rdgn", "yor"}
 
 	n := 0
-	switch options.Gradset {
+	switch options.Config.Gradset {
 	case gradopts[1]:
 		n = 1
 	case gradopts[2]:
@@ -239,14 +239,14 @@ func main() {
 			idx = 0
 			idx_entry.SetText("0")
 		}
-		options.Idx = int(idx)
-		options.Dms = dms_check.GetActive()
-		options.Kml = kml_check.GetActive()
-		options.Rssi = rssi_check.GetActive()
-		options.Extrude = extrude_check.GetActive()
-		options.Efficiency = effic_check.GetActive()
+		options.Config.Idx = int(idx)
+		options.Config.Dms = dms_check.GetActive()
+		options.Config.Kml = kml_check.GetActive()
+		options.Config.Rssi = rssi_check.GetActive()
+		options.Config.Extrude = extrude_check.GetActive()
+		options.Config.Efficiency = effic_check.GetActive()
 		n := grad_combo.GetActive()
-		options.Gradset = gradopts[n]
+		options.Config.Gradset = gradopts[n]
 
 		//		pdl, _ := gtk.DialogNew()
 		pdl := gtk.MessageDialogNew(win,
@@ -288,7 +288,7 @@ func main() {
 				metas, err := lfr.GetMetas()
 				if err == nil {
 					for _, b := range metas {
-						if (options.Idx == 0 || options.Idx == b.Index) && b.Flags&types.Is_Valid != 0 {
+						if (options.Config.Idx == 0 || options.Config.Idx == b.Index) && b.Flags&types.Is_Valid != 0 {
 							for k, v := range b.Summary() {
 								add_textview(textview, fmt.Sprintf("%-8.8s : %s\n", k, v))
 							}
@@ -320,7 +320,7 @@ func main() {
 		}()
 	})
 
-	_, err = exec.LookPath(options.Blackbox_decode)
+	_, err = exec.LookPath(options.Config.Blackbox_decode)
 	if err != nil {
 		glib.IdleAdd(func() {})
 		show_dialogue(win, "Missing blackbox_decode")

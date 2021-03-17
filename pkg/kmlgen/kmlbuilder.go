@@ -120,7 +120,7 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 		sb.Write([]byte(`<table style="border="1px" silver; border="1" silver; rules="all";;">`))
 
 		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%s</td></tr>","Time", tfmt)))
-		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%s</td></tr>", "Position", geo.PositionFormat(r.Lat, r.Lon, options.Dms))))
+		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%s</td></tr>", "Position", geo.PositionFormat(r.Lat, r.Lon, options.Config.Dms))))
 		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.0f m</td></tr>", "Elevation", r.Alt)))
 		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.0f m</td></tr>", "GPS Altitude", alt)))
 		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%d°</td></tr>", "Course", r.Cse)))
@@ -160,7 +160,7 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 
 		se:= kml.Style()
 
-		if options.Extrude {
+		if options.Config.Extrude {
 			po.Add (
 				kml.Extrude(true),
 				kml.Tessellate(false),
@@ -182,7 +182,7 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 			)
 		}
 
-		if options.Extrude || (r.Status & types.Is_FAIL) == types.Is_FAIL {
+		if options.Config.Extrude || (r.Status & types.Is_FAIL) == types.Is_FAIL {
 			k.Add(se)
 		}
 		k.Add(po)
@@ -200,7 +200,7 @@ func getHomes(hpos types.HomeRec) []kml.Element {
 		htext = "Home"
 	}
 	hdesc = fmt.Sprintf("Location %s<br/>",
-		geo.PositionFormat(hpos.HomeLat, hpos.HomeLon, options.Dms))
+		geo.PositionFormat(hpos.HomeLat, hpos.HomeLon, options.Config.Dms))
 	if (hpos.Flags & types.HOME_ALT) == types.HOME_ALT {
 		hdesc = hdesc + fmt.Sprintf("GPS Altitude: %.0fm<br/>", hpos.HomeAlt)
 	}
@@ -224,7 +224,7 @@ func getHomes(hpos types.HomeRec) []kml.Element {
 		k = kml.Placemark(
 			kml.Name("Home"),
 			kml.Description(fmt.Sprintf("Location %s<br/>",
-				geo.PositionFormat(hpos.SafeLat, hpos.SafeLon, options.Dms))),
+				geo.PositionFormat(hpos.SafeLat, hpos.SafeLon, options.Config.Dms))),
 			kml.Point(
 				kml.Coordinates(kml.Coordinate{Lon: hpos.SafeLon, Lat: hpos.SafeLat}),
 			),
@@ -350,7 +350,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 		{
 			gidx := 0
 
-			switch options.Gradset {
+			switch options.Config.Gradset {
 			case "rdgn":
 				gidx = GRAD_RGN
 			case "yor":
@@ -403,7 +403,7 @@ func add_ground_track (rec types.LogRec) kml.Element {
 func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 	meta types.FlightMeta, smap types.MapRec) {
 
-	defviz := !(options.Rssi && rec.Items[0].Rssi > 0)
+	defviz := !(options.Config.Rssi && rec.Items[0].Rssi > 0)
 	ts0 := rec.Items[0].Utc
 	ts1 := rec.Items[len(rec.Items)-1].Utc
 
@@ -414,8 +414,8 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 	d := kml.Folder(kml.Name(meta.LogName())).Add(kml.Open(true))
 	d.Add(add_ground_track(rec))
 
-	if len(options.Mission) > 0 {
-		 _, ms, err := mission.Read_Mission_File(options.Mission)
+	if len(options.Config.Mission) > 0 {
+		 _, ms, err := mission.Read_Mission_File(options.Config.Mission)
 		if err == nil {
 			if geo.Getfrobnication() {
 				for k,mi := range ms.MissionItems {
@@ -424,10 +424,10 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 					}
 				}
 			}
-			mf := ms.To_kml(hpos, options.Dms, false)
+			mf := ms.To_kml(hpos, options.Config.Dms, false)
 			d.Add(mf)
 		} else {
-			fmt.Fprintf(os.Stderr,"* Failed to read mission file %s\n", options.Mission)
+			fmt.Fprintf(os.Stderr,"* Failed to read mission file %s\n", options.Config.Mission)
 		}
 	}
 
@@ -447,7 +447,7 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 	d.Add(kml.TimeSpan(kml.Begin(ts0), kml.End(ts1)))
 	d.Add(getHomes(hpos)...)
 	d.Add(f0)
-	if rec.Cap&types.CAP_RSSI_VALID !=0 || options.Efficiency {
+	if rec.Cap&types.CAP_RSSI_VALID !=0 || options.Config.Efficiency {
 		d.Add(generate_shared_styles(COL_STYLE_RSSI)...)
 	}
 
@@ -456,7 +456,7 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 			Add(getPoints(rec,hpos,COL_STYLE_RSSI,!defviz)...)
 		d.Add(f1)
 	}
-	if options.Efficiency {
+	if options.Config.Efficiency {
 		f1 := kml.Folder(kml.Name("Efficiency")).Add(kml.Visibility(false)).
 			Add(getPoints(rec,hpos,COL_STYLE_EFFIC,!defviz)...)
 		d.Add(f1)

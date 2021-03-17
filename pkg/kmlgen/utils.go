@@ -13,7 +13,7 @@ func GenKmlName(inp string, idx int) string {
 	if len(ext) < len(outfn) {
 		outfn = outfn[0 : len(outfn)-len(ext)]
 	}
-	if options.Kml {
+	if options.Config.Kml {
 		ext = ".kml"
 	} else {
 		ext = ".kmz"
@@ -22,11 +22,11 @@ func GenKmlName(inp string, idx int) string {
 		ext = fmt.Sprintf(".%d%s", idx, ext)
 	}
 	outfn = outfn + ext
-	if len(options.Outdir) > 0 {
-		os.MkdirAll(options.Outdir, os.ModePerm)
-		stat, err := os.Stat(options.Outdir)
+	if len(options.Config.Outdir) > 0 {
+		os.MkdirAll(options.Config.Outdir, os.ModePerm)
+		stat, err := os.Stat(options.Config.Outdir)
 		if err == nil && stat.IsDir() {
-			outfn = filepath.Join(options.Outdir, outfn)
+			outfn = filepath.Join(options.Config.Outdir, outfn)
 		}
 	}
 	return outfn
