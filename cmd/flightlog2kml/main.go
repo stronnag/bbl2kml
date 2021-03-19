@@ -57,7 +57,7 @@ func main() {
 					if res {
 						if dump_log {
 							for _, b := range ls.L.Items {
-								fmt.Fprintln(os.Stderr, b)
+								fmt.Fprintf(os.Stderr, "%+v\n", b)
 							}
 						} else {
 							outfn := kmlgen.GenKmlName(b.Logname, b.Index)
