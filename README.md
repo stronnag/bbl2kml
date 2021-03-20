@@ -89,7 +89,7 @@ Both Flight Mode and RSSI tracks are generated; the default for display is Fligh
 
 * Flight mode: the default, colours as [below](#flight_mode_track).
 * RSSI mode: RSSI percentage as a colour gradient, according to the current `--gradient` setting. Note that if no valid RSSI is found in the log, this mode will be suppressed.
-* Efficiency mode: The efficiency (mAh/km) as a colour gradient,  according to the current `--gradient` setting. This is not enabled by default, and requires the `--efficiency` setting to be specified, either as a command line option or permanently in the [configuration file](#setting_default_options).
+* Efficiency mode: The efficiency (mAh/km) as a colour gradient,  according to the current `--gradient` setting. This is not enabled by default, and requires the `--efficiency` setting to be specified, either as a command line option or permanently in the [configuration file](#setting-default-options).
 
 #### Flight Mode Track
 
@@ -110,7 +110,7 @@ The RSSI and Efficiency modes are displayed using a colour gradient. Three gradi
 * `rdgn` : Red to green, green representing the best (100%), red the worst (0%)
 * `yor` : Yellow/Orange/Red, yellow representing the best (100%), red the worst (0%)
 
-If no option is given, `red` is assumed. Values are set by the `--gradient` command line option or  in the [configuration file](#setting_default_options).
+If no option is given, `red` is assumed. Values are set by the `--gradient` command line option or  in the [configuration file](#setting-default-options).
 
 ### Examples
 
