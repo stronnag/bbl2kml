@@ -52,7 +52,7 @@ func Usage() {
 	flag.Usage()
 }
 
-func parse_confile_file() {
+func parse_config_file() {
 	def := os.Getenv("APPDATA")
 	if def == "" {
 		def = os.Getenv("HOME")
@@ -81,7 +81,7 @@ func ParseCLI(gv func() string) ([]string, string) {
 		fmt.Fprintln(os.Stderr, gv())
 	}
 
-	parse_confile_file()
+	parse_config_file()
 
 	defs := os.Getenv("BBL2KML_OPTS")
 	if defs != "" {

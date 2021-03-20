@@ -2,7 +2,7 @@
 
 ## Overview
 
-A suite of tools to generate annotated KML/KMZ files (and other data) from **inav** blackbox logs and OpenTX log files (inav S.Port telemetry).
+A suite of tools to generate annotated KML/KMZ files (and other data) from **inav** blackbox logs and OpenTX log files (inav S.Port telemetry). From 0.9.7, there is limited support for OpenTX logs from Ardupilot.
 
 * flightlog2kml - Generates KML/Z file(s) from Blackbox log(s) and OpenTX (OTX) logs
 * mission2kml - Generate KML file from inav mission files (and other formats)
@@ -32,12 +32,18 @@ Usage of flightlog2kml [options] file...
     	Generate KML (vice default KMZ)
   -mission string
     	Optional mission file name
+  -outdir string
+    	Output directory for generated KML
+  -rebase string
+    	rebase all positions on lat,lon[,alt]
   -rssi
     	Set RSSI view as default
   -split-time int
     	[OTX] Time(s) determining log split, 0 disables (default 120)
+  -visibility int
+    	0=folder value,-1=don't set,1=all on
 
-flightlog2kml 0.8.4, commit: 0adaefb / 2021-01-09
+flightlog2kml 0.9.7, commit: bccf72e/2021-03-20
 ```
 
 Multiple logs (with multiple indices) may be given. A KML/Z will be generated for each file / index.
@@ -83,7 +89,7 @@ Both Flight Mode and RSSI tracks are generated; the default for display is Fligh
 
 * Flight mode: the default, colours as [below](#flight_mode_track).
 * RSSI mode: RSSI percentage as a colour gradient, according to the current `--gradient` setting. Note that if no valid RSSI is found in the log, this mode will be suppressed.
-* Efficiency mode: The efficiency (mAh/km) as a colour gradient,  according to the current `--gradient` setting. This is not enabled by default, and requires the `--efficiency` setting to be specified, either as a command line option or permanently in `$BBL2KML_OPTS`.
+* Efficiency mode: The efficiency (mAh/km) as a colour gradient,  according to the current `--gradient` setting. This is not enabled by default, and requires the `--efficiency` setting to be specified, either as a command line option or permanently in the [configuration file](#setting_default_options).
 
 #### Flight Mode Track
 
@@ -104,7 +110,7 @@ The RSSI and Efficiency modes are displayed using a colour gradient. Three gradi
 * `rdgn` : Red to green, green representing the best (100%), red the worst (0%)
 * `yor` : Yellow/Orange/Red, yellow representing the best (100%), red the worst (0%)
 
-If no option is given, `red` is assumed. Values are set by the `--gradient` command line option or  in `$BBL2KML_OPTS`.
+If no option is given, `red` is assumed. Values are set by the `--gradient` command line option or  in the [configuration file](#setting_default_options).
 
 ### Examples
 
