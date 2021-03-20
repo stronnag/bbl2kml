@@ -33,6 +33,7 @@ type Configuration struct {
 	Mqttopts        string `json:"-"`
 	Outdir          string `json:"outdir"`
 	Rebase          string `json:"-"`
+	Visibility      int    `json:"visibility"`
 }
 
 var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120}
@@ -135,6 +136,7 @@ func ParseCLI(gv func() string) ([]string, string) {
 		flag.StringVar(&Config.Gradset, "gradient", Config.Gradset, "Specific colour gradient [red,rdgn,yor]")
 		flag.BoolVar(&Config.Dms, "dms", Config.Dms, "Show positions as DD:MM:SS.s (vice decimal degrees)")
 		flag.StringVar(&Config.Outdir, "outdir", Config.Outdir, "Output directory for generated KML")
+		flag.IntVar(&Config.Visibility, "visibility", Config.Visibility, "0=folder value,-1=don't set,1=all on")
 	}
 	flag.IntVar(&Config.Intvl, "interval", Config.Intvl, "Sampling Interval (ms)")
 	flag.Parse()

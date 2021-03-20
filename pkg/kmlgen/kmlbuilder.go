@@ -152,12 +152,17 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 			)
 
 		k := kml.Placemark(
-			kml.Visibility(viz),
 			kml.Description(sb.String()),
 			kml.TimeStamp(kml.When(r.Utc)),
 			kml.StyleURL(getStyleURL(r, colmode)),
 		)
-
+		if options.Config.Visibility != -1 {
+			if options.Config.Visibility == 1 {
+				k.Add(kml.Visibility(true))
+			} else {
+				k.Add(kml.Visibility(viz))
+			}
+		}
 		se:= kml.Style()
 
 		if options.Config.Extrude {
