@@ -233,7 +233,7 @@ $ mission2kml -home 54.125229,-4.730443 barrule-h.mission > mtest.kml
 
 ## Setting default options
 
-Default settings may be set in a configuration file.
+Default settings may be set in a JSON formatted configuration file.
 
 * On POSIX platforms (Linux, FreeBSD, MacOS), `$HOME/.config/fl2x/config.json`
 * On Windows `%APPDIR%\fl2x\config.json`
