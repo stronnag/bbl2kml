@@ -252,6 +252,7 @@ The keys in the file are the relevant command line options, the following are re
 * `outdir`
 * `blt-vers`
 * `type`
+* `visibility`
 
 For example:
 
