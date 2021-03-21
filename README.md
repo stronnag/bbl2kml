@@ -64,8 +64,8 @@ Distance : 48437 m
 Duration : 43:44
 Disarm   : Switch
 
-results in the KMZ file "LOG00044.1.kmz"
 ```
+results in the KMZ file "LOG00044.1.kmz"
 
 Where `-mission <file>` is given, the given waypoint `<mission file>` will be included in the generated KML/Z; mission files may be one of the following formats as supported by [impload](https://github.com/stronnag/impload):
 
@@ -165,7 +165,7 @@ Usage of fl2mqtt [options] file...
     	[OTX] Time(s) determining log split, 0 disables (default 120)
 ```
 
-The [BulletGCSS wiki](https://github.com/danarrib/BulletGCSS/wiki) describes how these values are chosen; in general:
+The [BulletGCSS wiki](https://github.com/danarrib/BulletGCSS/wiki) describes how the broker values are chosen; in general:
 
 * It is safe to use `broker.emqx.io` as the MQTT broker, this is default if no broker host is defined in the URI.
 * You should use a unique topic for publishing your own data, this is slash separated string, for example `foo/bar/quux/demo`; the topic should include at least three elements.
@@ -271,6 +271,8 @@ For example:
 }
 ```
 
+A warning will be displayed if the configuration file in not syntactically correct; in such cases its contents will be ignored. There is a [complete example](https://github.com/stronnag/bbl2kml/wiki/Sample-Config-file) in the wiki that can be used as a template.
+
 Note also that the command interpreter allows `-flag` or `--flag` for any option.
 
 ## Limitations, Bugs, Bug Reporting
@@ -299,7 +301,7 @@ or more simply
 make
 ```
 
-**flightlog2kml** depends on [twpayne/go-kml](https://github.com/twpayne/go-kml), an outstanding Golang KML library.
+**flightlog2kml** depends on [twpayne/go-kml](https://github.com/twpayne/go-kml), an outstanding open source Golang KML library.
 
 `flightlog2kml` may be build for all OS for which a suitable Golang is available. It also requires inav's [blackbox_decode](https://github.com/iNavFlight/blackbox-tools); 0.4.5 (or future) is recommended; the minimum `blackbox_decode` version is 0.4.4. For Windows' users it is probably easiest to copy inav's `blackbox_decode.exe` into the same directory as `flightlog2kml.exe`.
 
