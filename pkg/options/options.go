@@ -52,7 +52,8 @@ func Usage() {
 	flag.Usage()
 }
 
-func parse_config_file() {
+func parse_config_file() error {
+	var err error
 	def := os.Getenv("APPDATA")
 	if def == "" {
 		def = os.Getenv("HOME")
@@ -63,25 +64,28 @@ func parse_config_file() {
 		}
 	}
 	fn := filepath.Join(def, "fl2x", "config.json")
-	data, err := ioutil.ReadFile(fn)
-	if err == nil {
+	data, oerr := ioutil.ReadFile(fn)
+	if oerr == nil {
 		err = json.Unmarshal(data, &Config)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "JSON Config: %v\n", err)
-		}
 	}
+	return err
 }
 
 func ParseCLI(gv func() string) ([]string, string) {
 	app := filepath.Base(os.Args[0])
+	var err error
+
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of %s [options] file...\n", app)
 		flag.PrintDefaults()
 		fmt.Fprintf(os.Stderr, "\n")
 		fmt.Fprintln(os.Stderr, gv())
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: config file ignored due to error: %v\n", err)
+		}
 	}
 
-	parse_config_file()
+	err = parse_config_file()
 
 	defs := os.Getenv("BBL2KML_OPTS")
 	if defs != "" {
@@ -144,7 +148,9 @@ func ParseCLI(gv func() string) ([]string, string) {
 	if !isFlagSet("home-alt") {
 		Config.HomeAlt = -999999 // sentinel
 	}
-
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: config file ignored due to error: %v\n", err)
+	}
 	files := flag.Args()
 	return files, app
 }
