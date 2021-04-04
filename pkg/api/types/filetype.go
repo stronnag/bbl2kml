@@ -11,6 +11,8 @@ const (
 	IS_UNKNOWN = -1
 	IS_BBL     = 1
 	IS_OTX     = 2
+	IS_BLT     = 3
+	IS_MWP     = 4
 )
 
 func EvinceFileType(fn string) int {
@@ -23,10 +25,15 @@ func EvinceFileType(fn string) int {
 	fh := bufio.NewReader(file)
 	sig, err := fh.Peek(64) //read a few bytes without consuming
 	if err == nil {
-		if strings.HasPrefix(string(sig), "H Product:Blackbox") {
+		switch {
+		case strings.HasPrefix(string(sig), "H Product:Blackbox"):
 			res = IS_BBL
-		} else if strings.HasPrefix(string(sig), "Date,Time,") {
+		case strings.HasPrefix(string(sig), "Date,Time,"):
 			res = IS_OTX
+		case strings.Contains(string(sig), "|Connected to "):
+			res = IS_BLT
+		case strings.HasPrefix(string(sig), `{"type":`):
+			res = IS_MWP
 		}
 	}
 	return res

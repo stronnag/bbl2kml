@@ -37,7 +37,7 @@ func main() {
 
 	C.resources_register_resource()
 
-	files, _ := options.Config.ParseCLI(getVersion)
+	files, _ := options.ParseCLI(getVersion)
 	if options.Config.Dump {
 		fmt.Fprintln(os.Stderr, "Dump only supported via CLI")
 		return

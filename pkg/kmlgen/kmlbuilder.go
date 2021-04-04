@@ -468,16 +468,17 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 	}
 
 	var err error
-
 	if strings.HasSuffix(outfn, ".kmz") {
 		z := kmz.NewKMZ(d)
-		w, err := os.Create(outfn)
+		w, err0 := os.Create(outfn)
+		err = err0
 		if err == nil {
 			err = z.WriteIndent(w, "", "  ")
 		}
 	} else {
 		k := kml.KML(d)
-		output, err := os.Create(outfn)
+		output, err0 := os.Create(outfn)
+		err = err0
 		if err == nil {
 			err = k.WriteIndent(output, "", "  ")
 		}

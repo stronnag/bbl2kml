@@ -41,7 +41,8 @@ func getopentopo(lat, lon float64) ([]TopoRes, error) {
 	response, err := http.Get(req)
 	if err == nil {
 		defer response.Body.Close()
-		contents, err := ioutil.ReadAll(response.Body)
+		contents, err1 := ioutil.ReadAll(response.Body)
+		err = err1
 		if err == nil {
 			res = topo_parse_response(contents)
 		}

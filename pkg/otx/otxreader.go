@@ -372,7 +372,7 @@ func get_otx_line(r []string) types.LogItem {
 		rssi, _ := strconv.ParseInt(s, 10, 32)
 		b.Rssi = uint8(rssi)
 
-		if s, _, ok := get_rec_value(r, "RxBt"); ok {
+		if s, _, ok = get_rec_value(r, "RxBt"); ok {
 			b.Volts, _ = strconv.ParseFloat(s, 64)
 		}
 

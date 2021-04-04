@@ -20,6 +20,7 @@ type Configuration struct {
 	Kml             bool   `json:"kml"`
 	Metas           bool   `json:"-"`
 	Rssi            bool   `json:"rssi"`
+	Summary         bool   `json:"-"`
 	Bulletvers      int    `json:"blt-vers"`
 	Intvl           int    `json:"-"`
 	Idx             int    `json:"-"`
@@ -141,6 +142,7 @@ func ParseCLI(gv func() string) ([]string, string) {
 		flag.BoolVar(&Config.Dms, "dms", Config.Dms, "Show positions as DD:MM:SS.s (vice decimal degrees)")
 		flag.StringVar(&Config.Outdir, "outdir", Config.Outdir, "Output directory for generated KML")
 		flag.IntVar(&Config.Visibility, "visibility", Config.Visibility, "0=folder value,-1=don't set,1=all on")
+		flag.BoolVar(&Config.Summary, "summary", Config.Summary, "Just show summary")
 	}
 	flag.IntVar(&Config.Intvl, "interval", Config.Intvl, "Sampling Interval (ms)")
 	flag.Parse()

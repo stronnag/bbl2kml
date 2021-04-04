@@ -59,7 +59,7 @@ func main() {
 							for _, b := range ls.L.Items {
 								fmt.Fprintf(os.Stderr, "%+v\n", b)
 							}
-						} else {
+						} else if options.Config.Summary == false {
 							outfn := kmlgen.GenKmlName(b.Logname, b.Index)
 							kmlgen.GenerateKML(ls.H, ls.L, outfn, b, ls.M)
 						}
