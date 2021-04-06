@@ -68,7 +68,6 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 	i := 1
 	lasttm := int64(0)
 	var parts []string
-
 	for scanner.Scan() {
 		line := scanner.Text()
 		if parts = strings.Split(line, "|"); len(parts) == 2 {
@@ -85,6 +84,14 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 			idx += 1
 			mt := types.FlightMeta{Logname: basefile, Date: lt, Index: idx, Start: i}
 			metas = append(metas, mt)
+		} else if idx > 0 && metas[idx-1].Flags == 0 {
+			if cstart := strings.Index(parts[1], "cs:"); cstart > -1 {
+				cstart += 3
+				cend := strings.Index(parts[1][cstart:], ",")
+				cend += cstart
+				metas[idx-1].Craft = parts[1][cstart:cend]
+				metas[idx-1].Flags = types.Has_Craft
+			}
 		}
 		i += 1
 	}
@@ -96,7 +103,7 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 
 	for j, mx := range metas {
 		if mx.End-mx.Start > 64 {
-			metas[j].Flags = types.Has_Start | types.Is_Valid
+			metas[j].Flags |= types.Has_Start | types.Is_Valid
 		}
 	}
 	if len(metas) == 0 {
