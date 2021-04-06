@@ -35,6 +35,7 @@ type Configuration struct {
 	Outdir          string `json:"outdir"`
 	Rebase          string `json:"-"`
 	Visibility      int    `json:"visibility"`
+	Tmpdir          string `json:"-"`
 }
 
 var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120}

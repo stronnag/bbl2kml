@@ -90,7 +90,7 @@ func read_gpx(dat []byte) *Mission {
 	return mission
 }
 
-func decode_action(b byte) string {
+func (m *Mission) Decode_action(b byte) string {
 	var a string
 	switch b {
 	case wp_WAYPOINT:
@@ -156,6 +156,34 @@ func (m *Mission) Dump(dms bool, homep...float64)  {
 	k := kml.KML(m.To_kml(hpos, dms, true))
 	k.WriteIndent(os.Stdout, "", "  ")
 }
+
+
+func (m *Mission) To_MWXML(fname string) {
+	doc := etree.NewDocument()
+	doc.CreateProcInst("xml", `version="1.0" encoding="utf-8"`)
+	x := doc.CreateElement("mission")
+	x.CreateComment(`Created by "flightlog2kml"`)
+	v := x.CreateElement("version")
+	v.CreateAttr("value", "0.0")
+	for _, mi := range m.MissionItems {
+		xi := x.CreateElement("missionitem")
+		xi.CreateAttr("no", fmt.Sprintf("%d", mi.No))
+		xi.CreateAttr("action", mi.Action)
+		xi.CreateAttr("lat", strconv.FormatFloat(mi.Lat, 'f', 7, 64))
+		xi.CreateAttr("lon", strconv.FormatFloat(mi.Lon, 'f', 7, 64))
+		xi.CreateAttr("alt", fmt.Sprintf("%d", mi.Alt))
+		xi.CreateAttr("parameter1", fmt.Sprintf("%d", mi.P1))
+		xi.CreateAttr("parameter2", fmt.Sprintf("%d", mi.P2))
+		xi.CreateAttr("parameter3", fmt.Sprintf("%d", mi.P3))
+	}
+	w, err := os.Create(fname)
+	if err == nil {
+		defer w.Close()
+		doc.Indent(2)
+		doc.WriteTo(w)
+	}
+}
+
 
 func (m *Mission) To_kml(hpos types.HomeRec, dms bool, fake bool) kml.Element {
 	var points []kml.Coordinate
@@ -448,7 +476,7 @@ func read_simple(dat []byte) *Mission {
 
 		iaction, err := strconv.Atoi(record[j])
 		if err == nil {
-			action = decode_action(byte(iaction))
+			action = mission.Decode_action(byte(iaction))
 		} else {
 			action = record[j]
 		}

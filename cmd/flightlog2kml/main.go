@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"io/ioutil"
 	otx "github.com/stronnag/bbl2kml/pkg/otx"
 	bbl "github.com/stronnag/bbl2kml/pkg/bbl"
+	blt "github.com/stronnag/bbl2kml/pkg/bltreader"
 	options "github.com/stronnag/bbl2kml/pkg/options"
 	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	geo "github.com/stronnag/bbl2kml/pkg/geo"
@@ -39,6 +41,9 @@ func main() {
 		} else if ftype == types.IS_BBL {
 			blfr := bbl.NewBBLReader(fn)
 			lfr = &blfr
+		} else if ftype == types.IS_BLT {
+			blfr := blt.NewBLTReader(fn)
+			lfr = &blfr
 		} else {
 			continue
 		}
@@ -48,6 +53,12 @@ func main() {
 				lfr.Dump()
 				os.Exit(0)
 			}
+			options.Config.Tmpdir, err = ioutil.TempDir("", ".fl2x")
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer os.RemoveAll(options.Config.Tmpdir)
+
 			for _, b := range metas {
 				if (options.Config.Idx == 0 || options.Config.Idx == b.Index) && b.Flags&types.Is_Valid != 0 {
 					for k, v := range b.Summary() {
