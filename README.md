@@ -4,7 +4,7 @@
 
 A suite of tools to generate annotated KML/KMZ files (and other data) from **inav** blackbox logs and OpenTX log files (inav S.Port telemetry). From 0.9.7, there is limited support for OpenTX logs from Ardupilot.
 
-* flightlog2kml - Generates KML/Z file(s) from Blackbox log(s) and OpenTX (OTX) logs
+* flightlog2kml - Generates KML/Z file(s) from Blackbox log(s), OpenTX (OTX) and Bullet GCSS logs
 * mission2kml - Generate KML file from inav mission files (and other formats)
 * fl2mqtt - Generates MQTT data to stimulate the on-line Ground Control Station [BulletGCSS](https://bulletgcss.fpvsampa.com/)
 * fl2ltm - If fl2mqtt is installed (typically by hard or soft link) as `fl2ltm` it generates LTM  (inav's Lightweight Telemetry). This is primarily for use by [mwp](https://github.com/stronnag/mwptools/) as a unified replay tool for Blackbox and Opentx logs.
