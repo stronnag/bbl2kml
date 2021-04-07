@@ -102,17 +102,17 @@ clean:
 	make -C  cmd/fl2kmlgtk clean
 	@go clean
 
-install: $(CAPP)$(EXE) $(MAPP)$(EXE) $(QAPP)$(EXE)
+install: $(CAPP)$(EXE) $(MAPP)$(EXE) $(QAPP)$(EXE) $(LAPP)$(EXE)
 	@ install -d $(prefix)/bin
-	install -s $(CAPP)$(EXE) $(MAPP)$(EXE) $(QAPP)$(EXE) $(prefix)/bin
+	install -s $(CAPP)$(EXE) $(MAPP)$(EXE) $(QAPP)$(EXE) $(LAPP)$(EXE) $(prefix)/bin
 	@rm -f $(prefix)/bin/fl2ltm
 	@ln -sf $(prefix)/bin/fl2mqtt $(prefix)/bin/fl2ltm
 
-install-all: $(CAPP)$(EXE) $(MAPP)$(EXE) $(GAPP)$(EXE) $(QAPP)$(EXE)
+install-all: $(CAPP)$(EXE) $(MAPP)$(EXE) $(GAPP)$(EXE) $(QAPP)$(EXE) $(LAPP)$(EXE)
 	@ install -d $(prefix)/bin
-	install -s $(CAPP)$(EXE) $(MAPP)$(EXE) $(GAPP)$(EXE) $(QAPP)$(EXE) $(prefix)/bin
+	install -s $(CAPP)$(EXE) $(MAPP)$(EXE) $(GAPP)$(EXE) $(QAPP)$(EXE) $(LAPP)$(EXE) $(prefix)/bin
 
 
-install-local: $(CAPP) $(MAPP) $(GAPP) $(QAPP)
+install-local: $(CAPP) $(MAPP) $(GAPP) $(QAPP) $(LAPP)
 	install -d $(HOME)/bin
-	install -s $(CAPP)$(EXE) $(MAPP)$(EXE) $(GAPP)$(EXE) $(HOME)/bin/
+	install -s $(CAPP)$(EXE) $(MAPP)$(EXE) $(GAPP)$(EXE) $(LAPP)$(EXE) $(HOME)/bin/
