@@ -29,10 +29,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	if options.Config.Idx == 0 {
-		options.Config.Idx = 1
-	}
-
 	geo.Frobnicate_init()
 	var lfr types.FlightLog
 	for _, fn := range files {

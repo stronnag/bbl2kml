@@ -6,6 +6,7 @@ _GAPP=fl2kmlgtk
 _MAPP=mission2kml
 _FAPP=fl2kmlfyne
 _QAPP=fl2mqtt
+_LAPP=log2mission
 
 ifndef DESTDIR
  CAPP=flightlog2kml
@@ -13,12 +14,14 @@ ifndef DESTDIR
  MAPP=mission2kml
  FAPP=fl2kmlfyne
  QAPP=fl2mqtt
+ LAPP=log2mission
 else
  CAPP=$(DESTDIR)/flightlog2kml
  MAPP=$(DESTDIR)/mission2kml
  GAPP=$(DESTDIR)/fl2kmlgtk
  FAPP=$(DESTDIR)/fl2kmlfyne
  QAPP=$(DESTDIR)/fl2mqtt
+ LAPP=$(DESTDIR)/log2mission
 endif
 
 ifeq ($(GOOS),windows)
@@ -72,9 +75,13 @@ QSRCS = $(wildcard cmd/fl2mqtt/*.go) $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV)
 MSRCS = $(wildcard cmd/mission2kml/*.go) $(PKGCOMMON)
 GSRCS = cmd/fl2kmlgtk/main.go cmd/fl2kmlgtk/logkml.ui $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGKML)
 FSRCS = cmd/fl2kmlfyne/main.go $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGKML)
+LSRCS = cmd/log2mission/main.go $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGKML)  $(PKGBLTR)
 
 $(_CAPP): $(CSRCS)
 	CGO_ENABLED=0 go build $(LDF) "$(LDFLAGS) -extldflags -static" -o $(CAPP)$(EXT) cmd/flightlog2kml/main.go
+
+$(_LAPP): $(LSRCS)
+	CGO_ENABLED=0 go build $(LDF) "$(LDFLAGS) -extldflags -static" -o $(LAPP)$(EXT) cmd/log2mission/main.go
 
 $(_MAPP): $(MSRCS)
 	CGO_ENABLED=0 go build $(LDF) "$(LDFLAGS) -extldflags -static" -o $(MAPP)$(EXT) cmd/mission2kml/main.go

@@ -6,6 +6,7 @@ require (
 	fyne.io/fyne v1.4.3
 	github.com/beevik/etree v1.1.0
 	github.com/bmizerany/perks v0.0.0-20141205001514-d9a9656a3a4b
+	github.com/deet/simpleline v0.0.0-20140919022041-9d297ff784a2
 	github.com/eclipse/paho.mqtt.golang v1.3.1
 	github.com/gotk3/gotk3 v0.5.2
 	github.com/mazznoer/colorgrad v0.7.0

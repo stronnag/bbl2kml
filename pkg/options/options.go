@@ -12,33 +12,34 @@ import (
 )
 
 type Configuration struct {
-	Dms             bool   `json:"dms"`
-	Dump            bool   `json:"-"`
-	Efficiency      bool   `json:"efficiency"`
-	Extrude         bool   `json:"extrude"`
-	Fast            bool   `json:"-"`
-	Kml             bool   `json:"kml"`
-	Metas           bool   `json:"-"`
-	Rssi            bool   `json:"rssi"`
-	Summary         bool   `json:"-"`
-	Bulletvers      int    `json:"blt-vers"`
-	Intvl           int    `json:"-"`
-	Idx             int    `json:"-"`
-	HomeAlt         int    `json:"home-alt"`
-	SplitTime       int    `json:"split-time"`
-	Type            int    `json:"type"`
-	Blackbox_decode string `json:"blackbox-decode"`
-	Gradset         string `json:"gradient"`
-	LTMdev          string `json:"-"`
-	Mission         string `json:"-"`
-	Mqttopts        string `json:"-"`
-	Outdir          string `json:"outdir"`
-	Rebase          string `json:"-"`
-	Visibility      int    `json:"visibility"`
-	Tmpdir          string `json:"-"`
+	Dms             bool    `json:"dms"`
+	Dump            bool    `json:"-"`
+	Efficiency      bool    `json:"efficiency"`
+	Extrude         bool    `json:"extrude"`
+	Fast            bool    `json:"-"`
+	Kml             bool    `json:"kml"`
+	Metas           bool    `json:"-"`
+	Rssi            bool    `json:"rssi"`
+	Summary         bool    `json:"-"`
+	Bulletvers      int     `json:"blt-vers"`
+	Intvl           int     `json:"-"`
+	Idx             int     `json:"-"`
+	HomeAlt         int     `json:"home-alt"`
+	SplitTime       int     `json:"split-time"`
+	Type            int     `json:"type"`
+	Blackbox_decode string  `json:"blackbox-decode"`
+	Gradset         string  `json:"gradient"`
+	LTMdev          string  `json:"-"`
+	Mission         string  `json:"-"`
+	Mqttopts        string  `json:"-"`
+	Outdir          string  `json:"outdir"`
+	Rebase          string  `json:"-"`
+	Visibility      int     `json:"visibility"`
+	Tmpdir          string  `json:"-"`
+	Epsilon         float64 `json:"-"`
 }
 
-var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120}
+var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120, Epsilon: 0.015}
 
 func isFlagSet(name string) bool {
 	found := false
@@ -120,11 +121,14 @@ func ParseCLI(gv func() string) ([]string, string) {
 	}
 
 	flag.IntVar(&Config.Idx, "index", 0, "Log index")
-	flag.BoolVar(&Config.Dump, "dump", false, "Dump log headers and exit")
-	flag.StringVar(&Config.Mission, "mission", "", "Optional mission file name")
 	flag.IntVar(&Config.SplitTime, "split-time", Config.SplitTime, "[OTX] Time(s) determining log split, 0 disables")
-	flag.IntVar(&Config.HomeAlt, "home-alt", Config.HomeAlt, "[OTX] home altitude")
 	flag.StringVar(&Config.Rebase, "rebase", "", "rebase all positions on lat,lon[,alt]")
+
+	if app != "log2mission" {
+		flag.IntVar(&Config.HomeAlt, "home-alt", Config.HomeAlt, "[OTX] home altitude")
+		flag.BoolVar(&Config.Dump, "dump", false, "Dump log headers and exit")
+		flag.StringVar(&Config.Mission, "mission", "", "Optional mission file name")
+	}
 	if app == "fl2mqtt" {
 		flag.StringVar(&Config.Mqttopts, "broker", "", "Mqtt URI (mqtt://[user[:pass]@]broker[:port]/topic[?cafile=file]")
 		flag.IntVar(&Config.Bulletvers, "blt-vers", Config.Bulletvers, "[MQTT] BulletGCSS version")
@@ -134,6 +138,8 @@ func ParseCLI(gv func() string) ([]string, string) {
 		flag.BoolVar(&Config.Metas, "metas", false, "list metadata and exit")
 		flag.BoolVar(&Config.Fast, "fast", false, "faster replay")
 		flag.IntVar(&Config.Type, "type", Config.Type, "model type")
+	} else if app == "log2mission" {
+		flag.Float64Var(&Config.Epsilon, "epsilon", Config.Epsilon, "Epsilon")
 	} else {
 		flag.BoolVar(&Config.Kml, "kml", Config.Kml, "Generate KML (vice default KMZ)")
 		flag.BoolVar(&Config.Rssi, "rssi", Config.Rssi, "Set RSSI view as default")
@@ -151,6 +157,11 @@ func ParseCLI(gv func() string) ([]string, string) {
 	if !isFlagSet("home-alt") {
 		Config.HomeAlt = -999999 // sentinel
 	}
+
+	if Config.Idx == 0 {
+		Config.Idx = 1
+	}
+
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: config file ignored due to error: %v\n", err)
 	}

@@ -174,8 +174,6 @@ func parse_bullet(line string, b *types.LogItem) {
 				case "hal":
 					homes.HomeAlt = float64(tmp) / 100.0
 					homes.Flags |= types.HOME_ALT
-				case "cs":
-					//				b.Name = kv[1]
 				case "cud":
 					b.Amps = float64(tmp) / 100.0
 				case "whd":
@@ -184,7 +182,9 @@ func parse_bullet(line string, b *types.LogItem) {
 					if mok == false {
 						parse_mission(vals)
 					}
-					// not used (for now)
+
+					// not used (here, for now)
+				case "cs": // in metas
 				case "mfr":
 				case "ont":
 				case "flt":
