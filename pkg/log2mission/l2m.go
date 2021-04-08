@@ -87,6 +87,13 @@ func Generate_mission(seg types.LogSegment, meta types.FlightMeta) {
 			if ntry > 42 {
 				log.Fatal("Failed to generate an aceeptable mission after 42 iterations")
 			}
+		} else if len(res) == 2 {
+			ep = ep / 15.0
+			ntry += 1
+			if ntry > 5 {
+				fmt.Fprintln(os.Stderr, "Giving up with minimal mission")
+				break
+			}
 		} else {
 			break
 		}
@@ -102,7 +109,7 @@ func Generate_mission(seg types.LogSegment, meta types.FlightMeta) {
 		ms.MissionItems = append(ms.MissionItems,
 			mission.MissionItem{No: len(res), Lat: 0.0, Lon: 0.0, Alt: int32(0.0), Action: "RTH"})
 	}
-	fmt.Printf("Mission  : %d points", len(res))
+	fmt.Printf("Mission  : %d points", nmi)
 	if ntry > 0 {
 		fmt.Printf(" (reprocess: %d, epsilon: %.6f)", ntry, ep)
 	}

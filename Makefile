@@ -56,7 +56,7 @@ export EXT
 export LDF
 export GOFLAGS
 
-all: $(_CAPP) $(_MAPP) $(_QAPP)
+all: $(_CAPP) $(_MAPP) $(_QAPP) $(_LAPP)
 
 gui: $(_FAPP) $(_GAPP)
 
