@@ -227,12 +227,12 @@ Usage of log2mission [options] file...
     	Start Offset (seconds) (default 30)
 ```
 
-* The `start-offset` and `end-offset` compensate for the fact that the start / end of the flight is usually on the ground, and thus is not a good WP choice. The defaults are 30 seconds for the start offset and -30 seconds (i.e. 30 seconds from the end) for the end offset. The end offset may be specificed as either a positive number of seconds from the start of the log or a negative number (from the end). Locations prior to the start offset and after the end offset are not considered for mission generation. If the `end-offset` is specificed (0 cancels it), and there is no flight mode filter, then RTH is included in the generated mission.
+* The `start-offset` and `end-offset` compensate for the fact that the start / end of the flight is usually on the ground, and thus is not a good WP choice. The defaults are 30 seconds for the start offset and -30 seconds (i.e. 30 seconds from the end) for the end offset. The end offset may be specified as either a positive number of seconds from the start of the log or a negative number (from the end). Locations prior to the start offset and after the end offset are not considered for mission generation. If the `end-offset` is specified (0 cancels it), and there is no flight mode filter, then RTH is included in the generated mission.
 * The `mode-filter` allows the log to filtered on Cruise and WP modes, e.g. `-mode-filter=cruise`, `-mode-filter=wp`, `-mode-filter=cruise,wp`. If `mode-filter` is specified, log entries not in the required flight mode(s) are discarded. Cruise includes both 2D and 3D cruise.
 
 ### `epsilon` tuning
 
-The `epsilon` value is an opaque factor that controls the point simpliciation process (using the Ramer–Douglas–Peucker algorithm). The default value should be a good starting point for fixed wing with reasonably sedate flying. On a multi-rotor in a small flight area, a much smaller value (e.g. 0.001) would be more appropriate.  Increasing the value will decrease the number of mission points generated. `log2mission` will do this automatically if the default value results in greater than 60 mission points, for example: the log here would generate 77 points with the default `epsilon` value.
+The `epsilon` value is an opaque factor that controls the point simplification process (using the Ramer–Douglas–Peucker algorithm). The default value should be a good starting point for fixed wing with reasonably sedate flying. On a multi-rotor in a small flight area, a much smaller value (e.g. 0.001) would be more appropriate.  Increasing the value will decrease the number of mission points generated. `log2mission` will do this automatically if the default value results in greater than 60 mission points, for example: the log below would generate 77 points with the default `epsilon` value.
 
 ```
 $ log2mission -start-offset 60 -end-offset -120 /t/inav-contrib/otxlogs/demolog.TXT
