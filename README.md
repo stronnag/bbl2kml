@@ -289,6 +289,8 @@ Mission  : 2 points
 ```
 So some experimentation may be required to get a good mission, particularly for shorter MR flights. In particular, if reprocessing is indicated and the number of generated points is close to 60, then it's probably worth running again with a slightly larger `epsilon` than that shown in the output.
 
+`log2mission` will make an attempt to resolve the "short/complex" 2 point results by increasing `epsilon` automatically.
+
 ## mission2kml
 
 A standalone mission file to KML/Z converter is also provided.
