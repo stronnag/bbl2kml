@@ -82,7 +82,7 @@ func Generate_mission(seg types.LogSegment, meta types.FlightMeta) {
 			nmi += 1
 		}
 		if nmi > 60 {
-			ep += float64(float64(nmi-60) * 0.00025)
+			ep += float64(float64(nmi-60) * ep * 0.02) // 0.00025
 			ntry += 1
 			if ntry > 42 {
 				log.Fatal("Failed to generate an aceeptable mission after 42 iterations")
@@ -104,7 +104,7 @@ func Generate_mission(seg types.LogSegment, meta types.FlightMeta) {
 	}
 	fmt.Printf("Mission  : %d points", len(res))
 	if ntry > 0 {
-		fmt.Printf(" (reprocess: %d, epsilon: %.3f)", ntry, ep)
+		fmt.Printf(" (reprocess: %d, epsilon: %.6f)", ntry, ep)
 	}
 	fmt.Println()
 	ms.To_MWXML(generate_filename(meta))

@@ -201,7 +201,7 @@ If a mission file is given, this will also be displayed by BulletGCSS, albeit in
 
 [mwp](https://github.com/stronnag/mwptools) can also process / display the BulletGCSS MQTT protocol, using a similar [URI definition](https://github.com/stronnag/mwptools/wiki/mqtt---bulletgcss-telemetry).
 
-## `log2mssion`
+## `log2mission`
 
 `log2mission` will create an inav XML mission file from a supported flight log (Blackbox, OpenTX, BulletGCSS). The mission will not exceed the inav maximum of 60 mission points.
 
@@ -229,7 +229,9 @@ Usage of log2mission [options] file...
 * The `start-offset` and `end-offset` compensate for the fact that the start / end of the flight is usually on the ground, and thus is not a good WP choice. The defaults are 30 seconds for the start offset and -30 seconds (i.e. 30 seconds from the end) for the end offset. The end offset may be specificed as either a positive number of seconds from the start of the log or a negative number (from the end). Locations prior to the start offset and after the end offset are not considered for mission generation. If the `end-offset` is specificed (0 cancels it), and there is no flight mode filter, then RTH is included in the generated mission.
 * The `mode-filter` allows the log to filtered on Cruise and WP modes, e.g. `-mode-filter=cruise`, `-mode-filter=wp`, `-mode-filter=cruise,wp`. If `mode-filter` is specified, log entries not in the required flight mode(s) are discarded. Cruise includes both 2D and 3D cruise.
 
-The `epsilon` value is an opaque factor that controls the point simpliciation process (using the Ramer–Douglas–Peucker algorithm). The default value should be a good starting point. Increasing the value will decrease the number of mission points generated. `log2mission` will do this automatically if the default value results in greater than 60 mission points, for example: the log here would generate 77 points with the default `epsilon` value.
+### `epsilon` tuning
+
+The `epsilon` value is an opaque factor that controls the point simpliciation process (using the Ramer–Douglas–Peucker algorithm). The default value should be a good starting point for fixed wing with reasonably sedate flying. On a multi-rotor in a small flight area, a much smaller value (e.g. 0.001) would be more appropriate.  Increasing the value will decrease the number of mission points generated. `log2mission` will do this automatically if the default value results in greater than 60 mission points, for example: the log here would generate 77 points with the default `epsilon` value.
 
 ```
 $ log2mission -start-offset 60 -end-offset -120 /t/inav-contrib/otxlogs/demolog.TXT
@@ -247,6 +249,44 @@ Mission  : 56 points (reprocess: 1, epsilon: 0.018)
 ```
 
 The output from this example would be `demolog.1.mission`
+
+#### multirotor example
+
+Using a old, contributed MR log, in quite a small area, with user specifed `epsilon`.
+
+```
+$ log2mission -epsilon 0.001 logfs.TXT
+Log      : logfs.TXT / 1
+Flight   :  on 2019-02-08 15:21:13
+Firmware : INAV 2.1.0 (7bdd5967e) OMNIBUSF4V3 of Jan 22 2019 09:39:17
+Size     : 32.03 MB
+Current  : 23.5 A at 02:21
+Distance : 1560 m
+Duration : 04:10
+Altitude : 52.5 m at 02:50
+Speed    : 17.3 m/s at 02:38
+Range    : 174 m at 01:22
+Mission  : 13 points
+```
+
+13 points is a adequate mission to reproduce the flight.
+
+Using an extreme user defined `epsilon` results in an excessive number of points:
+
+```
+$ log2mission -epsilon 0.00001 logfs.TXT
+...
+Mission  : 59 points (reprocess: 8, epsilon: 0.000105)
+```
+
+Whereas, with the default `epsilon` of 0.015, no useful mission is generated:
+
+```
+$ log2mission logfs.TXT
+...
+Mission  : 2 points
+```
+So some experimentation may be required to get a good mission, particularly for shorter MR flights. In particular, if reprocessing is indicated and the number of generated points is close to 60, then it's probably worth running again with a slightly larger `epsilon` than that shown in the output.
 
 ## `mission2kml`
 
