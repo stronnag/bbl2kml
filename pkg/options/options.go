@@ -39,6 +39,7 @@ type Configuration struct {
 	Epsilon         float64 `json:"-"`
 	StartOff        int     `json:"start-offset"`
 	EndOff          int     `json:"end-offset"`
+	Modefilter      string  `json:"-"`
 }
 
 var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120, Epsilon: 0.015, StartOff: 30, EndOff: -30}
@@ -144,6 +145,7 @@ func ParseCLI(gv func() string) ([]string, string) {
 		flag.Float64Var(&Config.Epsilon, "epsilon", Config.Epsilon, "Epsilon")
 		flag.IntVar(&Config.StartOff, "start-offset", Config.StartOff, "Start Offset (seconds)")
 		flag.IntVar(&Config.EndOff, "end-offset", Config.EndOff, "End Offset (seconds)")
+		flag.StringVar(&Config.Modefilter, "mode-filter", Config.Modefilter, "Mode filter (cruise,wp)")
 	} else {
 		flag.BoolVar(&Config.Kml, "kml", Config.Kml, "Generate KML (vice default KMZ)")
 		flag.BoolVar(&Config.Rssi, "rssi", Config.Rssi, "Set RSSI view as default")

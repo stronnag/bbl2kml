@@ -7,7 +7,8 @@ A suite of tools to generate annotated KML/KMZ files (and other data) from **ina
 * flightlog2kml - Generates KML/Z file(s) from Blackbox log(s), OpenTX (OTX) and Bullet GCSS logs
 * mission2kml - Generate KML file from inav mission files (and other formats)
 * fl2mqtt - Generates MQTT data to stimulate the on-line Ground Control Station [BulletGCSS](https://bulletgcss.fpvsampa.com/)
-* fl2ltm - If fl2mqtt is installed (typically by hard or soft link) as `fl2ltm` it generates LTM  (inav's Lightweight Telemetry). This is primarily for use by [mwp](https://github.com/stronnag/mwptools/) as a unified replay tool for Blackbox and Opentx logs.
+* fl2ltm - If fl2mqtt is installed (typically by hard or soft link) as `fl2ltm` it generates LTM  (inav's Lightweight Telemetry). This is primarily for use by [mwp](https://github.com/stronnag/mwptools/) as a unified replay tool for Blackbox and OpenTx logs.
+* log2mission - Converts a flight log (Blackbox, OpenTx, BulletGCSS) into a valid inav mission. A number of filters may be applied (time, flight mode).
 
 ```
 $ flightlog2kml --help
@@ -199,6 +200,52 @@ $ fl2mqtt -broker wss://test.mosquitto.org:8081/fl2mqtt/fl2mtqq/test -mission si
 If a mission file is given, this will also be displayed by BulletGCSS, albeit incorrectly if there WP contains types other than `WAYPOINT` and `RTH`.
 
 [mwp](https://github.com/stronnag/mwptools) can also process / display the BulletGCSS MQTT protocol, using a similar [URI definition](https://github.com/stronnag/mwptools/wiki/mqtt---bulletgcss-telemetry).
+
+## `log2mssion`
+
+`log2mission` will create an inav XML mission file from a supported flight log (Blackbox, OpenTX, BulletGCSS). The mission will not exceed the inav maximum of 60 mission points.
+
+```
+$ log2mission
+Usage of log2mission [options] file...
+  -end-offset int
+    	End Offset (seconds) (default -30)
+  -epsilon float
+    	Epsilon (default 0.015)
+  -index int
+    	Log index
+  -interval int
+    	Sampling Interval (ms) (default 1000)
+  -mode-filter string
+    	Mode filter (cruise,wp)
+  -rebase string
+    	rebase all positions on lat,lon[,alt]
+  -split-time int
+    	[OTX] Time(s) determining log split, 0 disables (default 120)
+  -start-offset int
+    	Start Offset (seconds) (default 30)
+```
+
+* The `start-offset` and `end-offset` compensate for the fact that the start / end of the flight is usually on the ground, and thus is not a good WP choice. The defaults are 30 seconds for the start offset and -30 seconds (i.e. 30 seconds from the end) for the end offset. The end offset may be specificed as either a positive number of seconds from the start of the log or a negative number (from the end). Locations prior to the start offset and after the end offset are not considered for mission generation. If the `end-offset` is specificed (0 cancels it), and there is no flight mode filter, then RTH is included in the generated mission.
+* The `mode-filter` allows the log to filtered on Cruise and WP modes, e.g. `-mode-filter=cruise`, `-mode-filter=wp`, `-mode-filter=cruise,wp`. If `mode-filter` is specified, log entries not in the required flight mode(s) are discarded. Cruise includes both 2D and 3D cruise.
+
+The `epsilon` value is an opaque factor that controls the point simpliciation process (using the Ramer–Douglas–Peucker algorithm). The default value should be a good starting point. Increasing the value will decrease the number of mission points generated. `log2mission` will do this automatically if the default value results in greater than 60 mission points, for example: the log here would generate 77 points with the default `epsilon` value.
+
+```
+$ log2mission -start-offset 60 -end-offset -120 /t/inav-contrib/otxlogs/demolog.TXT
+Flight   : MrPlane on 2021-04-08 13:24:07
+Firmware : INAV 3.0.0 (fc0e5e274) MATEKF405 of Apr 7 2021 / 17:02:08
+Size     : 19.36 MB
+Log      : demolog.TXT / 1
+Speed    : 28.0 m/s at 13:54
+Range    : 17322 m at 14:22
+Current  : 30.6 A at 00:05
+Distance : 48437 m
+Duration : 43:44
+Altitude : 292.8 m at 25:42
+Mission  : 56 points, retries: 1 (epsilon: 0.018)
+```
+The output from this example would be `demolog.1.mission`
 
 ## `mission2kml`
 
