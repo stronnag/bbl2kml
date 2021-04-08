@@ -1,0 +1,76 @@
+package log2mission
+
+import (
+	"os"
+	"fmt"
+	"time"
+	"path/filepath"
+	"github.com/deet/simpleline"
+	mission "github.com/stronnag/bbl2kml/pkg/mission"
+	options "github.com/stronnag/bbl2kml/pkg/options"
+	types "github.com/stronnag/bbl2kml/pkg/api/types"
+)
+
+func generate_filename(m types.FlightMeta) string {
+	outfn := filepath.Base(m.Logname)
+	ext := filepath.Ext(outfn)
+	if len(ext) < len(outfn) {
+		outfn = outfn[0 : len(outfn)-len(ext)]
+	}
+	ext = fmt.Sprintf(".%d.mission", m.Index)
+	outfn = outfn + ext
+	return outfn
+}
+
+
+func Generate_mission(seg types.LogSegment, meta types.FlightMeta) {
+	points := []simpleline.Point{}
+	var b types.LogItem
+	var st, et time.Time
+	if options.Config.StartOff > 0 {
+		diff := (time.Duration(options.Config.StartOff) * time.Second)
+		st = seg.L.Items[0].Utc.Add(diff)
+	}
+	if options.Config.EndOff < 0 {
+		diff := (time.Duration(options.Config.EndOff) * time.Second)
+		lidx := len(seg.L.Items) - 1
+		et = seg.L.Items[lidx].Utc.Add(diff)
+	} else if options.Config.EndOff > 0 {
+		diff := (time.Duration(options.Config.EndOff) * time.Second)
+		et = seg.L.Items[0].Utc.Add(diff)
+	}
+
+	for _, b = range seg.L.Items {
+		if !st.IsZero() && b.Utc.Before(st) {
+			continue
+		}
+		if !et.IsZero() && b.Utc.After(et) {
+			continue
+		}
+		pt := simpleline.Point3d{X: b.Lon, Y: b.Lat, Z: b.Alt}
+		points = append(points, &pt)
+	}
+	res, err := simpleline.RDP(points, options.Config.Epsilon, simpleline.Euclidean, true)
+	if err != nil {
+		fmt.Printf("Simplify error:  %v\n", err)
+		os.Exit(1)
+	}
+	var ms mission.Mission
+	for i, p := range res {
+		v := p.Vector()
+		mi := mission.MissionItem{No: i + 1, Lat: v[1], Lon: v[0],
+			Alt: int32(v[2]), Action: "WAYPOINT"}
+		/*
+			if mi.Is_GeoPoint() && geo.Getfrobnication() {
+				mi.Lat, mi.Lon, _ = geo.Frobnicate_move(mi.Lat, mi.Lon, 0)
+			}
+		*/
+		ms.MissionItems = append(ms.MissionItems, mi)
+	}
+	if !et.IsZero() {
+		ms.MissionItems = append(ms.MissionItems,
+			mission.MissionItem{No: len(res), Lat: 0.0, Lon: 0.0, Alt: int32(0.0), Action: "RTH"})
+	}
+	fmt.Printf("Mission  : %v points\n", len(res))
+	ms.To_MWXML(generate_filename(meta))
+}

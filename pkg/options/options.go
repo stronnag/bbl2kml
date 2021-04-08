@@ -37,9 +37,11 @@ type Configuration struct {
 	Visibility      int     `json:"visibility"`
 	Tmpdir          string  `json:"-"`
 	Epsilon         float64 `json:"-"`
+	StartOff        int     `json:"start-offset"`
+	EndOff          int     `json:"end-offset"`
 }
 
-var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120, Epsilon: 0.015}
+var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120, Epsilon: 0.015, StartOff: 30, EndOff: -30}
 
 func isFlagSet(name string) bool {
 	found := false
@@ -140,6 +142,8 @@ func ParseCLI(gv func() string) ([]string, string) {
 		flag.IntVar(&Config.Type, "type", Config.Type, "model type")
 	} else if app == "log2mission" {
 		flag.Float64Var(&Config.Epsilon, "epsilon", Config.Epsilon, "Epsilon")
+		flag.IntVar(&Config.StartOff, "start-offset", Config.StartOff, "Start Offset (seconds)")
+		flag.IntVar(&Config.EndOff, "end-offset", Config.EndOff, "End Offset (seconds)")
 	} else {
 		flag.BoolVar(&Config.Kml, "kml", Config.Kml, "Generate KML (vice default KMZ)")
 		flag.BoolVar(&Config.Rssi, "rssi", Config.Rssi, "Set RSSI view as default")
