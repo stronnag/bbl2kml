@@ -4,11 +4,13 @@
 
 A suite of tools to generate annotated KML/KMZ files (and other data) from **inav** blackbox logs and OpenTX log files (inav S.Port telemetry). From 0.9.7, there is limited support for OpenTX logs from Ardupilot.
 
-* flightlog2kml - Generates KML/Z file(s) from Blackbox log(s), OpenTX (OTX) and Bullet GCSS logs
-* mission2kml - Generate KML file from inav mission files (and other formats)
-* fl2mqtt - Generates MQTT data to stimulate the on-line Ground Control Station [BulletGCSS](https://bulletgcss.fpvsampa.com/)
-* fl2ltm - If fl2mqtt is installed (typically by hard or soft link) as `fl2ltm` it generates LTM  (inav's Lightweight Telemetry). This is primarily for use by [mwp](https://github.com/stronnag/mwptools/) as a unified replay tool for Blackbox and OpenTx logs.
-* log2mission - Converts a flight log (Blackbox, OpenTx, BulletGCSS) into a valid inav mission. A number of filters may be applied (time, flight mode).
+* [flightlog2kml](#flightlog2kml) - Generates KML/Z file(s) from Blackbox log(s), OpenTX (OTX) and Bullet GCSS logs
+* [fl2mqtt](#fl2mqtt) - Generates MQTT data to stimulate the on-line Ground Control Station [BulletGCSS](https://bulletgcss.fpvsampa.com/)
+* [fl2ltm](#fl2ltm) - If fl2mqtt is installed (typically by hard or soft link) as `fl2ltm` it generates LTM  (inav's Lightweight Telemetry). This is primarily for use by [mwp](https://github.com/stronnag/mwptools/) as a unified replay tool for Blackbox and OpenTx logs.
+* [log2mission](#log2mission) - Converts a flight log (Blackbox, OpenTx, BulletGCSS) into a valid inav mission. A number of filters may be applied (time, flight mode).
+* [mission2kml](#mission2kml) - Generate KML file from inav mission files (and other formats)
+
+## flightlog2kml
 
 ```
 $ flightlog2kml --help
@@ -78,7 +80,7 @@ Where `-mission <file>` is given, the given waypoint `<mission file>` will be in
 
 If you use a format other than MW-XML or mwp JSON, it is recommended that you review any relevant format constraints as described in the [impload user guide](https://github.com/stronnag/impload/wiki/impload-User-Guide).
 
-## Output
+### Output
 
 KML/Z file defining tracks which may be displayed Google Earth. Tracks can be animated with the time slider.
 
@@ -129,15 +131,14 @@ Note: These images are rather old, it looks much better now.
 
 ![Example 4](https://github.com/stronnag/mwptools/wiki/images/inav-tracer-rssi.jpg)
 
-## Using OpenTX logs
+### Using OpenTX logs
 
 There are a few issues with OpenTX logs, the first of which needs OpenTX 2.3.11 (released 2021-01-08) to be resolved:
 * CRSF logs in OpenTX 2.3.10 do not record the FM (Flight Mode) field. This makes it impossible to determine flight mode, or even if the craft is armed. Currently `flightlog2kml` tries to evince the armed state from other data.
 * GPS Elevation. Unless you have a GPS attached to the TX, you don't get GPS altitude. This can be set by the `-home-alt H` value (in metres). Otherwise `flightlog2kml` will use an online elevation service.
 * OpenTX creates a log per calendar day (IIRC), this means there may be multiple logs in the same file. Delimiting these individual logs is less than trivial, to some degree due to the prior CRSF issue which means arm / disarm is not reliably available. Currently, `flightlog2kml` assumes that a gap of more than 120 seconds indicates a new flight. The `-split-time` value allows a user-defined split time (seconds). Setting this to zero disables the log splitting function.
 
-
-## `fl2mqtt`
+## fl2mqtt
 
 The MQTT option (for BulletGCSS) uses a MQTT broker URI, which may include a username/password and cafile if required for authentication and/or encryption. It can also generate compatible log files that may be replayed by BulletGCSS' internal log player (without requiring a MQTT broker).
 
@@ -201,7 +202,7 @@ If a mission file is given, this will also be displayed by BulletGCSS, albeit in
 
 [mwp](https://github.com/stronnag/mwptools) can also process / display the BulletGCSS MQTT protocol, using a similar [URI definition](https://github.com/stronnag/mwptools/wiki/mqtt---bulletgcss-telemetry).
 
-## `log2mission`
+## log2mission
 
 `log2mission` will create an inav XML mission file from a supported flight log (Blackbox, OpenTX, BulletGCSS). The mission will not exceed the inav maximum of 60 mission points.
 
@@ -288,7 +289,7 @@ Mission  : 2 points
 ```
 So some experimentation may be required to get a good mission, particularly for shorter MR flights. In particular, if reprocessing is indicated and the number of generated points is close to 60, then it's probably worth running again with a slightly larger `epsilon` than that shown in the output.
 
-## `mission2kml`
+## mission2kml
 
 A standalone mission file to KML/Z converter is also provided.
 
