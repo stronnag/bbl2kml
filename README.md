@@ -175,8 +175,8 @@ The [BulletGCSS wiki](https://github.com/danarrib/BulletGCSS/wiki) describes how
 
 Note that the scheme (**mqtt**:// in the `--help` text) is interpreted as:
 
-* ws - Websocket (vice TCP socket), ensure the websocket port is also specificed
-* wss - Encrypted websocket, ensure the TLS websocket port is also specificed. TLS validation is performed using the operating system.
+* ws - Websocket (vice TCP socket), ensure the websocket port is also specified
+* wss - Encrypted websocket, ensure the TLS websocket port is also specified. TLS validation is performed using the operating system.
 * mqtts,ssl - Secure (TLS) TCP connection. Ensure the TLS port is specified. TLS validation is performed using the operating system, unless `?cafile=file` is specified.
 * mqtt (or any-other scheme) - TCP connection. If `?cafile=file` is specified, then that is used for TLS validation (and the TLS port should be specified).
 
@@ -253,43 +253,26 @@ The output from this example would be `demolog.1.mission`
 
 #### multirotor example
 
-Using a old, contributed MR log, in quite a small area, with user specifed `epsilon`.
+Using a old, contributed MR log, in quite a small area, with user specified `epsilon` and prior to 0.98 release:
 
-```
-$ log2mission -epsilon 0.001 logfs.TXT
-Log      : logfs.TXT / 1
-Flight   :  on 2019-02-08 15:21:13
-Firmware : INAV 2.1.0 (7bdd5967e) OMNIBUSF4V3 of Jan 22 2019 09:39:17
-Size     : 32.03 MB
-Current  : 23.5 A at 02:21
-Distance : 1560 m
-Duration : 04:10
-Altitude : 52.5 m at 02:50
-Speed    : 17.3 m/s at 02:38
-Range    : 174 m at 01:22
-Mission  : 13 points
-```
-
-13 points is a adequate mission to reproduce the flight.
-
-Using an extreme user defined `epsilon` results in an excessive number of points:
-
-```
-$ log2mission -epsilon 0.00001 logfs.TXT
-...
-Mission  : 59 points (reprocess: 8, epsilon: 0.000105)
-```
-
-Whereas, with the default `epsilon` of 0.015, no useful mission is generated:
+With the default `epsilon` of 0.015, no useful mission is generated from a "short/complex" flight:
 
 ```
 $ log2mission logfs.TXT
 ...
 Mission  : 2 points
 ```
-So some experimentation may be required to get a good mission, particularly for shorter MR flights. In particular, if reprocessing is indicated and the number of generated points is close to 60, then it's probably worth running again with a slightly larger `epsilon` than that shown in the output.
 
-`log2mission` will make an attempt to resolve the "short/complex" 2 point results by increasing `epsilon` automatically.
+For 0.9.8, `log2mission` will make an attempt to resolve the "short/complex" 2 point results by increasing `epsilon` automatically.
+
+```
+$ log2mission /t/inav-contrib/logfs.TXT
+Log      : logfs.TXT / 1
+...
+Mission  : 14 points (reprocess: 1, epsilon: 0.001000)
+```
+
+Some experimentation may be required to get a good mission, particularly for shorter MR flights. In particular, if reprocessing is indicated and the number of generated points is close to 60, then it's probably worth running again with a slightly larger epsilon than that shown in the output. Likewise, where `log2mission` has decreased the `epsilon`, it's probably worth running `log2mission` again with a slightly smaller `epsilon` than indicated.
 
 ## mission2kml
 
