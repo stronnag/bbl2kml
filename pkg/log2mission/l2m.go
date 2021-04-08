@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 	"strings"
+	"log"
 	"path/filepath"
 	"github.com/deet/simpleline"
 	mission "github.com/stronnag/bbl2kml/pkg/mission"
@@ -83,6 +84,9 @@ func Generate_mission(seg types.LogSegment, meta types.FlightMeta) {
 		if nmi > 60 {
 			ep += float64(float64(nmi-60) * 0.00025)
 			ntry += 1
+			if ntry > 42 {
+				log.Fatal("Failed to generate an aceeptable mission after 42 iterations")
+			}
 		} else {
 			break
 		}
@@ -98,9 +102,9 @@ func Generate_mission(seg types.LogSegment, meta types.FlightMeta) {
 		ms.MissionItems = append(ms.MissionItems,
 			mission.MissionItem{No: len(res), Lat: 0.0, Lon: 0.0, Alt: int32(0.0), Action: "RTH"})
 	}
-	fmt.Printf("Mission  : %v points", len(res))
+	fmt.Printf("Mission  : %d points", len(res))
 	if ntry > 0 {
-		fmt.Printf(", retries: %v (epsilon: %v)", ntry, ep)
+		fmt.Printf(" (reprocess: %d, epsilon: %.3f)", ntry, ep)
 	}
 	fmt.Println()
 	ms.To_MWXML(generate_filename(meta))

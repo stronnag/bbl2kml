@@ -243,8 +243,9 @@ Current  : 30.6 A at 00:05
 Distance : 48437 m
 Duration : 43:44
 Altitude : 292.8 m at 25:42
-Mission  : 56 points, retries: 1 (epsilon: 0.018)
+Mission  : 56 points (reprocess: 1, epsilon: 0.018)
 ```
+
 The output from this example would be `demolog.1.mission`
 
 ## `mission2kml`
