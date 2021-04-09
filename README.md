@@ -253,7 +253,7 @@ The output from this example would be `demolog.1.mission`
 
 #### multirotor example
 
-With the default `epsilon` of 0.015, no useful mission would be generated from a "short/complex" flight, without the 0.98 release auto-correction.
+With the default `epsilon` of 0.015, for a "small field" MR flight, it is often the case that no useful mission would be generated from a such "short/complex" flight, prior to the 0.98 release auto-correction, for example:
 
 ```
 $ log2mission logfs.TXT
