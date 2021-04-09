@@ -253,9 +253,7 @@ The output from this example would be `demolog.1.mission`
 
 #### multirotor example
 
-Using a old, contributed MR log, in quite a small area, with user specified `epsilon` and prior to 0.98 release:
-
-With the default `epsilon` of 0.015, no useful mission is generated from a "short/complex" flight:
+With the default `epsilon` of 0.015, no useful mission would be generated from a "short/complex" flight, without the 0.98 release auto-correction.
 
 ```
 $ log2mission logfs.TXT
@@ -272,7 +270,7 @@ Log      : logfs.TXT / 1
 Mission  : 14 points (reprocess: 1, epsilon: 0.001000)
 ```
 
-Some experimentation may be required to get a good mission, particularly for shorter MR flights. In particular, if reprocessing is indicated and the number of generated points is close to 60, then it's probably worth running again with a slightly larger epsilon than that shown in the output. Likewise, where `log2mission` has decreased the `epsilon`, it's probably worth running `log2mission` again with a slightly smaller `epsilon` than indicated.
+Some experimentation may still be required to get a good mission, particularly for shorter MR flights. In particular, if reprocessing is indicated and the number of generated points is close to 60, then it's probably worth running again with a slightly larger epsilon than that shown in the output. Likewise, where `log2mission` has decreased the `epsilon`, it's probably worth running `log2mission` again with a slightly smaller `epsilon` than indicated.
 
 ## mission2kml
 
