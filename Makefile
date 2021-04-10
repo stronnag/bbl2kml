@@ -2,15 +2,12 @@ LDFLAGS ?= -s -w
 prefix ?= /usr
 
 _CAPP=flightlog2kml
-_GAPP=fl2kmlgtk
 _MAPP=mission2kml
-_FAPP=fl2kmlfyne
 _QAPP=fl2mqtt
 _LAPP=log2mission
 
 ifndef DESTDIR
  CAPP=flightlog2kml
- GAPP=fl2kmlgtk
  MAPP=mission2kml
  FAPP=fl2kmlfyne
  QAPP=fl2mqtt
@@ -18,15 +15,12 @@ ifndef DESTDIR
 else
  CAPP=$(DESTDIR)/flightlog2kml
  MAPP=$(DESTDIR)/mission2kml
- GAPP=$(DESTDIR)/fl2kmlgtk
- FAPP=$(DESTDIR)/fl2kmlfyne
  QAPP=$(DESTDIR)/fl2mqtt
  LAPP=$(DESTDIR)/log2mission
 endif
 
 ifeq ($(GOOS),windows)
  EXT=.exe
- LDEXTRA=-H=windowsgui
 else
  EXT=
 endif
@@ -58,8 +52,6 @@ export GOFLAGS
 
 all: $(_CAPP) $(_MAPP) $(_QAPP) $(_LAPP)
 
-gui: $(_FAPP) $(_GAPP)
-
 PKGCOMMON = $(wildcard pkg/api/*/*.go) $(wildcard pkg/mission/*.go) $(wildcard pkg/geo/*.go) $(wildcard pkg/options/*.go)
 PKGBBL = $(wildcard pkg/bbl/*.go)
 PKGOTX = $(wildcard pkg/otx/*.go)
@@ -74,8 +66,6 @@ CSRCS = $(wildcard cmd/flightlog2kml/*.go) $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PK
 QSRCS = $(wildcard cmd/fl2mqtt/*.go) $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGMQTT) $(PKGLTM)
 #LSRCS = $(wildcard cmd/fl2ltm/*.go) $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGLTM)
 MSRCS = $(wildcard cmd/mission2kml/*.go) $(PKGCOMMON)
-GSRCS = cmd/fl2kmlgtk/main.go cmd/fl2kmlgtk/logkml.ui $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGKML)
-FSRCS = cmd/fl2kmlfyne/main.go $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGKML)
 LSRCS = cmd/log2mission/main.go $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGKML)  $(PKGBLTR) $(PKGL2M)
 
 $(_CAPP): $(CSRCS)
@@ -87,20 +77,12 @@ $(_LAPP): $(LSRCS)
 $(_MAPP): $(MSRCS)
 	CGO_ENABLED=0 go build $(LDF) "$(LDFLAGS) -extldflags -static" -o $(MAPP)$(EXT) cmd/mission2kml/main.go
 
-$(_GAPP): $(GSRCS)
-	make -C cmd/fl2kmlgtk
-	mv cmd/fl2kmlgtk/fl2kmlgtk $(GAPP)
-
-$(_FAPP): $(FSRCS)
-	go build $(LDF) "$(LDFLAGS) $(LDEXTRA)" -o $(FAPP)$(EXT) cmd/fl2kmlfyne/main.go
-
 $(_QAPP): $(QSRCS)
 	CGO_ENABLED=0 go build $(LDF) "$(LDFLAGS) -extldflags -static" -o $(QAPP)$(EXT) cmd/fl2mqtt/main.go
 	ln -sf fl2mqtt fl2ltm
 
 clean:
 	@rm -f $(CAPP)$(EXT) $(MAPP)$(EXT) $(GAPP)$(EXT) $(FAPP)$(EXT) $(QAPP)$(EXT)
-	make -C  cmd/fl2kmlgtk clean
 	@go clean
 
 install: $(CAPP)$(EXE) $(MAPP)$(EXE) $(QAPP)$(EXE) $(LAPP)$(EXE)
