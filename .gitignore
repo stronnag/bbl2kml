@@ -6,11 +6,7 @@
 mk*.sh
 *.backup
 go.sum
-cmd/fl2kmlgtk/res.go
-fl2kmlfyne
-fl2kmlgtk
 flightlog2kml
 fl2mqtt
+fl2ltm
 tools
-cmd/{fl2kmlgtk
-cmd/fl2kmlfyne

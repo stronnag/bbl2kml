@@ -82,7 +82,7 @@ $(_QAPP): $(QSRCS)
 	ln -sf fl2mqtt fl2ltm
 
 clean:
-	@rm -f $(CAPP)$(EXT) $(MAPP)$(EXT) $(GAPP)$(EXT) $(FAPP)$(EXT) $(QAPP)$(EXT)
+	@rm -f $(CAPP)$(EXT) $(MAPP)$(EXT) $(GAPP)$(EXT) $(FAPP)$(EXT) $(QAPP)$(EXT) fl2ltm* $(LAPP)$(EXT)
 	@go clean
 
 install: $(CAPP)$(EXE) $(MAPP)$(EXE) $(QAPP)$(EXE) $(LAPP)$(EXE)
