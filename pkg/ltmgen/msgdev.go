@@ -72,9 +72,9 @@ func NewMSPSerial(device string, baud int) *MSPSerial {
 	var err error
 	dd := check_device(device, baud)
 	if dd.name == "" {
-		laddr, err = net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", dd.name, dd.param))
+		laddr, err = net.ResolveUDPAddr("udp6", fmt.Sprintf("%s:%d", dd.name, dd.param))
 	} else {
-		raddr, err = net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", dd.name, dd.param))
+		raddr, err = net.ResolveUDPAddr("udp6", fmt.Sprintf("%s:%d", dd.name, dd.param))
 	}
 	if err == nil {
 		conn, err = net.DialUDP("udp6", laddr, raddr)
