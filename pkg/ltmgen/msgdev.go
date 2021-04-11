@@ -77,7 +77,7 @@ func NewMSPSerial(device string, baud int) *MSPSerial {
 		raddr, err = net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", dd.name, dd.param))
 	}
 	if err == nil {
-		conn, err = net.DialUDP("udp", laddr, raddr)
+		conn, err = net.DialUDP("udp6", laddr, raddr)
 		if err == nil {
 			reader = bufio.NewReader(conn)
 		}
