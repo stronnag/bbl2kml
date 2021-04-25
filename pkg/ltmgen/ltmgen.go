@@ -203,7 +203,7 @@ func LTMGen(seg types.LogSegment, meta types.FlightMeta) {
 	var s *MSPSerial
 
 	typ := options.Config.Type
-	if typ <= 0 {
+	if typ == -1 {
 		switch meta.Motors {
 		case 0, 1, 2:
 			typ = 8
