@@ -5,7 +5,7 @@
 /mission2kml
 mk*.sh
 *.backup
-go.sum
+##go.sum
 flightlog2kml
 fl2mqtt
 fl2ltm
