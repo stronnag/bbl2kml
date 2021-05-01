@@ -114,5 +114,7 @@ func Generate_mission(seg types.LogSegment, meta types.FlightMeta) {
 		fmt.Printf(" (reprocess: %d, epsilon: %.6f)", ntry, ep)
 	}
 	fmt.Println()
+	fmt.Println("Note: Increase epsilon to decrease the number of mission points,")
+	fmt.Println("      decrease epsilon to increase the number of mission points.")
 	ms.To_MWXML(generate_filename(meta))
 }
