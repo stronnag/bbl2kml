@@ -225,7 +225,11 @@ func (m *Mission) To_kml(hpos types.HomeRec, dms bool, fake bool) kml.Element {
 		} else {
 			lat = mi.Lat
 			lon = mi.Lon
-			alt = mi.Alt + addAlt
+			if mi.P3 == 0 {
+				alt = mi.Alt + addAlt
+			} else {
+				alt = mi.Alt
+			}
 			llat = lat
 			llon = lon
 			lalt = alt
