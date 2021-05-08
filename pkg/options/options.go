@@ -163,11 +163,11 @@ func ParseCLI(gv func() string) ([]string, string) {
 	if !isFlagSet("home-alt") {
 		Config.HomeAlt = -999999 // sentinel
 	}
-
-	if Config.Idx == 0 {
-		Config.Idx = 1
-	}
-
+	/*
+		if Config.Idx == 0 {
+			Config.Idx = 1
+		}
+	*/
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: config file ignored due to error: %v\n", err)
 	}

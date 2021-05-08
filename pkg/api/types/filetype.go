@@ -23,14 +23,14 @@ func EvinceFileType(fn string) int {
 	}
 	defer file.Close()
 	fh := bufio.NewReader(file)
-	sig, err := fh.Peek(64) //read a few bytes without consuming
+	sig, err := fh.Peek(128) //read a few bytes without consuming
 	if err == nil {
 		switch {
 		case strings.HasPrefix(string(sig), "H Product:Blackbox"):
 			res = IS_BBL
 		case strings.HasPrefix(string(sig), "Date,Time,"):
 			res = IS_OTX
-		case strings.Contains(string(sig), "|Connected to "):
+		case strings.Contains(string(sig), "|Connected to"):
 			res = IS_BLT
 		case strings.HasPrefix(string(sig), `{"type":`):
 			res = IS_MWP

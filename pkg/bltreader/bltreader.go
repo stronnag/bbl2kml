@@ -113,7 +113,6 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 }
 
 func parse_bullet(line string, b *types.LogItem) {
-
 	if parts := strings.Split(line, "|"); len(parts) == 2 {
 		lasttm, _ := strconv.ParseInt(parts[0], 10, 64)
 		b.Utc = time.Unix(lasttm/1000, 1000*1000*(lasttm%1000))
@@ -313,10 +312,10 @@ func (lg *BLTLOG) Reader(m types.FlightMeta) (types.LogSegment, bool) {
 				}
 			}
 		}
+		i += 1
 	}
 
 	srec := stats.Summary(uint64(lt.Sub(st).Microseconds()))
-
 	ok := homes.Flags != 0 && len(rec.Items) > 0
 	if ok {
 		ls.L = rec
