@@ -24,6 +24,8 @@ var (
 	mok   bool
 )
 
+var fltmodes = [...]uint8{0, types.FM_MANUAL, types.FM_RTH, types.FM_PH, types.FM_PH, types.FM_CRUISE3D, types.FM_CRUISE3D, types.FM_WP, types.FM_AH, types.FM_ANGLE, types.FM_HORIZON, types.FM_ACRO}
+
 type BLTLOG struct {
 	name string
 	meta []types.FlightMeta
@@ -143,9 +145,14 @@ func parse_bullet(line string, b *types.LogItem) {
 				case "ghp":
 					b.Hdop = uint16(tmp)
 				case "fs":
-					b.Status |= uint8(tmp) << 1
+					if tmp == 1 {
+						b.Status |= 2
+					} else {
+						b.Status &= ^uint8(2)
+					}
 				case "ftm":
 					b.Fmode = parse_flight_mode(uint8(tmp))
+					b.Fmtext = types.Mnames[b.Fmode]
 				case "hdr":
 					b.Bearing = int32(tmp)
 				case "hds":
@@ -159,7 +166,11 @@ func parse_bullet(line string, b *types.LogItem) {
 				case "3df":
 					b.Fix = 3 * uint8(tmp)
 				case "arm":
-					b.Status |= uint8(tmp) & 1
+					if tmp == 1 {
+						b.Status |= 1
+					} else {
+						b.Status &= ^uint8(1)
+					}
 				case "trp":
 					b.Throttle = tmp
 				case "nvs":
@@ -247,11 +258,9 @@ func parse_mission(vals []string) {
 }
 
 func parse_flight_mode(fmode uint8) uint8 {
-	modes := []uint8{0, types.FM_MANUAL, types.FM_RTH, types.FM_PH, types.FM_PH, types.FM_CRUISE3D,
-		types.FM_CRUISE3D, types.FM_WP, types.FM_AH, types.FM_ANGLE, types.FM_HORIZON, types.FM_ACRO}
 
-	if fmode < uint8(len(modes)) {
-		return modes[fmode]
+	if fmode < uint8(len(fltmodes)) {
+		return fltmodes[fmode]
 	} else {
 		return 0
 	}
