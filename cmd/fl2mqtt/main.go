@@ -12,6 +12,7 @@ import (
 	geo "github.com/stronnag/bbl2kml/pkg/geo"
 	mqttgen "github.com/stronnag/bbl2kml/pkg/bltmqtt"
 	ltmgen "github.com/stronnag/bbl2kml/pkg/ltmgen"
+	blt "github.com/stronnag/bbl2kml/pkg/bltreader"
 )
 
 var GitCommit = "local"
@@ -38,6 +39,9 @@ func main() {
 			lfr = &olfr
 		} else if ftype == types.IS_BBL {
 			blfr := bbl.NewBBLReader(fn)
+			lfr = &blfr
+		} else if ftype == types.IS_BLT {
+			blfr := blt.NewBLTReader(fn)
 			lfr = &blfr
 		} else {
 			continue

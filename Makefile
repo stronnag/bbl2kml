@@ -63,7 +63,7 @@ PKGBLTR = $(wildcard pkg/bltreader/*.go)
 PKGL2M = $(wildcard pkg/log2mission/*.go)
 
 CSRCS = $(wildcard cmd/flightlog2kml/*.go) $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGKML)  $(PKGBLTR)
-QSRCS = $(wildcard cmd/fl2mqtt/*.go) $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGMQTT) $(PKGLTM)
+QSRCS = $(wildcard cmd/fl2mqtt/*.go) $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGMQTT) $(PKGLTM) $(PKGBLTR)
 #LSRCS = $(wildcard cmd/fl2ltm/*.go) $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGLTM)
 MSRCS = $(wildcard cmd/mission2kml/*.go) $(PKGCOMMON)
 LSRCS = cmd/log2mission/main.go $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGKML)  $(PKGBLTR) $(PKGL2M)
