@@ -604,6 +604,8 @@ func (lg *BBLOG) Reader(meta types.FlightMeta) (types.LogSegment, bool) {
 		}
 	}
 
+	ndelay := 1000 * uint64(options.Config.Intvl)
+
 	leffic := 0.0
 	for i := 0; ; i++ {
 		record, err := r.Read()
@@ -662,7 +664,7 @@ func (lg *BBLOG) Reader(meta types.FlightMeta) (types.LogSegment, bool) {
 				var d float64
 				var c float64
 				// Do the plot every 100ms
-				if (us - dt) >= 1000*uint64(options.Config.Intvl) {
+				if (us - dt) >= ndelay {
 					if !basetime.IsZero() {
 						b.Utc = basetime.Add(time.Duration(us) * time.Microsecond)
 					}

@@ -271,8 +271,8 @@ func LTMGen(seg types.LogSegment, meta types.FlightMeta) {
 		s.Write(MSP_serialise_status(meta.Sensors))
 	}
 
-	g1diff := time.Duration(250) * time.Millisecond
-	g2diff := time.Duration(500) * time.Millisecond
+	g1diff := time.Duration(100) * time.Millisecond
+	g2diff := time.Duration(200) * time.Millisecond
 	g3diff := time.Duration(2) * time.Second
 	var g1t time.Time
 	var g2t time.Time
