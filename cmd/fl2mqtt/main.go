@@ -82,7 +82,7 @@ func main() {
 				}
 			}
 		} else {
-			log.Fatal(err)
+			log.Fatalf("fl2mqtt: %+v\n", err)
 		}
 	}
 }

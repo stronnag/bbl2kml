@@ -102,6 +102,6 @@ Examples:
 		m.Dump(dms, home...)
 	}
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("mission2kmk: %+v\n", err)
 	}
 }

@@ -55,7 +55,7 @@ func main() {
 			}
 			options.Config.Tmpdir, err = ioutil.TempDir("", ".fl2x")
 			if err != nil {
-				log.Fatal(err)
+				log.Fatalf("fl2x: %+v\n", err)
 			}
 			defer os.RemoveAll(options.Config.Tmpdir)
 
@@ -88,7 +88,7 @@ func main() {
 				}
 			}
 		} else {
-			log.Fatal(err)
+			log.Fatalf("fl2x: %+v\n", err)
 		}
 	}
 }

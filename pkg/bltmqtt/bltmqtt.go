@@ -44,7 +44,7 @@ func NewTlsConfig(cafile string) (*tls.Config, string) {
 		certpool := x509.NewCertPool()
 		ca, err := ioutil.ReadFile(cafile)
 		if err != nil {
-			log.Fatalln(err.Error())
+			log.Fatalf("blt2mqtt: %+v\n", err)
 		}
 		certpool.AppendCertsFromPEM(ca)
 		return &tls.Config{
@@ -71,7 +71,7 @@ func NewMQTTClient() *MQTTClient {
 
 	u, err := url.Parse(options.Config.Mqttopts)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("blt2mqtt: %+v\n", err)
 	}
 
 	broker = u.Hostname()
@@ -142,7 +142,7 @@ func NewMQTTClient() *MQTTClient {
 
 	client := mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		log.Fatal(token.Error())
+		log.Fatalf("blt2mqtt: %+v\n", token.Error())
 	}
 	return &MQTTClient{client: client, topic: topic}
 }
@@ -389,7 +389,7 @@ func MQTTGen(s types.LogSegment, meta types.FlightMeta) {
 	}
 
 	if wfh == nil && c == nil {
-		log.Fatal("Need at least a broker or log file")
+		log.Fatalln("blt2mqtt: Need at least a broker or log file")
 	}
 
 	var lastm time.Time

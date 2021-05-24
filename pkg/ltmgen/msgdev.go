@@ -42,7 +42,7 @@ func parse_device(device string, baud int) DevDescription {
 func check_device(device string, baud int) DevDescription {
 	devdesc := parse_device(device, baud)
 	if devdesc.name == "" {
-		log.Fatalln("No device available")
+		log.Fatalln("msgdev: No device available")
 	} else {
 		log.Printf("Using device [%v]\n", devdesc.name)
 	}
@@ -83,7 +83,7 @@ func NewMSPSerial(device string, baud int) *MSPSerial {
 		}
 	}
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("msgdev: %+v\n", err)
 	}
 	return &MSPSerial{klass: dd.klass, conn: conn, reader: reader}
 }

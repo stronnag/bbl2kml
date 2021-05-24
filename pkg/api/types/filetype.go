@@ -19,7 +19,7 @@ func EvinceFileType(fn string) int {
 	res := IS_UNKNOWN
 	file, err := os.Open(fn)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("filetype: %+v\n", err)
 	}
 	defer file.Close()
 	fh := bufio.NewReader(file)

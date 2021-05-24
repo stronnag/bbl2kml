@@ -726,7 +726,7 @@ func (lg *BBLOG) Reader(meta types.FlightMeta) (types.LogSegment, bool) {
 			}
 		}
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("bblreader: %+v\n", err)
 		}
 	}
 	srec := stats.Summary(lt - st)

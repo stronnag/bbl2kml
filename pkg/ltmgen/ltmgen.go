@@ -39,7 +39,7 @@ func newLTM(mtype byte) *ltmbuf {
 	case 'q':
 		paylen = 2
 	default:
-		log.Fatal("LTM: No payload defined for type '%c'\n", mtype)
+		log.Fatalf("LTM: No payload defined for type '%c'\n", mtype)
 	}
 
 	buf := make([]byte, paylen+4)

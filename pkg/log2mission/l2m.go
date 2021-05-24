@@ -85,7 +85,7 @@ func Generate_mission(seg types.LogSegment, meta types.FlightMeta) {
 			ep += float64(float64(nmi-60) * ep * 0.02) // 0.00025
 			ntry += 1
 			if ntry > 42 {
-				log.Fatal("Failed to generate an aceeptable mission after 42 iterations")
+				log.Fatalln("l2m: Failed to generate an aceeptable mission after 42 iterations")
 			}
 		} else if len(res) == 2 {
 			ep = ep / 15.0

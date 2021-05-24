@@ -445,7 +445,7 @@ func read_simple(dat []byte) *Mission {
 			break
 		}
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("misson: %+v\n", err)
 		}
 
 		if record[0] == "no" {
@@ -575,7 +575,7 @@ func read_qgc_text(dat []byte) []QGCrec {
 			}
 		}
 	} else {
-		log.Fatal(err)
+		log.Fatalf("mission: %+v\n", err)
 	}
 	return qgcs
 }
@@ -742,7 +742,7 @@ func process_qgc(dat []byte, mtype string) *Mission {
 
 	mission, ok := fixup_qgc_mission(mission, have_jump)
 	if !ok {
-		log.Fatalf("Unsupported QGC file\n")
+		log.Fatalln("mission: Unsupported QGC file")
 	}
 	return mission
 }

@@ -484,6 +484,6 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 		}
 	}
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("kmlbuilder: %+v\n", err)
 	}
 }
