@@ -186,8 +186,6 @@ func parse_bullet(line string, b *types.LogItem) {
 					homes.Flags |= types.HOME_ALT
 				case "cud":
 					b.Amps = float64(tmp) / 100.0
-				case "whd":
-					b.Tdist = float64(tmp)
 				case "wpno":
 					if mok == false {
 						parse_mission(vals)
@@ -210,6 +208,7 @@ func parse_bullet(line string, b *types.LogItem) {
 				case "css":
 				case "hwh":
 				case "cwn":
+				case "whd":
 					break
 				}
 			}
@@ -304,10 +303,17 @@ func (lg *BLTLOG) Reader(m types.FlightMeta) (types.LogSegment, bool) {
 						stats.Max_alt = b.Alt
 						stats.Max_alt_time = uint64(b.Utc.Sub(st).Microseconds())
 					}
+					if b.Spd > 0 && b.Spd < 400 {
+						if b.Spd > stats.Max_speed {
+							stats.Max_speed = b.Spd
+							stats.Max_speed_time = uint64(b.Utc.Sub(st).Microseconds())
+						}
 
-					if b.Spd < 400 && b.Spd > stats.Max_speed {
-						stats.Max_speed = b.Spd
-						stats.Max_speed_time = uint64(b.Utc.Sub(st).Microseconds())
+						deltat := b.Utc.Sub(lt).Seconds()
+						if deltat != 0 {
+							deltad := b.Spd / deltat
+							b.Tdist += deltad
+						}
 					}
 
 					if b.Amps > stats.Max_current {

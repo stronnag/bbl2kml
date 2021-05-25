@@ -29,6 +29,7 @@ type Configuration struct {
 	Type            int     `json:"type"`
 	Blackbox_decode string  `json:"blackbox-decode"`
 	Gradset         string  `json:"gradient"`
+	Engunit         string  `json:"energy-unit"`
 	LTMdev          string  `json:"-"`
 	Mission         string  `json:"-"`
 	Mqttopts        string  `json:"-"`
@@ -42,7 +43,7 @@ type Configuration struct {
 	Modefilter      string  `json:"-"`
 }
 
-var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120, Epsilon: 0.015, StartOff: 30, EndOff: -30}
+var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120, Epsilon: 0.015, StartOff: 30, EndOff: -30, Engunit: "mah"}
 
 func isFlagSet(name string) bool {
 	found := false
@@ -151,6 +152,7 @@ func ParseCLI(gv func() string) ([]string, string) {
 		flag.BoolVar(&Config.Rssi, "rssi", Config.Rssi, "Set RSSI view as default")
 		flag.BoolVar(&Config.Extrude, "extrude", Config.Extrude, "Extends track points to ground")
 		flag.BoolVar(&Config.Efficiency, "efficiency", Config.Efficiency, "Include efficiency layer in KML/Z")
+		flag.StringVar(&Config.Engunit, "energy-unit", Config.Engunit, "Energy unit [mah, wh]")
 		flag.StringVar(&Config.Gradset, "gradient", Config.Gradset, "Specific colour gradient [red,rdgn,yor]")
 		flag.BoolVar(&Config.Dms, "dms", Config.Dms, "Show positions as DD:MM:SS.s (vice decimal degrees)")
 		flag.StringVar(&Config.Outdir, "outdir", Config.Outdir, "Output directory for generated KML")

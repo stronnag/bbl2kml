@@ -536,6 +536,8 @@ func (lg *OTXLOG) Reader(m types.FlightMeta) (types.LogSegment, bool) {
 	var lt, st time.Time
 
 	leffic := 0.0
+	lwhkm := 0.0
+	whacc := 0.0
 
 	for i := 1; ; i++ {
 		record, err := r.Read()
@@ -640,8 +642,13 @@ func (lg *OTXLOG) Reader(m types.FlightMeta) (types.LogSegment, bool) {
 						aspd := d * 1852 / deltat              // m/s
 						b.Effic = b.Amps * 1000 / (3.6 * aspd) // efficiency
 						leffic = b.Effic
+						b.Whkm = b.Amps * b.Volts / (3.6 * aspd)
+						whacc += b.Amps * b.Volts * deltat / 3600
+						b.WhAcc = whacc
+						lwhkm = b.Whkm
 					} else {
 						b.Effic = leffic
+						b.Whkm = lwhkm
 					}
 				}
 

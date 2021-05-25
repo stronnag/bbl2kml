@@ -70,6 +70,8 @@ type LogItem struct {
 	Tdist    float64
 	Effic    float64
 	Energy   float64
+	Whkm     float64
+	WhAcc    float64
 	Qval     float64
 	Throttle int
 	Roll     int16

@@ -607,6 +607,9 @@ func (lg *BBLOG) Reader(meta types.FlightMeta) (types.LogSegment, bool) {
 	ndelay := 1000 * uint64(options.Config.Intvl)
 
 	leffic := 0.0
+	lwhkm := 0.0
+	whacc := 0.0
+
 	for i := 0; ; i++ {
 		record, err := r.Read()
 		if err == io.EOF {
@@ -694,10 +697,15 @@ func (lg *BBLOG) Reader(meta types.FlightMeta) (types.LogSegment, bool) {
 						if d > 0 {
 							deltat := float64((us - dt)) / 1000000.0 // seconds
 							aspd := d * 1852 / deltat                // m/s
-							b.Effic = b.Amps * 1000 / (3.6 * aspd)   // efficiency
+							b.Effic = b.Amps * 1000 / (3.6 * aspd)   // efficiency mAh/km
 							leffic = b.Effic
+							b.Whkm = b.Amps * b.Volts / (3.6 * aspd)
+							whacc += b.Amps * b.Volts * deltat / 3600
+							b.WhAcc = whacc
+							lwhkm = b.Whkm
 						} else {
 							b.Effic = leffic
+							b.Whkm = lwhkm
 						}
 					}
 					if b.Rssi > 0 {

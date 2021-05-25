@@ -82,19 +82,29 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 	if colmode == COL_STYLE_EFFIC {
 		q := quantile.NewTargeted(0.05, 0.95)
 		for _, r := range rec.Items {
-			q.Insert(r.Effic)
+			if options.Config.Engunit == "wh" {
+				q.Insert(r.Whkm)
+			} else {
+				q.Insert(r.Effic)
+			}
 		}
 		qval0 = q.Query(0.05)
 		qval1 = q.Query(0.95)
-		/**
+
 		if os.Getenv("DEBUG_EFFIC") != "" {
-			fmt.Fprintf(os.Stderr, "Qval0 %v qval1 %v\n\n", qval0, qval1)
-			fmt.Fprintln(os.Stderr, "Index\tLat Lon\tqval\tmah/km\tstyle%\tRGB")
+			fmt.Fprintf(os.Stderr, "Qval0 %v,qval1 %v,%s\n\n", qval0, qval1, options.Config.Engunit)
+			fmt.Fprintf(os.Stderr, "Index,Lat Lon,qval,%s/km,style%%,RGB\n", options.Config.Engunit)
 		}
-    **/
 	}
 	tpts := len(rec.Items)
+	effic := 0.0
 	for np, r := range rec.Items {
+		if options.Config.Engunit == "wh" {
+			effic = r.Whkm
+		}	else {
+			effic = r.Effic
+		}
+
 		tfmt := r.Utc.Format("2006‑01‑02T15:04:05.99MST")
 		fmtxt := r.Fmtext
 		if (r.Status & types.Is_FAIL) == types.Is_FAIL {
@@ -110,15 +120,14 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 			altmode = kml.AltitudeModeRelativeToGround
 		}
 		if colmode == COL_STYLE_EFFIC {
-			if r.Effic > qval1 {
+			if effic > qval1 {
 				r.Qval = 0
-			} else if r.Effic < qval0 {
+			} else if effic < qval0 {
 				r.Qval = 100
 			} else {
-				r.Qval = 100*(1-(r.Effic-qval0)/(qval1-qval0))
+				r.Qval = 100*(1-(effic-qval0)/(qval1-qval0))
 			}
 
-			/**
 			if(os.Getenv("DEBUG_EFFIC") != "") {
 				gidx := 0
 				switch options.Config.Gradset {
@@ -133,11 +142,10 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 				gcols := Get_gradset(gidx)
 				c := gcols[jcol]
 				cl := color.RGBA{R: c.R, G: c.G, B: c.B, A: c.A}
-				s := fmt.Sprintf("style%03d\t%+v", jcol*5, cl)
-				fmt.Fprintf(os.Stderr, "%d\t%.6f %.6f\t%.0f\t%.1f\t%s\n", np, r.Lat, r.Lon,
-					r.Qval, r.Effic,s);
+				s := fmt.Sprintf("style%03d,%+v", jcol*5, cl)
+				fmt.Fprintf(os.Stderr, "%d,%.6f %.6f,%.0f,%.1f,%s\n", np, r.Lat, r.Lon,
+					r.Qval, effic,s);
 			}
-**/
 		}
 
 		var sb strings.Builder
@@ -164,10 +172,11 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 		if (rec.Cap & types.CAP_AMPS) == types.CAP_AMPS {
 			sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.1f A</td></tr>", "Current", r.Amps)))
 			if (rec.Cap & types.CAP_ENERGY) == types.CAP_ENERGY {
-				sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.1f mah</td></tr>", "Total Energy", r.Energy)))
+				sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.1f mah / %.2f Wh</td></tr>", "Total Energy", r.Energy, r.WhAcc)))
 				ceav := r.Energy*1000/r.Tdist
-				sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.1f mah / km</td></tr>", "Efficiency",r.Effic)))
-				sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.1f mah / km</td></tr>", "Average Efficiency",ceav)))
+				ceav1 := r.WhAcc*1000/r.Tdist
+				sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.1f mah/km / %.2f Wh/km</td></tr>", "Efficiency",r.Effic,r.Whkm)))
+				sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.1f mah/km / %.2f Wh/km</td></tr>", "Average Efficiency",ceav,ceav1)))
 			}
 		}
 		sb.Write([]byte("</table>"))
