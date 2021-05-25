@@ -86,8 +86,13 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 		}
 		qval0 = q.Query(0.05)
 		qval1 = q.Query(0.95)
+		/**
+		if os.Getenv("DEBUG_EFFIC") != "" {
+			fmt.Fprintf(os.Stderr, "Qval0 %v qval1 %v\n\n", qval0, qval1)
+			fmt.Fprintln(os.Stderr, "Index\tLat Lon\tqval\tmah/km\tstyle%\tRGB")
+		}
+    **/
 	}
-
 	tpts := len(rec.Items)
 	for np, r := range rec.Items {
 		tfmt := r.Utc.Format("2006‑01‑02T15:04:05.99MST")
@@ -106,12 +111,33 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 		}
 		if colmode == COL_STYLE_EFFIC {
 			if r.Effic > qval1 {
-				r.Qval = 100
-			} else if r.Effic < qval0 {
 				r.Qval = 0
+			} else if r.Effic < qval0 {
+				r.Qval = 100
 			} else {
 				r.Qval = 100*(1-(r.Effic-qval0)/(qval1-qval0))
 			}
+
+			/**
+			if(os.Getenv("DEBUG_EFFIC") != "") {
+				gidx := 0
+				switch options.Config.Gradset {
+				case "rdgn":
+					gidx = GRAD_RGN
+				case "yor":
+					gidx = GRAD_YOR
+				default:
+					gidx = GRAD_RED
+				}
+				jcol := int(r.Qval)/5
+				gcols := Get_gradset(gidx)
+				c := gcols[jcol]
+				cl := color.RGBA{R: c.R, G: c.G, B: c.B, A: c.A}
+				s := fmt.Sprintf("style%03d\t%+v", jcol*5, cl)
+				fmt.Fprintf(os.Stderr, "%d\t%.6f %.6f\t%.0f\t%.1f\t%s\n", np, r.Lat, r.Lon,
+					r.Qval, r.Effic,s);
+			}
+**/
 		}
 
 		var sb strings.Builder
