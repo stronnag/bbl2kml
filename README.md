@@ -21,6 +21,8 @@ Usage of flightlog2kml [options] file...
     	Dump log headers and exit
   -efficiency
     	Include efficiency layer in KML/Z (default true)
+  -energy-unit string
+    	Energy unit [mah, wh] (default "mah")
   -extrude
     	Extends track points to ground (default true)
   -gradient string
@@ -43,10 +45,12 @@ Usage of flightlog2kml [options] file...
     	Set RSSI view as default
   -split-time int
     	[OTX] Time(s) determining log split, 0 disables (default 120)
+  -summary
+    	Just show summary
   -visibility int
     	0=folder value,-1=don't set,1=all on
 
-flightlog2kml 0.9.7, commit: bccf72e/2021-03-20
+flightlog2kml 0.9.11, commit: 9f4700f/2021-05-25
 ```
 
 Multiple logs (with multiple indices) may be given. A KML/Z will be generated for each file / index.
@@ -331,6 +335,7 @@ The keys in the file are the relevant command line options, the following are re
 * `blt-vers`
 * `type`
 * `visibility`
+* `energy-unit`
 
 For example:
 
@@ -343,7 +348,7 @@ For example:
 }
 ```
 
-A warning will be displayed if the configuration file in not syntactically correct; in such cases its contents will be ignored. There is a [complete example](https://github.com/stronnag/bbl2kml/wiki/Sample-Config-file) in the wiki that can be used as a template.
+A warning will be displayed if the configuration file in not syntactically correct; in such cases its contents will be ignored. There is a somewhat [complete example](https://github.com/stronnag/bbl2kml/wiki/Sample-Config-file) in the wiki that can be used as a template.
 
 Note also that the command interpreter allows `-flag` or `--flag` for any option.
 
