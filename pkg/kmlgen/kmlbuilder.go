@@ -90,11 +90,6 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 		}
 		qval0 = q.Query(0.05)
 		qval1 = q.Query(0.95)
-
-		if os.Getenv("DEBUG_EFFIC") != "" {
-			fmt.Fprintf(os.Stderr, "Qval0 %v,qval1 %v,%s\n\n", qval0, qval1, options.Config.Engunit)
-			fmt.Fprintf(os.Stderr, "Index,Lat Lon,qval,%s/km,style%%,RGB\n", options.Config.Engunit)
-		}
 	}
 	tpts := len(rec.Items)
 	effic := 0.0
@@ -126,25 +121,6 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 				r.Qval = 100
 			} else {
 				r.Qval = 100*(1-(effic-qval0)/(qval1-qval0))
-			}
-
-			if(os.Getenv("DEBUG_EFFIC") != "") {
-				gidx := 0
-				switch options.Config.Gradset {
-				case "rdgn":
-					gidx = GRAD_RGN
-				case "yor":
-					gidx = GRAD_YOR
-				default:
-					gidx = GRAD_RED
-				}
-				jcol := int(r.Qval)/5
-				gcols := Get_gradset(gidx)
-				c := gcols[jcol]
-				cl := color.RGBA{R: c.R, G: c.G, B: c.B, A: c.A}
-				s := fmt.Sprintf("style%03d,%+v", jcol*5, cl)
-				fmt.Fprintf(os.Stderr, "%d,%.6f %.6f,%.0f,%.1f,%s\n", np, r.Lat, r.Lon,
-					r.Qval, effic,s);
 			}
 		}
 
