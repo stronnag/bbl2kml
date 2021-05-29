@@ -47,6 +47,9 @@ func main() {
 		metas, err := lfr.GetMetas()
 		if err == nil {
 			if options.Config.Idx <= len(metas) {
+				if options.Config.Idx < 1 {
+					options.Config.Idx = 1
+				}
 				if metas[options.Config.Idx-1].Flags&types.Is_Valid != 0 {
 					for k, v := range metas[options.Config.Idx-1].Summary() {
 						fmt.Printf("%-8.8s : %s\n", k, v)

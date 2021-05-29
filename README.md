@@ -50,7 +50,7 @@ Usage of flightlog2kml [options] file...
   -visibility int
     	0=folder value,-1=don't set,1=all on
 
-flightlog2kml 0.9.11, commit: 9f4700f/2021-05-25
+flightlog2kml 0.9.11, commit: 5a3e331/2021-05-25
 ```
 
 Multiple logs (with multiple indices) may be given. A KML/Z will be generated for each file / index.

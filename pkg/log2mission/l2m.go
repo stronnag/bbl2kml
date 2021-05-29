@@ -109,7 +109,7 @@ func Generate_mission(seg types.LogSegment, meta types.FlightMeta) {
 		ms.MissionItems = append(ms.MissionItems,
 			mission.MissionItem{No: len(res), Lat: 0.0, Lon: 0.0, Alt: int32(0.0), Action: "RTH"})
 	}
-	fmt.Printf("Mission  : %d points", nmi)
+	fmt.Printf("Mission  : %d points, epsilon: %.6f", nmi, ep)
 	if ntry > 0 {
 		fmt.Printf(" (reprocess: %d, epsilon: %.6f)", ntry, ep)
 	}
