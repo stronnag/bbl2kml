@@ -10,34 +10,106 @@ import (
 	"strconv"
 	"strings"
 	"os"
-	"github.com/beevik/etree"
 	"encoding/json"
+	"encoding/xml"
 	kml "github.com/twpayne/go-kml"
 	"github.com/twpayne/go-kml/icon"
 	"image/color"
 	geo "github.com/stronnag/bbl2kml/pkg/geo"
 	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	"path/filepath"
+	"time"
 )
 
 type QGCrec struct {
 	jindex  int
 	command int
+	altmode int
 	lat     float64
 	lon     float64
 	alt     float64
 	params  [4]float64
 }
 
+type qgc_plan struct {
+	Filetype string `json:"fileType"`
+	Mission  struct {
+		Items []struct {
+			Typ         string    `json:"type"`
+			Altitude    int       `json:"Altitude"`
+			Altitudemode int       `json:"AltitudeMode"`
+			Command     int       `json:"command"`
+			Jumpid      int       `json:"doJumpId"`
+			Frame       int       `json:"frame"`
+			Params      []float64 `json:"params"`
+			Transect    struct {
+				Items []struct {
+					Typ         string    `json:"type"`
+					Altitude    int       `json:"Altitude"`
+					Alitudemode int       `json:"AltitudeMode"`
+					Command     int       `json:"command"`
+					Jumpid      int       `json:"doJumpId"`
+					Frame       int       `json:"frame"`
+					Params      []float64 `json:"params"`
+				} `json:"items"`
+			} `json:"TransectStyleComplexItem,omitempty"`
+		} `json:"items"`
+	} `json:"mission"`
+}
+
 type MissionItem struct {
-	No     int
-	Action string
-	Lat    float64
-	Lon    float64
-	Alt    int32
-	P1     int16
-	P2     int16
-	P3     int16
+	No     int     `xml:"no,attr" json:"no"`
+	Action string  `xml:"action,attr" json:"action"`
+	Lat    float64 `xml:"lat,attr" json:"lat"`
+	Lon    float64 `xml:"lon,attr" json:"lon"`
+	Alt    int32   `xml:"alt,attr" json:"alt"`
+	P1     int16   `xml:"parameter1,attr" json:"p1"`
+	P2     int16   `xml:"parameter2,attr" json:"p2"`
+	P3     int16   `xml:"parameter3,attr" json:"p3"`
+	Flag   uint8   `xml:"flag,attr,omitempty" json:"flag,omitempty"`
+}
+
+type MissionMWP struct {
+	Zoom  int     `xml:"zoom,attr" json:"zoom"`
+	Cx    float64 `xml:"cx,attr" json:"cx"`
+	Cy    float64 `xml:"cy,attr" json:"cy"`
+	Homex float64 `xml:"home-x,attr" json:"home-x"`
+	Homey float64 `xml:"home-y,attr" json:"home-y"`
+	Stamp string  `xml:"save-date,attr" json:"save-date"`
+	Generator string  `xml:"generator,attr" json:"generator"`
+}
+
+type Version struct {
+	Value string `xml:"value,attr"`
+}
+
+type Mission struct {
+	XMLName      xml.Name      `xml:"mission"  json:"-"`
+	Version      Version       `xml:"version" json:"-"`
+	Comment      string         `xml:",comment" json:"-"`
+	Metadata     MissionMWP    `xml:"mwp" json:"meta"`
+	MissionItems []MissionItem `xml:"missionitem" json:"mission"`
+	mission_file string `xml:"-" json:"-"`
+}
+
+type PlaceMark struct {
+	LineString struct {
+		AltitudeMode string `xml:"altitudeMode"`
+		Coordinates  string `xml:"coordinates"`
+	} `xml:"LineString"`
+}
+
+type Gpx struct {
+	XMLName xml.Name `xml:"gpx"`
+	Wpts    []Pts    `xml:"wpt"`
+	Rpts    []Pts    `xml:"rte>rtept"`
+	Tpts    []Pts    `xml:"trk>trkseg>trkpt"`
+}
+
+type Pts struct {
+	Lat float64 `xml:"lat,attr"`
+	Lon float64 `xml:"lon,attr"`
+	Elev float64    `xml:"ele"`
 }
 
 const (
@@ -51,12 +123,6 @@ const (
 	wp_LAND
 )
 
-type Mission struct {
-	mission_file string
-	Version      string
-	MissionItems []MissionItem
-}
-
 var ActionMap = map[string]int{
 	"WAYPOINT": wp_WAYPOINT,
 	"POSHOLD_UNLIM": wp_POSHOLD_UNLIM,
@@ -66,28 +132,6 @@ var ActionMap = map[string]int{
 	"JUMP": wp_JUMP,
 	"SET_HEAD": wp_SET_HEAD,
 	"LAND": wp_LAND,
-}
-
-func read_gpx(dat []byte) *Mission {
-	items := []MissionItem{}
-	mission := &Mission{"", "0.0", items}
-	stypes := []string{"//trkpt", "//rtept", "//wpt"}
-
-	doc := etree.NewDocument()
-	if err := doc.ReadFromBytes(dat); err == nil {
-		root := doc.SelectElement("gpx")
-		for _, stype := range stypes {
-			for k, pts := range root.FindElements(stype) {
-				alt := 0.0
-				lat, _ := strconv.ParseFloat(pts.SelectAttrValue("lat", "0"), 64)
-				lon, _ := strconv.ParseFloat(pts.SelectAttrValue("lon", "0"), 64)
-				item := MissionItem{No: k + 1, Lat: lat, Lon: lon, Alt: int32(alt), Action: "WAYPOINT"}
-				mission.MissionItems = append(mission.MissionItems, item)
-			}
-			break
-		}
-	}
-	return mission
 }
 
 func (m *Mission) Decode_action(b byte) string {
@@ -157,30 +201,42 @@ func (m *Mission) Dump(dms bool, homep...float64)  {
 	k.WriteIndent(os.Stdout, "", "  ")
 }
 
+func read_gpx(dat []byte) *Mission {
+	mission := &Mission{}
+	var pts []Pts
+	var g Gpx
+	err := xml.Unmarshal(dat, &g)
+	if err == nil {
+		if len(g.Wpts) > 0 {
+			pts =g.Wpts
+		} else if len(g.Rpts) > 0 {
+			pts =g.Rpts
+		} else if len(g.Tpts) > 0 {
+			pts =g.Tpts
+		}
+		if pts != nil {
+			for k, p := range pts {
+				item := MissionItem{No: k + 1, Lat: p.Lat, Lon: p.Lon,
+					Alt: int32(p.Elev), P3: 1, Action: "WAYPOINT"}
+				mission.MissionItems = append(mission.MissionItems, item)
+			}
+		}
+	} else {
+		fmt.Fprintf(os.Stderr, "GPX error: %v", err)
+	}
+	return mission
+}
 
 func (m *Mission) To_MWXML(fname string) {
-	doc := etree.NewDocument()
-	doc.CreateProcInst("xml", `version="1.0" encoding="utf-8"`)
-	x := doc.CreateElement("mission")
-	x.CreateComment(`Created by "flightlog2kml"`)
-	v := x.CreateElement("version")
-	v.CreateAttr("value", "0.0")
-	for _, mi := range m.MissionItems {
-		xi := x.CreateElement("missionitem")
-		xi.CreateAttr("no", fmt.Sprintf("%d", mi.No))
-		xi.CreateAttr("action", mi.Action)
-		xi.CreateAttr("lat", strconv.FormatFloat(mi.Lat, 'f', 7, 64))
-		xi.CreateAttr("lon", strconv.FormatFloat(mi.Lon, 'f', 7, 64))
-		xi.CreateAttr("alt", fmt.Sprintf("%d", mi.Alt))
-		xi.CreateAttr("parameter1", fmt.Sprintf("%d", mi.P1))
-		xi.CreateAttr("parameter2", fmt.Sprintf("%d", mi.P2))
-		xi.CreateAttr("parameter3", fmt.Sprintf("%d", mi.P3))
-	}
+	m.Comment = "bbl2kml"
+	m.Metadata.Generator = "impload"
+	m.Metadata.Stamp = time.Now().Format(time.RFC3339)
 	w, err := os.Create(fname)
 	if err == nil {
 		defer w.Close()
-		doc.Indent(2)
-		doc.WriteTo(w)
+		xs, _ := xml.MarshalIndent(m, "", " ")
+		fmt.Fprint(w, xml.Header)
+		fmt.Fprintln(w, string(xs))
 	}
 }
 
@@ -433,8 +489,7 @@ func mission_styles() []kml.Element {
 func read_simple(dat []byte) *Mission {
 	r := csv.NewReader(strings.NewReader(string(dat)))
 
-	items := []MissionItem{}
-	mission := &Mission{"", "0.0", items}
+	mission := &Mission{}
 
 	n := 1
 	has_no := false
@@ -445,7 +500,7 @@ func read_simple(dat []byte) *Mission {
 			break
 		}
 		if err != nil {
-			log.Fatalf("misson: %+v\n", err)
+			log.Fatal(err)
 		}
 
 		if record[0] == "no" {
@@ -469,6 +524,8 @@ func read_simple(dat []byte) *Mission {
 		p1 := int16(0)
 		p2 := int16(0)
 		fp2 := 0.0
+		p3 := 0
+		flag := 0
 		lat, _ = strconv.ParseFloat(record[j+1], 64)
 		lon, _ = strconv.ParseFloat(record[j+2], 64)
 		alt, _ := strconv.ParseFloat(record[j+3], 64)
@@ -476,6 +533,13 @@ func read_simple(dat []byte) *Mission {
 		if len(record) > j+5 {
 			fp2, _ = strconv.ParseFloat(record[j+5], 64)
 		}
+		if len(record) > j+6 {
+			p3, _ = strconv.Atoi(record[j+6])
+		}
+		if len(record) > j+7 {
+			flag, _ = strconv.Atoi(record[j+7])
+		}
+
 		var action string
 
 		iaction, err := strconv.Atoi(record[j])
@@ -511,10 +575,13 @@ func read_simple(dat []byte) *Mission {
 			if fp1 > 0 {
 				p1 = int16(fp1 * 100)
 			}
+		case "SET_POI":
+		case "SET_HEAD":
+			p1 = int16(fp1)
 		default:
 			continue
 		}
-		item := MissionItem{No: no, Lat: lat, Lon: lon, Alt: int32(alt), Action: action, P1: p1, P2: p2}
+		item := MissionItem{No: no, Lat: lat, Lon: lon, Alt: int32(alt), Action: action, P1: p1, P2: p2, P3: int16(p3), Flag: uint8(flag)}
 		mission.MissionItems = append(mission.MissionItems, item)
 		n++
 	}
@@ -523,28 +590,44 @@ func read_simple(dat []byte) *Mission {
 
 func read_qgc_json(dat []byte) []QGCrec {
 	qgcs := []QGCrec{}
-	var result map[string]interface{}
-
-	json.Unmarshal(dat, &result)
-	mi := result["mission"].(interface{})
-	mid := mi.(map[string]interface{})
-	it := mid["items"].([]interface{})
-
-	for _, l := range it {
-		ll := l.(map[string]interface{})
-		ps := ll["params"].([]interface{})
-		qg := QGCrec{}
-		qg.jindex = int(ll["doJumpId"].(float64))
-		qg.command = int(ll["command"].(float64))
-		qg.lat = ps[4].(float64)
-		qg.lon = ps[5].(float64)
-		qg.alt = ps[6].(float64)
-		for j := 0; j < 4; j++ {
-			if ps[j] != nil {
-				qg.params[j] = ps[j].(float64)
+  var qm qgc_plan
+	json.Unmarshal(dat, &qm)
+	if qm.Filetype == "Plan" {
+		for _, qmi := range qm.Mission.Items {
+			if qmi.Typ == "SimpleItem" {
+				if len(qmi.Params) == 7 {
+					qg := QGCrec{}
+					qg.jindex = qmi.Jumpid
+					qg.altmode = qmi.Altitudemode
+					qg.command = qmi.Command
+					qg.lat = qmi.Params[4]
+					qg.lon = qmi.Params[5]
+					qg.alt = qmi.Params[6]
+					for j := 0; j < 4; j++ {
+						qg.params[j] = qmi.Params[j]
+					}
+					qgcs = append(qgcs, qg)
+				}
+			} else if qmi.Typ == "ComplexItem" {
+				for _, qmii := range qmi.Transect.Items {
+					if len(qmii.Params) == 7 {
+						qg := QGCrec{}
+						qg.jindex = qmii.Jumpid
+						qg.altmode = qmi.Altitudemode
+						qg.command = qmii.Command
+						qg.lat = qmii.Params[4]
+						qg.lon = qmii.Params[5]
+						qg.alt = qmii.Params[6]
+						for j := 0; j < 4; j++ {
+							qg.params[j] = qmii.Params[j]
+						}
+						qgcs = append(qgcs, qg)
+					}
+				}
 			}
 		}
-		qgcs = append(qgcs, qg)
+	} else {
+		fmt.Fprintln(os.Stderr, "Skipping non-Plan file");
 	}
 	return qgcs
 }
@@ -575,7 +658,7 @@ func read_qgc_text(dat []byte) []QGCrec {
 			}
 		}
 	} else {
-		log.Fatalf("mission: %+v\n", err)
+		log.Fatal(err)
 	}
 	return qgcs
 }
@@ -588,7 +671,11 @@ func fixup_qgc_mission(mission *Mission, have_jump bool) (*Mission, bool) {
 				jumptgt := mission.MissionItems[i].P1
 				ajump := int16(0)
 				for j := 0; j < len(mission.MissionItems); j++ {
-					if mission.MissionItems[j].P3 == int16(jumptgt) {
+					p3abs := mission.MissionItems[j].P3; // -ve indicate amsl
+					if p3abs < 0 {
+						p3abs *= -1
+					}
+					if p3abs == int16(jumptgt) {
 						ajump = int16(j + 1)
 						break
 					}
@@ -608,7 +695,11 @@ func fixup_qgc_mission(mission *Mission, have_jump bool) (*Mission, bool) {
 	}
 	if ok {
 		for i := 0; i < len(mission.MissionItems); i++ {
-			mission.MissionItems[i].P3 = 0
+			if mission.MissionItems[i].P3 < 0 {
+				mission.MissionItems[i].P3 = 1
+			} else {
+				mission.MissionItems[i].P3 = 0
+			}
 		}
 		return mission, ok
 	} else {
@@ -618,8 +709,7 @@ func fixup_qgc_mission(mission *Mission, have_jump bool) (*Mission, bool) {
 
 func process_qgc(dat []byte, mtype string) *Mission {
 	var qs []QGCrec
-	items := []MissionItem{}
-	mission := &Mission{"", "0.0", items}
+	mission := &Mission{}
 
 	if mtype == "qgc-text" {
 		qs = read_qgc_text(dat)
@@ -676,7 +766,7 @@ func process_qgc(dat []byte, mtype string) *Mission {
 			action = "RTH"
 			q.lat = 0.0
 			q.lon = 0.0
-			if q.alt == 0 || have_land {
+			if /*q.alt == 0 ||*/ have_land {
 				p1 = 1
 			}
 			q.alt = 0
@@ -730,9 +820,13 @@ func process_qgc(dat []byte, mtype string) *Mission {
 			last_alt = q.alt
 			last_lat = q.lat
 			last_lon = q.lon
+			// P3 stores the original ID, which may not match No
 			p3 := int16(q.jindex)
 			no += 1
 			item := MissionItem{No: no, Lat: q.lat, Lon: q.lon, Alt: int32(q.alt), Action: action, P1: p1, P2: p2, P3: p3}
+			if item.Is_GeoPoint() && q.altmode == 2 { // AMSL
+				item.P3 *= -1; // -ve P3 indicates amsl
+			}
 			mission.MissionItems = append(mission.MissionItems, item)
 			if last {
 				break
@@ -742,61 +836,44 @@ func process_qgc(dat []byte, mtype string) *Mission {
 
 	mission, ok := fixup_qgc_mission(mission, have_jump)
 	if !ok {
-		log.Fatalln("mission: Unsupported QGC file")
+		log.Fatalf("Unsupported QGC file\n")
 	}
 	return mission
 }
 
 func read_xml_mission(dat []byte) *Mission {
-	items := []MissionItem{}
-	mission := &Mission{"", "0.0", items}
-	doc := etree.NewDocument()
-	if err := doc.ReadFromBytes(dat); err == nil {
-		for _, root := range doc.ChildElements() {
-			if strings.EqualFold(root.Tag, "MISSION") {
-				for _, el := range root.ChildElements() {
-					switch {
-					case strings.EqualFold(el.Tag, "VERSION"):
-						version := el.SelectAttrValue("value", "")
-						if version != "" {
-							mission.Version = version
-						}
-					case strings.EqualFold(el.Tag, "MISSIONITEM"):
-						no, _ := strconv.Atoi(el.SelectAttrValue("no", "0"))
-						action := el.SelectAttrValue("action", "WAYPOINT")
-						lat, _ := strconv.ParseFloat(el.SelectAttrValue("lat", "0"), 64)
-						lon, _ := strconv.ParseFloat(el.SelectAttrValue("lon", "0"), 64)
-						alt, _ := strconv.Atoi(el.SelectAttrValue("alt", "0"))
-						p1, _ := strconv.Atoi(el.SelectAttrValue("parameter1", "0"))
-						p2, _ := strconv.Atoi(el.SelectAttrValue("parameter2", "0"))
-						p3, _ := strconv.Atoi(el.SelectAttrValue("parameter3", "0"))
-						item := MissionItem{no, action, lat, lon, int32(alt), int16(p1), int16(p2), int16(p3)}
-						mission.MissionItems = append(mission.MissionItems, item)
-					default:
-						// fmt.Printf("ignoring tag %s\n", el.Tag)
-					}
-				}
+	m := &Mission{}
+	buf := bytes.NewBuffer(dat)
+	dec := xml.NewDecoder(buf)
+	for {
+		t, _ := dec.Token()
+		if t == nil {
+			break
+		}
+		switch se := t.(type) {
+		case xml.StartElement:
+			switch strings.ToLower(se.Name.Local) {
+			case "mission":
+			case "version":
+				dec.DecodeElement(&m.Version, &se)
+			case "mwp":
+				dec.DecodeElement(&m.Metadata, &se)
+			case "missionitem":
+				var mi MissionItem
+				dec.DecodeElement(&mi, &se)
+				m.MissionItems = append(m.MissionItems, mi)
+			default:
+				fmt.Printf("Unknown MWXML tag %s\n", se.Name.Local)
 			}
 		}
 	}
-	return mission
+	return m
 }
 
 func read_json(dat []byte) *Mission {
-	items := []MissionItem{}
-	mission := &Mission{"", "0.0", items}
-	var result map[string]interface{}
-	json.Unmarshal(dat, &result)
-	mi := result["mission"].([]interface{})
-	for _, l := range mi {
-		ll := l.(map[string]interface{})
-		item := MissionItem{int(ll["no"].(float64)), ll["action"].(string),
-			ll["lat"].(float64), ll["lon"].(float64),
-			int32(ll["alt"].(float64)), int16(ll["p1"].(float64)),
-			int16(ll["p2"].(float64)), int16(ll["p3"].(float64))}
-		mission.MissionItems = append(mission.MissionItems, item)
-	}
-	return mission
+	m := &Mission{}
+	json.Unmarshal(dat, m)
+	return m
 }
 
 func Read_Mission_File(path string) (string, *Mission, error) {

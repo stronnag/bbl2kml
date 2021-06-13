@@ -3,7 +3,6 @@ module github.com/stronnag/bbl2kml
 go 1.15
 
 require (
-	github.com/beevik/etree v1.1.0
 	github.com/bmizerany/perks v0.0.0-20141205001514-d9a9656a3a4b
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/deet/simpleline v0.0.0-20140919022041-9d297ff784a2

@@ -56,6 +56,9 @@ func main() {
 					fmt.Printf("%d,%s,%s,%d,%d,%.0f,%x\n", mx.Index, mx.Logname, mx.Date, mx.Start, mx.End, mx.Duration.Seconds(), mx.Flags)
 				}
 			} else {
+				if options.Config.Idx < 1 {
+					options.Config.Idx = 1
+				}
 				if options.Config.Idx <= len(metas) {
 					if metas[options.Config.Idx-1].Flags&types.Is_Valid != 0 {
 						for k, v := range metas[options.Config.Idx-1].Summary() {
