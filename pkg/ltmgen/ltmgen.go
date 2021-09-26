@@ -337,7 +337,7 @@ func LTMGen(seg types.LogSegment, meta types.FlightMeta) {
 			l = newLTM('S')
 			l.sframe(b)
 			s.Write(l.msg)
-			l = newLTM('a') // provate current
+			l = newLTM('a') // private current
 			l.paframe(b)
 			s.Write(l.msg)
 			g2t = b.Utc.Add(g2diff)

@@ -537,6 +537,9 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 
 	if s, ok = get_rec_value(r, "energyCumulative (mAh)"); ok {
 		b.Energy, _ = strconv.ParseFloat(s, 64)
+		if b.Energy < 0 {
+			b.Energy = 0
+		}
 	}
 
 	if s, ok = get_rec_value(r, "rcData[3]"); ok {
