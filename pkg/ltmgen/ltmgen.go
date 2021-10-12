@@ -87,7 +87,16 @@ func (l *ltmbuf) gframe(b types.LogItem) {
 	binary.LittleEndian.PutUint32(l.msg[7:11], uint32(lon))
 	l.msg[11] = byte(b.Spd)
 	binary.LittleEndian.PutUint32(l.msg[12:16], uint32(alt))
-	l.msg[16] = b.Fix | (b.Numsat << 2)
+	var ifix uint8
+	switch b.Fix {
+	case 1:
+		ifix = 2
+	case 2:
+		ifix = 3
+	default:
+		ifix = 0
+	}
+	l.msg[16] = ifix | (b.Numsat << 2)
 	l.checksum()
 }
 
