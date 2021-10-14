@@ -9,6 +9,7 @@ import (
 	otx "github.com/stronnag/bbl2kml/pkg/otx"
 	bbl "github.com/stronnag/bbl2kml/pkg/bbl"
 	blt "github.com/stronnag/bbl2kml/pkg/bltreader"
+	ap "github.com/stronnag/bbl2kml/pkg/aplog"
 	options "github.com/stronnag/bbl2kml/pkg/options"
 	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	geo "github.com/stronnag/bbl2kml/pkg/geo"
@@ -35,18 +36,23 @@ func main() {
 	var lfr types.FlightLog
 	for _, fn := range files {
 		ftype := types.EvinceFileType(fn)
-		if ftype == types.IS_OTX {
-			olfr := otx.NewOTXReader(fn)
-			lfr = &olfr
-		} else if ftype == types.IS_BBL {
-			blfr := bbl.NewBBLReader(fn)
-			lfr = &blfr
-		} else if ftype == types.IS_BLT {
-			blfr := blt.NewBLTReader(fn)
-			lfr = &blfr
-		} else {
-			continue
+		switch ftype {
+		case types.IS_OTX:
+			l := otx.NewOTXReader(fn)
+			lfr = &l
+		case types.IS_BBL:
+			l := bbl.NewBBLReader(fn)
+			lfr = &l
+		case types.IS_BLT:
+			l := blt.NewBLTReader(fn)
+			lfr = &l
+		case types.IS_AP:
+			l := ap.NewAPReader(fn)
+			lfr = &l
+		default:
+			log.Fatal("Unknown log format")
 		}
+
 		metas, err := lfr.GetMetas()
 		if err == nil {
 			if options.Config.Dump {

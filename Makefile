@@ -61,12 +61,13 @@ PKGMQTT = $(wildcard pkg/bltmqtt/*.go)
 PKGLTM = $(wildcard pkg/ltmgen/*.go)
 PKGBLTR = $(wildcard pkg/bltreader/*.go)
 PKGL2M = $(wildcard pkg/log2mission/*.go)
+PKGAP = $(wildcard pkg/aplog/*.go)
 
-CSRCS = $(wildcard cmd/flightlog2kml/*.go) $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGKML)  $(PKGBLTR)
-QSRCS = $(wildcard cmd/fl2mqtt/*.go) $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGMQTT) $(PKGLTM) $(PKGBLTR)
+CSRCS = $(wildcard cmd/flightlog2kml/*.go) $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGKML)  $(PKGBLTR) $(PKGAP)
+QSRCS = $(wildcard cmd/fl2mqtt/*.go) $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGMQTT) $(PKGLTM) $(PKGBLTR) $(PKGAP)
 #LSRCS = $(wildcard cmd/fl2ltm/*.go) $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGLTM)
 MSRCS = $(wildcard cmd/mission2kml/*.go) $(PKGCOMMON)
-LSRCS = cmd/log2mission/main.go $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGKML)  $(PKGBLTR) $(PKGL2M)
+LSRCS = cmd/log2mission/main.go $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGKML)  $(PKGBLTR) $(PKGL2M) $(PKGAP)
 
 $(_CAPP): $(CSRCS)
 	CGO_ENABLED=0 go build -trimpath $(LDF) "$(LDFLAGS) -extldflags -static" -o $(CAPP)$(EXT) cmd/flightlog2kml/main.go

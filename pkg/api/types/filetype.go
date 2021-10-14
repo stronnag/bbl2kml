@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"os"
 	"log"
+	"bytes"
 )
 
 const (
@@ -13,6 +14,7 @@ const (
 	IS_OTX     = 2
 	IS_BLT     = 3
 	IS_MWP     = 4
+	IS_AP      = 5
 )
 
 func EvinceFileType(fn string) int {
@@ -34,6 +36,8 @@ func EvinceFileType(fn string) int {
 			res = IS_BLT
 		case strings.HasPrefix(string(sig), `{"type":`):
 			res = IS_MWP
+		case bytes.HasPrefix(sig, []byte{0xa3, 0x95, 0x80, 0x80, 0x59, 0x46, 0x4d, 0x54}):
+			res = IS_AP
 		}
 	}
 	return res
