@@ -248,8 +248,8 @@ func LTMGen(ch chan interface{}, meta types.FlightMeta) {
 
 	ms := read_mission()
 
+	s.Write(MSP_serialise_ident(byte(typ)))
 	if meta.Flags&types.Has_Firmware != 0 {
-		s.Write(MSP_serialise_ident(byte(typ)))
 		s.Write(MSP_serialise_api_version())
 		parts := strings.Split(meta.Firmware, " ")
 		lp := len(parts)
