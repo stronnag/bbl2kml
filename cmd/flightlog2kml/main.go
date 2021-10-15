@@ -70,7 +70,7 @@ func main() {
 					for k, v := range b.Summary() {
 						fmt.Printf("%-8.8s : %s\n", k, v)
 					}
-					ls, res := lfr.Reader(b)
+					ls, res := lfr.Reader(b, nil)
 					if res {
 						if dump_log {
 							for _, b := range ls.L.Items {

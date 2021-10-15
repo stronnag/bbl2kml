@@ -296,8 +296,7 @@ func apmode_normalise(mnum int64) uint8 {
 	return md
 }
 
-
-func (lg *APLOG) Reader(m types.FlightMeta) (types.LogSegment, bool) {
+func (lg *APLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegment, bool) {
 	cmd := exec.Command("mavlogdump.py", "--format", "json", lg.name)
 	types.SetSilentProcess(cmd)
 	out, err := cmd.StdoutPipe()
@@ -364,6 +363,9 @@ func (lg *APLOG) Reader(m types.FlightMeta) (types.LogSegment, bool) {
 				st = b.Stamp
 				llat = b.Lat
 				llon = b.Lon
+				if ch != nil {
+					ch <- homes
+				}
 			} else {
 				c, d := geo.Csedist(homes.HomeLat, homes.HomeLon, b.Lat, b.Lon)
 				b.Bearing = int32(c)
@@ -416,7 +418,11 @@ func (lg *APLOG) Reader(m types.FlightMeta) (types.LogSegment, bool) {
 							}
 						}
 
-						rec.Items = append(rec.Items, b)
+						if ch != nil {
+							ch <- b
+						} else {
+							rec.Items = append(rec.Items, b)
+						}
 						dt = us
 					}
 
@@ -442,12 +448,17 @@ func (lg *APLOG) Reader(m types.FlightMeta) (types.LogSegment, bool) {
 		}
 	}
 	srec := stats.Summary(lt - st)
-	ok := homes.Flags != 0 && len(rec.Items) > 0
 	ls := types.LogSegment{}
-	if ok {
-		ls.L = rec
-		ls.H = homes
-		ls.M = srec
+	if ch != nil {
+		ch <- srec
+		return ls, true
+	} else {
+		ok := homes.Flags != 0 && len(rec.Items) > 0
+		if ok {
+			ls.L = rec
+			ls.H = homes
+			ls.M = srec
+		}
+		return ls, ok
 	}
-	return ls, ok
 }

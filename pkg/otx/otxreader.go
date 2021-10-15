@@ -509,7 +509,7 @@ func acc_to_ah(ax, ay, az float64) (pitch int16, roll int16) {
 	return pitch, roll
 }
 
-func (lg *OTXLOG) Reader(m types.FlightMeta) (types.LogSegment, bool) {
+func (lg *OTXLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegment, bool) {
 	var stats types.LogStats
 
 	llat := 0.0
@@ -586,6 +586,9 @@ func (lg *OTXLOG) Reader(m types.FlightMeta) (types.LogSegment, bool) {
 						}
 						llat = b.Lat
 						llon = b.Lon
+						if ch != nil {
+							ch <- homes
+						}
 					}
 				} else {
 					if frobing {
@@ -656,7 +659,11 @@ func (lg *OTXLOG) Reader(m types.FlightMeta) (types.LogSegment, bool) {
 					rec.Cap |= types.CAP_RSSI_VALID
 				}
 
-				rec.Items = append(rec.Items, b)
+				if ch != nil {
+					ch <- b
+				} else {
+					rec.Items = append(rec.Items, b)
+				}
 				llat = b.Lat
 				llon = b.Lon
 				lt = b.Utc
@@ -668,12 +675,17 @@ func (lg *OTXLOG) Reader(m types.FlightMeta) (types.LogSegment, bool) {
 		}
 	}
 	srec := stats.Summary(uint64(lt.Sub(st).Microseconds()))
-	ok := homes.Flags != 0 && len(rec.Items) > 0
 	ls := types.LogSegment{}
-	if ok {
-		ls.L = rec
-		ls.H = homes
-		ls.M = srec
+	if ch != nil {
+		ch <- srec
+		return ls, true
+	} else {
+		ok := homes.Flags != 0 && len(rec.Items) > 0
+		if ok {
+			ls.L = rec
+			ls.H = homes
+			ls.M = srec
+		}
+		return ls, ok
 	}
-	return ls, ok
 }

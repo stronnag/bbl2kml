@@ -63,7 +63,7 @@ func main() {
 					if metas[options.Config.Idx-1].Flags&types.Is_Suspect != 0 {
 						fmt.Println("Warning  : Log entry may be corrupt")
 					}
-					ls, res := lfr.Reader(metas[options.Config.Idx-1])
+					ls, res := lfr.Reader(metas[options.Config.Idx-1], nil)
 					if res {
 						for k, v := range ls.M {
 							fmt.Printf("%-8.8s : %s\n", k, v)

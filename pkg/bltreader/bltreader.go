@@ -265,7 +265,7 @@ func parse_flight_mode(fmode uint8) uint8 {
 	}
 }
 
-func (lg *BLTLOG) Reader(m types.FlightMeta) (types.LogSegment, bool) {
+func (lg *BLTLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegment, bool) {
 	var stats types.LogStats
 	ls := types.LogSegment{}
 	var lt, st time.Time
@@ -281,11 +281,18 @@ func (lg *BLTLOG) Reader(m types.FlightMeta) (types.LogSegment, bool) {
 	i := 1
 	rec := types.LogRec{}
 	b := types.LogItem{}
+	hseen := false
 
 	for scanner.Scan() {
 		line := scanner.Text()
 		if i >= m.Start && i <= m.End {
 			parse_bullet(line, &b)
+			if ch != nil {
+				if !hseen && (homes.Flags&types.HOME_ARM) != 0 {
+					hseen = true
+					ch <- homes
+				}
+			}
 			if b.Utc != lt && b.Fix != 0 {
 				tdiff := b.Utc.Sub(lt)
 				if tdiff.Milliseconds() >= int64(options.Config.Intvl) {
@@ -322,7 +329,11 @@ func (lg *BLTLOG) Reader(m types.FlightMeta) (types.LogSegment, bool) {
 					}
 
 					lt = b.Utc
-					rec.Items = append(rec.Items, b)
+					if ch != nil {
+						ch <- b
+					} else {
+						rec.Items = append(rec.Items, b)
+					}
 					stats.Distance = b.Tdist / 1852.0
 				}
 			}
@@ -331,15 +342,21 @@ func (lg *BLTLOG) Reader(m types.FlightMeta) (types.LogSegment, bool) {
 	}
 
 	srec := stats.Summary(uint64(lt.Sub(st).Microseconds()))
-	ok := homes.Flags != 0 && len(rec.Items) > 0
-	if ok {
-		ls.L = rec
-		ls.H = homes
-		ls.M = srec
-		if mok {
-			options.Config.Mission = filepath.Join(options.Config.Tmpdir, "tmpmission.xml")
-			ms.To_MWXML(options.Config.Mission)
-		}
+	if mok {
+		options.Config.Mission = filepath.Join(options.Config.Tmpdir, "tmpmission.xml")
+		ms.To_MWXML(options.Config.Mission)
 	}
-	return ls, ok
+
+	if ch != nil {
+		ch <- srec
+		return ls, true
+	} else {
+		ok := homes.Flags != 0 && len(rec.Items) > 0
+		if ok {
+			ls.L = rec
+			ls.H = homes
+			ls.M = srec
+		}
+		return ls, ok
+	}
 }

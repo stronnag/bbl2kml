@@ -215,7 +215,7 @@ func read_mission() *mission.Mission {
 	return ms
 }
 
-func LTMGen(seg types.LogSegment, meta types.FlightMeta) {
+func LTMGen(ch chan interface{}, meta types.FlightMeta) {
 	var s *MSPSerial
 
 	typ := options.Config.Type
@@ -245,14 +245,6 @@ func LTMGen(seg types.LogSegment, meta types.FlightMeta) {
 
 	var st, lt time.Time
 	var hlon, hlat float64
-
-	if seg.H.Flags&types.HOME_SAFE != 0 {
-		hlat = seg.H.SafeLat
-		hlon = seg.H.SafeLon
-	} else {
-		hlat = seg.H.HomeLat
-		hlon = seg.H.HomeLon
-	}
 
 	ms := read_mission()
 
@@ -294,93 +286,110 @@ func LTMGen(seg types.LogSegment, meta types.FlightMeta) {
 	var g2t time.Time
 	var g3t time.Time
 
-	var b types.LogItem
-	for _, b = range seg.L.Items {
-		if st.IsZero() {
-			st = b.Utc
-		}
+	done := false
+	for !done {
+		v := <-ch
+		switch v.(type) {
+		case types.LogItem:
+			b := v.(types.LogItem)
+			if st.IsZero() {
+				st = b.Utc
+			}
 
-		if b.Fmode != laststat {
-			switch b.Fmode {
-			case types.FM_WP:
-				if ms != nil {
-					tgt = 1
+			if b.Fmode != laststat {
+				switch b.Fmode {
+				case types.FM_WP:
+					if ms != nil {
+						tgt = 1
+					}
+				case types.FM_RTH:
+					tgt = 0
+				case types.FM_PH:
+					tgt = 0
+				default:
+					tgt = 0
 				}
-			case types.FM_RTH:
-				tgt = 0
-			case types.FM_PH:
-				tgt = 0
-			default:
-				tgt = 0
-			}
 
-			l := newLTM('N')
-			l.nframe(b, 0, 0)
-			s.Write(l.msg)
-			laststat = b.Fmode
-		}
-
-		tdiff := b.Utc.Sub(lt)
-
-		if b.Fmode == types.FM_WP && ms != nil {
-			act := 0
-			tgt, act = inav.WP_state(ms, b, tgt)
-			if tgt != xtgt || b.NavMode != xnvs {
 				l := newLTM('N')
-				l.nframe(b, byte(act), byte(tgt))
+				l.nframe(b, 0, 0)
 				s.Write(l.msg)
+				laststat = b.Fmode
 			}
-		}
 
-		if b.Utc.After(g1t) {
-			l := newLTM('A')
-			l.aframe(b)
-			s.Write(l.msg)
-			g1t = b.Utc.Add(g1diff)
-		}
+			tdiff := b.Utc.Sub(lt)
 
-		if b.Utc.After(g2t) {
-			l := newLTM('G')
-			l.gframe(b)
-			s.Write(l.msg)
-			l = newLTM('S')
-			l.sframe(b)
-			s.Write(l.msg)
-			l = newLTM('a') // private current
-			l.paframe(b)
-			s.Write(l.msg)
-			g2t = b.Utc.Add(g2diff)
-		}
-
-		if b.Utc.After(g3t) {
-			l := newLTM('O')
-			l.oframe(b, hlat, hlon)
-			s.Write(l.msg)
-			l = newLTM('X')
-			l.xframe(b, xcount)
-			s.Write(l.msg)
-			xcount = (xcount + 1) & 0xff
-			g3t = b.Utc.Add(g3diff)
-		}
-
-		if !lt.IsZero() {
-			if options.Config.Fast {
-				time.Sleep(10 * time.Millisecond)
-			} else if tdiff > 0 {
-				time.Sleep(tdiff)
+			if b.Fmode == types.FM_WP && ms != nil {
+				act := 0
+				tgt, act = inav.WP_state(ms, b, tgt)
+				if tgt != xtgt || b.NavMode != xnvs {
+					l := newLTM('N')
+					l.nframe(b, byte(act), byte(tgt))
+					s.Write(l.msg)
+				}
 			}
-		}
 
-		et := b.Utc.Sub(st)
-		d := uint16(et.Seconds())
-		if d != ld {
-			l := newLTM('q')
-			l.qframe(d)
-			s.Write(l.msg)
-			ld = d
+			if b.Utc.After(g1t) {
+				l := newLTM('A')
+				l.aframe(b)
+				s.Write(l.msg)
+				g1t = b.Utc.Add(g1diff)
+			}
+
+			if b.Utc.After(g2t) {
+				l := newLTM('G')
+				l.gframe(b)
+				s.Write(l.msg)
+				l = newLTM('S')
+				l.sframe(b)
+				s.Write(l.msg)
+				l = newLTM('a') // private current
+				l.paframe(b)
+				s.Write(l.msg)
+				g2t = b.Utc.Add(g2diff)
+			}
+
+			if b.Utc.After(g3t) {
+				l := newLTM('O')
+				l.oframe(b, hlat, hlon)
+				s.Write(l.msg)
+				l = newLTM('X')
+				l.xframe(b, xcount)
+				s.Write(l.msg)
+				xcount = (xcount + 1) & 0xff
+				g3t = b.Utc.Add(g3diff)
+			}
+
+			if !lt.IsZero() {
+				if options.Config.Fast {
+					time.Sleep(10 * time.Millisecond)
+				} else if tdiff > 0 {
+					time.Sleep(tdiff)
+				}
+			}
+
+			et := b.Utc.Sub(st)
+			d := uint16(et.Seconds())
+			if d != ld {
+				l := newLTM('q')
+				l.qframe(d)
+				s.Write(l.msg)
+				ld = d
+			}
+			lt = b.Utc
+		case types.HomeRec:
+			h := v.(types.HomeRec)
+			if h.Flags&types.HOME_SAFE != 0 {
+				hlat = h.SafeLat
+				hlon = h.SafeLon
+			} else {
+				hlat = h.HomeLat
+				hlon = h.HomeLon
+			}
+		case types.MapRec:
+			done = true
 		}
-		lt = b.Utc
 	}
+	b := types.LogItem{}
 	l := newLTM('S')
 	b.Status = 0
 	l.sframe(b)

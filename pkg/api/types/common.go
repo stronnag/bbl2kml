@@ -157,9 +157,8 @@ type LogSegment struct {
 	M MapRec
 }
 
-
 type FlightLog interface {
-	Reader(FlightMeta) (LogSegment, bool)
+	Reader(FlightMeta, chan interface{}) (LogSegment, bool)
 	GetMetas() ([]FlightMeta, error)
 	GetDurations()
 	Dump()

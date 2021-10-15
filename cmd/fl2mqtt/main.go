@@ -73,16 +73,17 @@ func main() {
 						if metas[options.Config.Idx-1].Flags&types.Is_Suspect != 0 {
 							fmt.Println("Warning  : Log entry may be corrupt")
 						}
-						ls, res := lfr.Reader(metas[options.Config.Idx-1])
-						if res {
-							switch app {
-							case "fl2mqtt":
+
+						switch app {
+						case "fl2mqtt":
+							ls, res := lfr.Reader(metas[options.Config.Idx-1], nil)
+							if res {
 								mqttgen.MQTTGen(ls, metas[options.Config.Idx-1])
-							case "fl2ltm":
-								ltmgen.LTMGen(ls, metas[options.Config.Idx-1])
 							}
-						} else {
-							fmt.Fprintf(os.Stderr, "*** skipping generation for log  with no valid geospatial data\n")
+						case "fl2ltm":
+							ch := make(chan interface{})
+							go lfr.Reader(metas[options.Config.Idx-1], ch)
+							ltmgen.LTMGen(ch, metas[options.Config.Idx-1])
 						}
 						fmt.Println()
 					} else {

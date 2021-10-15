@@ -563,7 +563,7 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 	return b
 }
 
-func (lg *BBLOG) Reader(meta types.FlightMeta) (types.LogSegment, bool) {
+func (lg *BBLOG) Reader(meta types.FlightMeta, ch chan interface{}) (types.LogSegment, bool) {
 	cmd := exec.Command(options.Config.Blackbox_decode,
 		"--datetime", "--merge-gps", "--stdout", "--index",
 		strconv.Itoa(meta.Index), lg.name)
@@ -660,6 +660,9 @@ func (lg *BBLOG) Reader(meta types.FlightMeta) (types.LogSegment, bool) {
 				if frobing && (homes.Flags&types.HOME_SAFE != 0) {
 					homes.SafeLat, homes.SafeLon, _ = geo.Frobnicate_move(homes.SafeLat, homes.SafeLon, b.GAlt)
 				}
+				if ch != nil {
+					ch <- homes
+				}
 			}
 			if b.Utc.IsZero() {
 				basetime, _ = time.Parse("Jan 2 2006 15:04:05", meta.Fwdate)
@@ -715,7 +718,11 @@ func (lg *BBLOG) Reader(meta types.FlightMeta) (types.LogSegment, bool) {
 						rec.Cap |= types.CAP_RSSI_VALID
 					}
 
-					rec.Items = append(rec.Items, b)
+					if ch != nil {
+						ch <- b
+					} else {
+						rec.Items = append(rec.Items, b)
+					}
 					dt = us
 				}
 
@@ -741,12 +748,17 @@ func (lg *BBLOG) Reader(meta types.FlightMeta) (types.LogSegment, bool) {
 		}
 	}
 	srec := stats.Summary(lt - st)
-	ok := homes.Flags != 0 && len(rec.Items) > 0
 	ls := types.LogSegment{}
-	if ok {
-		ls.L = rec
-		ls.H = homes
-		ls.M = srec
+	if ch != nil {
+		ch <- srec
+		return ls, true
+	} else {
+		ok := homes.Flags != 0 && len(rec.Items) > 0
+		if ok {
+			ls.L = rec
+			ls.H = homes
+			ls.M = srec
+		}
+		return ls, ok
 	}
-	return ls, ok
 }
