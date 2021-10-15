@@ -6,8 +6,8 @@ A suite of tools to generate annotated KML/KMZ files (and other data) from **ina
 
 * [flightlog2kml](#flightlog2kml) - Generates KML/Z file(s) from Blackbox log(s), OpenTX (OTX) and Bullet GCSS logs
 * [fl2mqtt](#fl2mqtt) - Generates MQTT data to stimulate the on-line Ground Control Station [BulletGCSS](https://bulletgcss.fpvsampa.com/)
-* fl2ltm - If `fl2mqtt` is installed (typically by hard or soft link) as `fl2ltm` it generates LTM  (inav's Lightweight Telemetry). This is primarily for use by [mwp](https://github.com/stronnag/mwptools/) as a unified replay tool for Blackbox and OpenTx logs.
-* [log2mission](#log2mission) - Converts a flight log (Blackbox, OpenTx, BulletGCSS) into a valid inav mission. A number of filters may be applied (time, flight mode).
+* fl2ltm - If `fl2mqtt` is installed (typically by hard or soft link) as `fl2ltm` it generates LTM  (inav's Lightweight Telemetry). This is primarily for use by [mwp](https://github.com/stronnag/mwptools/) as a unified replay tool for Blackbox, OpenTx, BulletGCSS and Aurduplot `.bin` logs.
+* [log2mission](#log2mission) - Converts a flight log (Blackbox, OpenTx, BulletGCSS, AP) into a valid inav mission. A number of filters may be applied (time, flight mode).
 * [mission2kml](#mission2kml) - Generate KML file from inav mission files (and other formats)
 
 ## flightlog2kml
@@ -361,6 +361,8 @@ Due to the range of `inav` versions, `blackbox_decode` versions and supported op
 * The version of `flightlog2kml` and `blackbox_decode`. Both applications have a `--help` option that should give the version numbers.
 * The host operating system and version (e.g. "Debian Sid", "Windows 10", "MacOS 10.15").
 * Provide the blackbox log that illustrates the problem. If you don't want to post the log into an essentially public forum (the Github issue), then please propose a private delivery channel.
+
+Replaying Ardupilot logs requires [mavlogdump.py](https://github.com/ArduPilot/pymavlink).
 
 ## Building
 
