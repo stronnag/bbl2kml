@@ -241,7 +241,7 @@ func get_otx_line(r []string) types.LogItem {
 		b.Numsat = uint8(tmp2 % 100)
 		gfix := tmp2 / 1000
 		if (gfix & 1) == 1 {
-			b.Fix = 3
+			b.Fix = 2
 		} else if b.Numsat > 0 {
 			b.Fix = 1
 		} else {
@@ -436,7 +436,7 @@ func get_otx_line(r []string) types.LogItem {
 			ns, _ := strconv.ParseInt(s, 10, 16)
 			b.Numsat = uint8(ns)
 			if ns > 5 {
-				b.Fix = 3
+				b.Fix = 2
 				b.Hdop = uint16((3.3 - float64(ns)/12.0) * 100)
 				if b.Hdop < 50 {
 					b.Hdop = 50

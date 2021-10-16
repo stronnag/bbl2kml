@@ -168,7 +168,7 @@ func parse_bullet(line string, b *types.LogItem) {
 				case "gsc":
 					b.Numsat = uint8(tmp)
 				case "3df":
-					b.Fix = 3 * uint8(tmp)
+					b.Fix = 2 * uint8(tmp)
 				case "arm":
 					if tmp == 1 {
 						b.Status |= 1
