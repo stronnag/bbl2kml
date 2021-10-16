@@ -36,7 +36,11 @@ func NewBBLReader(fn string) BBLOG {
 }
 
 func (o *BBLOG) GetMetas() ([]types.FlightMeta, error) {
-	m, err := metas(o.name)
+	m, err := types.ReadMetaCache(o.name)
+	if err != nil {
+		m, err = metas(o.name)
+		types.WriteMetaCache(o.name, m)
+	}
 	o.meta = m
 	return m, err
 }

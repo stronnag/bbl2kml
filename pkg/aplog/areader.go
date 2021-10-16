@@ -9,6 +9,7 @@ import (
 	"time"
 	"math"
 	"regexp"
+	"path/filepath"
 	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	options "github.com/stronnag/bbl2kml/pkg/options"
 	geo "github.com/stronnag/bbl2kml/pkg/geo"
@@ -148,7 +149,11 @@ func (o *APLOG) LogType() byte {
 }
 
 func (o *APLOG) GetMetas() ([]types.FlightMeta, error) {
-	m, err := metas(o.name)
+	m, err := types.ReadMetaCache(o.name)
+	if err != nil {
+		m, err = metas(o.name)
+		types.WriteMetaCache(o.name, m)
+	}
 	o.meta = m
 	return m, err
 }
@@ -177,7 +182,7 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 		os.Exit(1)
 	}
 
-	mt := types.FlightMeta{Logname: logfile, Size: size, Start: 0}
+	mt := types.FlightMeta{Logname: filepath.Base(logfile), Size: size, Start: 0}
 
 	var st time.Time
 	var mlog MavLog
