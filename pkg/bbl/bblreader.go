@@ -54,6 +54,7 @@ func (o *BBLOG) LogType() byte {
 }
 
 func (o *BBLOG) Dump() {
+	get_headers(o.name)
 	dump_headers()
 }
 

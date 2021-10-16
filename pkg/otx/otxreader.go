@@ -51,6 +51,18 @@ func (o *OTXLOG) GetDurations() {
 }
 
 func (o *OTXLOG) Dump() {
+	if hdrs == nil || len(hdrs) == 0 {
+		fh, err := os.Open(o.name)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "log file %s\n", err)
+			return
+		}
+		defer fh.Close()
+		r := csv.NewReader(fh)
+		r.TrimLeadingSpace = true
+		record, err := r.Read()
+		read_headers(record) // for future usage
+	}
 	dump_headers()
 }
 
@@ -542,11 +554,14 @@ func (lg *OTXLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegm
 	leffic := 0.0
 	lwhkm := 0.0
 	whacc := 0.0
-
 	for i := 1; ; i++ {
 		record, err := r.Read()
 		if err == io.EOF {
 			break
+		}
+		if i == 1 {
+			read_headers(record)
+			continue
 		}
 		if i >= m.Start && i <= m.End {
 			rec.Cap = dataCapability()
@@ -561,7 +576,6 @@ func (lg *OTXLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegm
 					st = b.Utc
 					lt = st
 				}
-
 				if homes.Flags == 0 {
 					if b.Fix > 1 && b.Numsat > 5 {
 						homes.HomeLat = b.Lat
