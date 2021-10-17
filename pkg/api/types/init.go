@@ -34,7 +34,7 @@ func get_cache_name(lname string) (string, error) {
 		return "", err
 	}
 	sz := fi.Size()
-	mt := fi.ModTime().UTC().UnixMicro()
+	mt := fi.ModTime().UTC().UnixNano() / 1000 // for Ubuntu 20.04 et al
 	base := filepath.Base(lname)
 	uenc := b64.URLEncoding.EncodeToString([]byte(base))
 	fn := fmt.Sprintf("%s.%x.%x", uenc, sz, mt)
