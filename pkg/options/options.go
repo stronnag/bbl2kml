@@ -41,6 +41,7 @@ type Configuration struct {
 	StartOff        int     `json:"start-offset"`
 	EndOff          int     `json:"end-offset"`
 	Modefilter      string  `json:"-"`
+	UseTopo         bool    `json:"-"`
 }
 
 var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120, Epsilon: 0.015, StartOff: 30, EndOff: -30, Engunit: "mah"}
@@ -162,6 +163,9 @@ func ParseCLI(gv func() string) ([]string, string) {
 	flag.IntVar(&Config.Intvl, "interval", Config.Intvl, "Sampling Interval (ms)")
 	flag.Parse()
 
+	if app == "flightlog2kml" {
+		Config.UseTopo = true
+	}
 	if !isFlagSet("home-alt") {
 		Config.HomeAlt = -999999 // sentinel
 	}
