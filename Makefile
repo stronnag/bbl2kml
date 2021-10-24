@@ -19,6 +19,12 @@ else
  LAPP=$(DESTDIR)/log2mission
 endif
 
+ifeq (,$(shell go env GOVERSION))
+ TRIMPATH=
+else
+ TRIMPATH=-trimpath
+endif
+
 ifeq ($(GOOS),windows)
  EXT=.exe
 else
@@ -70,16 +76,16 @@ MSRCS = $(wildcard cmd/mission2kml/*.go) $(PKGCOMMON)
 LSRCS = cmd/log2mission/main.go $(PKGCOMMON) $(PKGBBL) $(PKGOTX) $(PKGINAV) $(PKGKML)  $(PKGBLTR) $(PKGL2M) $(PKGAP)
 
 $(_CAPP): $(CSRCS)
-	CGO_ENABLED=0 go build -trimpath $(LDF) "$(LDFLAGS) -extldflags -static" -o $(CAPP)$(EXT) cmd/flightlog2kml/main.go
+	CGO_ENABLED=0 go build $(TRIMPATH) $(LDF) "$(LDFLAGS) -extldflags -static" -o $(CAPP)$(EXT) cmd/flightlog2kml/main.go
 
 $(_LAPP): $(LSRCS)
-	CGO_ENABLED=0 go build -trimpath $(LDF) "$(LDFLAGS) -extldflags -static" -o $(LAPP)$(EXT) cmd/log2mission/main.go
+	CGO_ENABLED=0 go build $(TRIMPATH) $(LDF) "$(LDFLAGS) -extldflags -static" -o $(LAPP)$(EXT) cmd/log2mission/main.go
 
 $(_MAPP): $(MSRCS)
-	CGO_ENABLED=0 go build -trimpath $(LDF) "$(LDFLAGS) -extldflags -static" -o $(MAPP)$(EXT) cmd/mission2kml/main.go
+	CGO_ENABLED=0 go build $(TRIMPATH) $(LDF) "$(LDFLAGS) -extldflags -static" -o $(MAPP)$(EXT) cmd/mission2kml/main.go
 
 $(_QAPP): $(QSRCS)
-	CGO_ENABLED=0 go build -trimpath $(LDF) "$(LDFLAGS) -extldflags -static" -o $(QAPP)$(EXT) cmd/fl2mqtt/main.go
+	CGO_ENABLED=0 go build $(TRIMPATH) $(LDF) "$(LDFLAGS) -extldflags -static" -o $(QAPP)$(EXT) cmd/fl2mqtt/main.go
 	ln -sf fl2mqtt fl2ltm
 
 clean:

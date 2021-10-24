@@ -571,7 +571,7 @@ func (lg *OTXLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegm
 			}
 
 			tdiff := b.Utc.Sub(lt)
-			if tdiff.Milliseconds() >= int64(options.Config.Intvl) {
+			if tdiff.Nanoseconds()/(1000*1000) >= int64(options.Config.Intvl) {
 				if st.IsZero() {
 					st = b.Utc
 					lt = st
@@ -634,22 +634,22 @@ func (lg *OTXLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegm
 
 					if d > stats.Max_range {
 						stats.Max_range = d
-						stats.Max_range_time = uint64(b.Utc.Sub(st).Microseconds())
+						stats.Max_range_time = uint64(b.Utc.Sub(st).Nanoseconds()/1000)
 					}
 
 					if b.Alt > stats.Max_alt {
 						stats.Max_alt = b.Alt
-						stats.Max_alt_time = uint64(b.Utc.Sub(st).Microseconds())
+						stats.Max_alt_time = uint64(b.Utc.Sub(st).Nanoseconds()/1000)
 					}
 
 					if b.Spd < 400 && b.Spd > stats.Max_speed {
 						stats.Max_speed = b.Spd
-						stats.Max_speed_time = uint64(b.Utc.Sub(st).Microseconds())
+						stats.Max_speed_time = uint64(b.Utc.Sub(st).Nanoseconds()/1000)
 					}
 
 					if b.Amps > stats.Max_current {
 						stats.Max_current = b.Amps
-						stats.Max_current_time = uint64(b.Utc.Sub(st).Microseconds())
+						stats.Max_current_time = uint64(b.Utc.Sub(st).Nanoseconds()/1000)
 					}
 
 					if llat != b.Lat || llon != b.Lon {
@@ -694,7 +694,7 @@ func (lg *OTXLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegm
 			os.Exit(-1)
 		}
 	}
-	srec := stats.Summary(uint64(lt.Sub(st).Microseconds()))
+	srec := stats.Summary(uint64(lt.Sub(st).Nanoseconds()/1000))
 	ls := types.LogSegment{}
 	if ch != nil {
 		ch <- srec
