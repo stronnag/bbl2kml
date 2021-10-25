@@ -1,0 +1,2 @@
+option('version', type : 'string', value : '0.0.0', description : 'project version')
+option('commit', type : 'string', value : 'local', description : 'build id')
