@@ -1,5 +1,5 @@
 project('fl2x',  version : '0.0.0')
-meson.add_install_script('meson/post_install.sh')
+meson.add_install_script('meson/post_install.py')
 version = get_option('version')
 commit = get_option('commit')
 
