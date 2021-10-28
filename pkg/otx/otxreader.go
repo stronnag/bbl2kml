@@ -410,9 +410,9 @@ func get_otx_line(r []string) types.LogItem {
 				md = types.FM_AH
 			case "HOLD":
 				md = types.FM_PH
-			case "CRS":
+			case "CRS", "CRSH":
 				md = types.FM_CRUISE2D
-			case "3CRS":
+			case "3CRS", "CRUZ":
 				md = types.FM_CRUISE3D
 			case "WP":
 				md = types.FM_WP
@@ -634,22 +634,22 @@ func (lg *OTXLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegm
 
 					if d > stats.Max_range {
 						stats.Max_range = d
-						stats.Max_range_time = uint64(b.Utc.Sub(st).Nanoseconds()/1000)
+						stats.Max_range_time = uint64(b.Utc.Sub(st).Nanoseconds() / 1000)
 					}
 
 					if b.Alt > stats.Max_alt {
 						stats.Max_alt = b.Alt
-						stats.Max_alt_time = uint64(b.Utc.Sub(st).Nanoseconds()/1000)
+						stats.Max_alt_time = uint64(b.Utc.Sub(st).Nanoseconds() / 1000)
 					}
 
 					if b.Spd < 400 && b.Spd > stats.Max_speed {
 						stats.Max_speed = b.Spd
-						stats.Max_speed_time = uint64(b.Utc.Sub(st).Nanoseconds()/1000)
+						stats.Max_speed_time = uint64(b.Utc.Sub(st).Nanoseconds() / 1000)
 					}
 
 					if b.Amps > stats.Max_current {
 						stats.Max_current = b.Amps
-						stats.Max_current_time = uint64(b.Utc.Sub(st).Nanoseconds()/1000)
+						stats.Max_current_time = uint64(b.Utc.Sub(st).Nanoseconds() / 1000)
 					}
 
 					if llat != b.Lat || llon != b.Lon {
@@ -694,7 +694,7 @@ func (lg *OTXLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegm
 			os.Exit(-1)
 		}
 	}
-	srec := stats.Summary(uint64(lt.Sub(st).Nanoseconds()/1000))
+	srec := stats.Summary(uint64(lt.Sub(st).Nanoseconds() / 1000))
 	ls := types.LogSegment{}
 	if ch != nil {
 		ch <- srec
