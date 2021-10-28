@@ -166,6 +166,9 @@ func ParseCLI(gv func() string) ([]string, string) {
 	if app == "flightlog2kml" {
 		Config.UseTopo = true
 	}
+	if app == "bbsummary" {
+		Config.Summary = true
+	}
 	if !isFlagSet("home-alt") {
 		Config.HomeAlt = -999999 // sentinel
 	}

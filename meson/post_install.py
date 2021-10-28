@@ -3,10 +3,16 @@
 import os
 
 inspath = os.path.join(os.environ['MESON_INSTALL_PREFIX'],'bin')
-ltm = os.path.join(inspath, 'fl2ltm')
-mqtt = os.path.join(inspath, 'fl2mqtt')
+dst = os.path.join(inspath, 'fl2ltm')
+src = os.path.join(inspath, 'fl2mqtt')
 
-if os.path.exists(ltm):
-    os.remove(ltm)
+if os.path.exists(dst):
+    os.remove(dst)
+os.link(src, dst)
 
-os.link(mqtt, ltm)
+dst = os.path.join(inspath, 'bbsummary')
+src = os.path.join(inspath, 'flightlog2kml')
+
+if os.path.exists(dst):
+    os.remove(dst)
+os.link(src, dst)
