@@ -393,6 +393,6 @@ ninja install
 
 `flightlog2kml` may be build for all OS for which a suitable Golang is available. It also requires inav's [blackbox_decode](https://github.com/iNavFlight/blackbox-tools); 0.4.5 (or future) is recommended; the minimum `blackbox_decode` version is 0.4.4. For Windows' users it is probably easiest to copy inav's `blackbox_decode.exe` into the same directory as `flightlog2kml.exe`.
 
-Binaries are provided for common operating systems in the [Release folder](https://github.com/stronnag/bbl2kml/releases). `fl2ltm` is a link to `fl2mqtt`
+Binaries are provided for common operating systems in the [Release folder](https://github.com/stronnag/bbl2kml/releases). `fl2ltm` is a link to `fl2mqtt`; `bbsummary` is a link to `flightlog2kml` and will behave as `flightlog2kml -summary`.
 
 `fl2ltm` will be automatically detected by [mwp](https://github.com/stronnag/mwptools/) and used in preference to its older `replay_bbox_ltm.rb` and `otxlog` helpers.
