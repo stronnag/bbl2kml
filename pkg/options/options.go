@@ -32,6 +32,7 @@ type Configuration struct {
 	Engunit         string  `json:"energy-unit"`
 	LTMdev          string  `json:"-"`
 	Mission         string  `json:"-"`
+	MissionIndex    int     `json:"-"`
 	Mqttopts        string  `json:"-"`
 	Outdir          string  `json:"outdir"`
 	Rebase          string  `json:"-"`
@@ -133,6 +134,7 @@ func ParseCLI(gv func() string) ([]string, string) {
 		flag.IntVar(&Config.HomeAlt, "home-alt", Config.HomeAlt, "[OTX] home altitude")
 		flag.BoolVar(&Config.Dump, "dump", false, "Dump log headers and exit")
 		flag.StringVar(&Config.Mission, "mission", "", "Optional mission file name")
+		flag.IntVar(&Config.MissionIndex, "mission-index", 1, "Optional mission file index")
 	}
 	if app == "fl2mqtt" {
 		flag.StringVar(&Config.Mqttopts, "broker", "", "Mqtt URI (mqtt://[user[:pass]@]broker[:port]/topic[?cafile=file]")
@@ -177,6 +179,11 @@ func ParseCLI(gv func() string) ([]string, string) {
 			Config.Idx = 1
 		}
 	*/
+
+	if Config.MissionIndex == 0 {
+		Config.MissionIndex = 1
+	}
+
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: config file ignored due to error: %v\n", err)
 	}

@@ -13,12 +13,9 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	kml "github.com/twpayne/go-kml"
-	"github.com/twpayne/go-kml/icon"
-	"image/color"
-	geo "github.com/stronnag/bbl2kml/pkg/geo"
 	types "github.com/stronnag/bbl2kml/pkg/api/types"
-	"path/filepath"
 	"time"
+	"archive/zip"
 )
 
 type QGCrec struct {
@@ -35,14 +32,14 @@ type qgc_plan struct {
 	Filetype string `json:"fileType"`
 	Mission  struct {
 		Items []struct {
-			Typ         string    `json:"type"`
-			Altitude    int       `json:"Altitude"`
+			Typ          string    `json:"type"`
+			Altitude     int       `json:"Altitude"`
 			Altitudemode int       `json:"AltitudeMode"`
-			Command     int       `json:"command"`
-			Jumpid      int       `json:"doJumpId"`
-			Frame       int       `json:"frame"`
-			Params      []float64 `json:"params"`
-			Transect    struct {
+			Command      int       `json:"command"`
+			Jumpid       int       `json:"doJumpId"`
+			Frame        int       `json:"frame"`
+			Params       []float64 `json:"params"`
+			Transect     struct {
 				Items []struct {
 					Typ         string    `json:"type"`
 					Altitude    int       `json:"Altitude"`
@@ -70,12 +67,12 @@ type MissionItem struct {
 }
 
 type MissionMWP struct {
-	Zoom  int     `xml:"zoom,attr" json:"zoom"`
-	Cx    float64 `xml:"cx,attr" json:"cx"`
-	Cy    float64 `xml:"cy,attr" json:"cy"`
-	Homex float64 `xml:"home-x,attr" json:"home-x"`
-	Homey float64 `xml:"home-y,attr" json:"home-y"`
-	Stamp string  `xml:"save-date,attr" json:"save-date"`
+	Zoom      int     `xml:"zoom,attr" json:"zoom"`
+	Cx        float64 `xml:"cx,attr" json:"cx"`
+	Cy        float64 `xml:"cy,attr" json:"cy"`
+	Homex     float64 `xml:"home-x,attr" json:"home-x"`
+	Homey     float64 `xml:"home-y,attr" json:"home-y"`
+	Stamp     string  `xml:"save-date,attr" json:"save-date"`
 	Generator string  `xml:"generator,attr" json:"generator"`
 }
 
@@ -83,13 +80,32 @@ type Version struct {
 	Value string `xml:"value,attr"`
 }
 
+type MissionDetail struct {
+	Distance struct {
+		Units string `xml:"units,attr,omitempty" json:"units,omitempty"`
+		Value int    `xml:"value,attr,omitempty" json:"value,omitempty"`
+	} `xml:"distance,omitempty" json:"distance,omitempty"`
+}
+
+type MissionSegment struct {
+	Metadata     MissionMWP    `xml:"mwp" json:"meta"`
+	MissionItems []MissionItem `xml:"missionitem" json:"mission"`
+}
+
+type MultiMission struct {
+	XMLName xml.Name         `xml:"mission"  json:"-"`
+	Version Version          `xml:"version" json:"-"`
+	Comment string           `xml:",comment" json:"-"`
+	Segment []MissionSegment `json:"missions"`
+}
+
 type Mission struct {
 	XMLName      xml.Name      `xml:"mission"  json:"-"`
 	Version      Version       `xml:"version" json:"-"`
-	Comment      string         `xml:",comment" json:"-"`
+	Comment      string        `xml:",comment" json:"-"`
 	Metadata     MissionMWP    `xml:"mwp" json:"meta"`
 	MissionItems []MissionItem `xml:"missionitem" json:"mission"`
-	mission_file string `xml:"-" json:"-"`
+	mission_file string        `xml:"-" json:"-"`
 }
 
 type PlaceMark struct {
@@ -107,9 +123,9 @@ type Gpx struct {
 }
 
 type Pts struct {
-	Lat float64 `xml:"lat,attr"`
-	Lon float64 `xml:"lon,attr"`
-	Elev float64    `xml:"ele"`
+	Lat  float64 `xml:"lat,attr"`
+	Lon  float64 `xml:"lon,attr"`
+	Elev float64 `xml:"ele"`
 }
 
 const (
@@ -124,17 +140,25 @@ const (
 )
 
 var ActionMap = map[string]int{
-	"WAYPOINT": wp_WAYPOINT,
+	"WAYPOINT":      wp_WAYPOINT,
 	"POSHOLD_UNLIM": wp_POSHOLD_UNLIM,
-	"POSHOLD_TIME": wp_POSHOLD_TIME,
-	"RTH": wp_RTH,
-	"SET_POI": wp_SET_POI,
-	"JUMP": wp_JUMP,
-	"SET_HEAD": wp_SET_HEAD,
-	"LAND": wp_LAND,
+	"POSHOLD_TIME":  wp_POSHOLD_TIME,
+	"RTH":           wp_RTH,
+	"SET_POI":       wp_SET_POI,
+	"JUMP":          wp_JUMP,
+	"SET_HEAD":      wp_SET_HEAD,
+	"LAND":          wp_LAND,
 }
 
-func (m *Mission) Decode_action(b byte) string {
+var (
+	MaxWP = 120
+)
+
+func (m *Mission)Decode_action(b byte) string {
+	return decode_action(b)
+}
+
+func decode_action(b byte) string {
 	var a string
 	switch b {
 	case wp_WAYPOINT:
@@ -188,43 +212,19 @@ func (mi *MissionItem) Is_GeoPoint() bool {
 	return !(a == "RTH" || a == "SET_HEAD" || a == "JUMP")
 }
 
-func (m *Mission) Dump(dms bool, homep...float64)  {
+func (m *Mission) Dump(dms bool, homep ...float64) {
 	var hpos types.HomeRec
-	hpos.HomeLat = homep[0]
-	hpos.HomeLon = homep[1]
-	hpos.Flags = types.HOME_ARM
+	if len(homep) == 2 {
+		hpos.HomeLat = homep[0]
+		hpos.HomeLon = homep[1]
+		hpos.Flags = types.HOME_ARM
+	}
 	if len(homep) > 2 {
 		hpos.HomeAlt = homep[2]
 		hpos.Flags |= types.HOME_ALT
 	}
 	k := kml.KML(m.To_kml(hpos, dms, true))
 	k.WriteIndent(os.Stdout, "", "  ")
-}
-
-func read_gpx(dat []byte) *Mission {
-	mission := &Mission{}
-	var pts []Pts
-	var g Gpx
-	err := xml.Unmarshal(dat, &g)
-	if err == nil {
-		if len(g.Wpts) > 0 {
-			pts =g.Wpts
-		} else if len(g.Rpts) > 0 {
-			pts =g.Rpts
-		} else if len(g.Tpts) > 0 {
-			pts =g.Tpts
-		}
-		if pts != nil {
-			for k, p := range pts {
-				item := MissionItem{No: k + 1, Lat: p.Lat, Lon: p.Lon,
-					Alt: int32(p.Elev), P3: 1, Action: "WAYPOINT"}
-				mission.MissionItems = append(mission.MissionItems, item)
-			}
-		}
-	} else {
-		fmt.Fprintf(os.Stderr, "GPX error: %v", err)
-	}
-	return mission
 }
 
 func (m *Mission) To_MWXML(fname string) {
@@ -240,257 +240,191 @@ func (m *Mission) To_MWXML(fname string) {
 	}
 }
 
+/****************************************************************************
+ * Generic, shared with impload
+ *****************************************************************************/
 
-func (m *Mission) To_kml(hpos types.HomeRec, dms bool, fake bool) kml.Element {
-	var points []kml.Coordinate
-	var wps  []kml.Element
-	llat := 0.0
-	llon := 0.0
-	lalt := int32(0)
-	var altmode kml.AltitudeModeEnum
-
-	addAlt := int32(0)
-
-	if (hpos.Flags & types.HOME_ARM) != 0 {
-		if (hpos.Flags & types.HOME_ALT) == types.HOME_ALT {
-			addAlt = int32(hpos.HomeAlt)
-		} else {
-			bingelev, err :=  geo.GetElevation(hpos.HomeLat, hpos.HomeLon)
-			if err == nil {
-				addAlt = int32(bingelev)
-				hpos.Flags |= types.HOME_ALT
-			}
-		}
-
-		if (hpos.Flags & types.HOME_ALT) == types.HOME_ALT {
-			altmode = kml.AltitudeModeAbsolute
-		} else {
-			altmode = kml.AltitudeModeRelativeToGround
-		}
-		points = append(points, kml.Coordinate{Lon: hpos.HomeLon, Lat: hpos.HomeLat, Alt: float64(addAlt)})
+func (ml *MissionSegment) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	if err := e.EncodeElement(ml.Metadata, xml.StartElement{Name: xml.Name{Local: "mwp"}}); err != nil {
+		return err
 	}
-
-	var lat, lon float64
-	var alt int32
-
-	for _, mi := range m.MissionItems {
-		if  mi.Action == "JUMP" || mi.Action == "SET_HEAD" || mi.Action == "RTH" {
-			lat = llat
-			lon = llon
-			alt = lalt
-		} else {
-			lat = mi.Lat
-			lon = mi.Lon
-			if mi.P3 == 0 {
-				alt = mi.Alt + addAlt
-			} else {
-				alt = mi.Alt
-			}
-			llat = lat
-			llon = lon
-			lalt = alt
+	for _, mi := range ml.MissionItems {
+		if err := e.EncodeElement(mi, xml.StartElement{Name: xml.Name{Local: "missionitem"}}); err != nil {
+			return err
 		}
-		var bname string
+	}
+	return nil
+}
 
-		switch mi.Action {
-		case "WAYPOINT":
-			bname = "WP"
-		case "POSHOLD_UNLIM", "POSHOLD_TIME":
-			bname = "PH"
-		case "SET_POI":
-			bname = "POI"
-		case "SET_HEAD":
-			bname = "HD"
+func find_kml_coords(dat []byte) *PlaceMark {
+	buf := bytes.NewBuffer(dat)
+	dec := xml.NewDecoder(buf)
+	for {
+		t, _ := dec.Token()
+		if t == nil {
+			break
+		}
+		switch se := t.(type) {
+		case xml.StartElement:
+			if se.Name.Local == "Placemark" {
+				var p PlaceMark
+				dec.DecodeElement(&p, &se)
+				if len(p.LineString.Coordinates) > 0 {
+					return &p
+				}
+			}
 		default:
-			bname = mi.Action
-		}
-		name:= fmt.Sprintf("%s %d", bname, mi.No)
-		p := kml.Placemark(
-			kml.Name(name),
-			kml.Description(fmt.Sprintf("Action: %s<br/>Position: %s<br/>Elevation: %dm<br/>GPS Altitude: %dm<br/>",
-				mi.Action, geo.PositionFormat(lat, lon, dms), mi.Alt, alt)),
-			kml.StyleURL(fmt.Sprintf("#style%s", mi.Action)),
-			kml.Point(
-				kml.AltitudeMode(altmode),
-				kml.Coordinates(kml.Coordinate{Lon: lon, Lat: lat, Alt: float64(alt)}),
-			),
-		)
-		wps = append(wps, p)
-
-		if  mi.Action != "SET_POI" && mi.Action != "JUMP" && mi.Action != "SET_HEAD" &&
-			mi.Action != "RTH" {
-			pt := kml.Coordinate{Lon: mi.Lon, Lat: mi.Lat, Alt: float64(alt)}
-			points = append(points, pt)
 		}
 	}
-
-	var desc string
-	if (hpos.Flags & types.HOME_ALT) == types.HOME_ALT {
-		desc = fmt.Sprintf("Created from %s with elevations adjusted for home location %s",
-			m.mission_file, geo.PositionFormat(hpos.HomeLat, hpos.HomeLon, dms))
-		points = append(points, kml.Coordinate{Lon: hpos.HomeLon, Lat: hpos.HomeLat,Alt: float64(addAlt)})
-		if fake {
-			p := kml.Placemark(
-				kml.Name("Home"),
-				kml.Description(fmt.Sprintf("Assumed Home<br/>Position: %s<br/>GPS Altitude: %dm<br/>",
-					geo.PositionFormat(hpos.HomeLat, hpos.HomeLon, dms), addAlt)),
-				kml.StyleURL("#styleFakeHome"),
-				kml.Point(
-					kml.Coordinates(kml.Coordinate{Lon: hpos.HomeLon, Lat: hpos.HomeLat}),
-				),
-			)
-			wps = append(wps, p)
-		} else {
-			desc = fmt.Sprintf("Created from %s", m.mission_file)
-		}
-	}
-
-	track := kml.Placemark(
-		kml.Description("inav mission"),
-		kml.StyleURL("#styleWPTrack"),
-		kml.LineString(
-			kml.AltitudeMode(altmode),
-			kml.Extrude(true),
-			kml.Tessellate(false),
-			kml.Coordinates(points...),
-		),
-	)
-
-	return kml.Folder(kml.Name("Mission File")).Add(kml.Description(desc)).
-		Add(kml.Visibility(true)).Add(mission_styles()...).Add(track).Add(wps...)
+	return nil
 }
 
-func mission_styles() []kml.Element {
-	return []kml.Element{
-		kml.SharedStyle(
-			"styleSET_POI",
-			kml.IconStyle(
-				kml.Scale(0.8),
-				kml.Icon(
-					kml.Href(icon.PaddleHref("ylw-diamond"),
-					),
-				),
-			),
-			kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
-				kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
-		),
-		kml.SharedStyle(
-			"styleRTH",
-			kml.IconStyle(
-				kml.Scale(0.8),
-				kml.Icon(
-					kml.Href(icon.PaddleHref("red-diamond"),
-					),
-				),
-			),
-				kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
-					kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
-		),
-		kml.SharedStyle(
-			"styleSET_HEAD",
-			kml.IconStyle(
-				kml.Scale(0.8),
-				kml.Icon(
-					kml.Href(icon.PaddleHref("ylw-diamond"),
-					),
-				),
-			),
-				kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
-					kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
-		),
-		kml.SharedStyle(
-			"styleWAYPOINT",
-			kml.IconStyle(
-				kml.Scale(0.8),
-				kml.Icon(
-					kml.Href(icon.PaddleHref("ltblu-circle"),
-					),
-				),
-			),
-			kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
-				kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
-
-		),
-		kml.SharedStyle(
-			"stylePOSHOLD_UNLIM",
-			kml.IconStyle(
-				kml.Scale(0.8),
-				kml.Icon(
-					kml.Href(icon.PaddleHref("grn-diamond"),
-					),
-				),
-			),
-			kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
-				kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
-		),
-		kml.SharedStyle(
-			"stylePOSHOLD_TIME",
-			kml.IconStyle(
-				kml.Scale(0.8),
-				kml.Icon(
-					kml.Href(icon.PaddleHref("grn-circle"),
-					),
-				),
-			),
-				kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
-					kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
-		),
-		kml.SharedStyle(
-			"styleJUMP",
-			kml.IconStyle(
-				kml.Scale(0.8),
-				kml.Icon(
-					kml.Href(icon.PaddleHref("purple-circle"),
-					),
-				),
-			),
-			kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
-				kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
-		),
-		kml.SharedStyle(
-			"styleLAND",
-			kml.IconStyle(
-				kml.Scale(0.8),
-				kml.Icon(
-					kml.Href(icon.PaddleHref("pink-stars"),
-					),
-				),
-			),
-				kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
-					kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
-		),
-		kml.SharedStyle(
-			"styleFakeHome",
-			kml.IconStyle(
-				kml.Scale(0.8),
-				kml.Icon(
-					kml.Href(icon.PaddleHref("orange-stars"),
-					),
-				),
-			),
-				kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
-					kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
-		),
-		kml.SharedStyle(
-			"styleWPTrack",
-			kml.LineStyle(
-				kml.Width(2.0),
-				kml.Color(color.RGBA{R: 0, G: 0xff, B: 0xff, A: 0x66}),
-			),
-			kml.PolyStyle(
-				kml.Color(color.RGBA{R: 0xc0, G: 0xc0, B: 0xc0, A: 0x66}),
-			),
-		),
-		kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
-			kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
+func NewMultiMission (mis []MissionItem) *MultiMission {
+	mm := 	&MultiMission{Segment: []MissionSegment{{}}}
+	if mis != nil {
+		segno := 0
+		no := 1
+		for j := range mis {
+			mis[j].No = no
+			no++
+			mm.Segment[segno].MissionItems = append(mm.Segment[segno].MissionItems, mis[j])
+			if mis[j].Flag == 0xa5 {
+				if j != len(mis) -1 {
+					mm.Segment = append(mm.Segment, MissionSegment{})
+					segno++
+					no = 1
+				}
+			}
+		}
+		if no > 1 {
+			mm.Segment[segno].MissionItems[no-2].Flag = 0xa5;
+		}
 	}
+	return mm
 }
 
-func read_simple(dat []byte) *Mission {
+func read_kml(dat []byte) *MultiMission {
+	mis := []MissionItem{}
+	pm := find_kml_coords(dat)
+	if pm != nil {
+		p3 := int16(0)
+		if pm.LineString.AltitudeMode == "absolute" {
+			p3 = 1
+		}
+		st := strings.Trim(pm.LineString.Coordinates, "\n\r\t ")
+		ss := strings.Split(st, " ")
+		n := 1
+		for _, val := range ss {
+			coords := strings.Split(val, ",")
+			if len(coords) > 1 {
+				for i, c := range coords {
+					coords[i] = strings.Trim(c, "\n\r\t ")
+				}
+				lon, _ := strconv.ParseFloat(coords[0], 64)
+				lat, _ := strconv.ParseFloat(coords[1], 64)
+				alt := 0.0
+				if len(coords) > 2 {
+					alt, _ = strconv.ParseFloat(coords[2], 64)
+				}
+				item := MissionItem{No: n, Lat: lat, Lon: lon, Alt: int32(alt), P3: p3,
+					Action: "WAYPOINT"}
+				n++
+				mis = append(mis, item)
+			}
+		}
+	}
+	return NewMultiMission(mis)
+}
+
+
+func read_gpx(dat []byte) *MultiMission {
+	mis := []MissionItem{}
+	var pts []Pts
+	var g Gpx
+	err := xml.Unmarshal(dat, &g)
+	if err == nil {
+		if len(g.Wpts) > 0 {
+			pts = g.Wpts
+		} else if len(g.Rpts) > 0 {
+			pts = g.Rpts
+		} else if len(g.Tpts) > 0 {
+			pts = g.Tpts
+		}
+		if pts != nil {
+			for k, p := range pts {
+				item := MissionItem{No: k + 1, Lat: p.Lat, Lon: p.Lon,
+					Alt: int32(p.Elev), P3: 1, Action: "WAYPOINT"}
+				mis = append(mis, item)
+			}
+		}
+	} else {
+		fmt.Fprintf(os.Stderr, "GPX error: %v", err)
+	}
+	return NewMultiMission(mis)
+}
+
+func (mi *MissionItem) is_GeoPoint() bool {
+	a := mi.Action
+	return !(a == "RTH" || a == "SET_HEAD" || a == "JUMP")
+}
+
+func (mm *MultiMission) is_valid() bool {
+	force := os.Getenv("IMPLOAD_NO_VERIFY")
+	if len(force) > 0 {
+		return true
+	}
+	// Urg, Urg array index v. WP Nos ......
+	xmlen := int16(0)
+	for _, m := range mm.Segment {
+		mlen := int16(len(m.MissionItems))
+		xmlen += mlen
+		for i := int16(0); i < mlen; i++ {
+			var target = m.MissionItems[i].P1 - 1
+			if m.MissionItems[i].Action == "JUMP" {
+				if (i == 0) || ((target > (i - 2)) && (target < (i + 2))) || (target >= mlen) || (m.MissionItems[i].P2 < -1) {
+					return false
+				}
+				if !(m.MissionItems[target].Action == "WAYPOINT" || m.MissionItems[target].Action == "POSHOLD_TIME" || m.MissionItems[target].Action == "LAND") {
+					return false
+				}
+			}
+		}
+	}
+	if xmlen > int16(MaxWP) {
+		return false
+	}
+	return true
+}
+
+/**
+func (m *MissionSegment) Add_rtl(land bool) {
+	k := len(m.MissionItems)
+	p1 := int16(0)
+	if land {
+		p1 = 1
+	}
+	if k > 0 {
+		if m.MissionItems[k-1].Flag == 0xa5 {
+			m.MissionItems[k-1].Flag = 0
+		}
+	}
+	item := MissionItem{No: k + 1, Lat: 0.0, Lon: 0.0, Alt: 0, Action: "RTH", P1: p1}
+	m.MissionItems = append(m.MissionItems, item)
+}
+func (m *MultiMission) Dump(outfmt string, params ...string) {
+	switch outfmt {
+	case "cli":
+		m.To_cli(params[0])
+	case "json":
+		m.To_json(params[0])
+	default:
+		m.To_xml(params...)
+	}
+}
+**/
+func read_simple(dat []byte) *MultiMission {
+	var mis = []MissionItem{}
 	r := csv.NewReader(strings.NewReader(string(dat)))
-
-	mission := &Mission{}
-
 	n := 1
 	has_no := false
 
@@ -515,9 +449,7 @@ func read_simple(dat []byte) *Mission {
 		var lat, lon float64
 
 		j := 0
-		no := n
 		if has_no {
-			no, _ = strconv.Atoi(record[0])
 			j = 1
 		}
 
@@ -544,7 +476,7 @@ func read_simple(dat []byte) *Mission {
 
 		iaction, err := strconv.Atoi(record[j])
 		if err == nil {
-			action = mission.Decode_action(byte(iaction))
+			action = decode_action(byte(iaction))
 		} else {
 			action = record[j]
 		}
@@ -581,16 +513,16 @@ func read_simple(dat []byte) *Mission {
 		default:
 			continue
 		}
-		item := MissionItem{No: no, Lat: lat, Lon: lon, Alt: int32(alt), Action: action, P1: p1, P2: p2, P3: int16(p3), Flag: uint8(flag)}
-		mission.MissionItems = append(mission.MissionItems, item)
+		item := MissionItem{No: n, Lat: lat, Lon: lon, Alt: int32(alt), Action: action, P1: p1, P2: p2, P3: int16(p3), Flag: uint8(flag)}
+		mis = append(mis, item)
 		n++
 	}
-	return mission
+	return NewMultiMission(mis)
 }
 
 func read_qgc_json(dat []byte) []QGCrec {
 	qgcs := []QGCrec{}
-  var qm qgc_plan
+	var qm qgc_plan
 	json.Unmarshal(dat, &qm)
 	if qm.Filetype == "Plan" {
 		for _, qmi := range qm.Mission.Items {
@@ -627,7 +559,7 @@ func read_qgc_json(dat []byte) []QGCrec {
 			}
 		}
 	} else {
-		fmt.Fprintln(os.Stderr, "Skipping non-Plan file");
+		fmt.Fprintln(os.Stderr, "Skipping non-Plan file")
 	}
 	return qgcs
 }
@@ -663,15 +595,15 @@ func read_qgc_text(dat []byte) []QGCrec {
 	return qgcs
 }
 
-func fixup_qgc_mission(mission *Mission, have_jump bool) (*Mission, bool) {
+func fixup_qgc_mission(mis []MissionItem, have_jump bool) ([]MissionItem, bool) {
 	ok := true
 	if have_jump {
-		for i := 0; i < len(mission.MissionItems); i++ {
-			if mission.MissionItems[i].Action == "JUMP" {
-				jumptgt := mission.MissionItems[i].P1
+		for i := range(mis) {
+			if mis[i].Action == "JUMP" {
+				jumptgt := mis[i].P1
 				ajump := int16(0)
-				for j := 0; j < len(mission.MissionItems); j++ {
-					p3abs := mission.MissionItems[j].P3; // -ve indicate amsl
+				for j := range(mis) {
+					p3abs := mis[j].P3 // -ve indicate amsl
 					if p3abs < 0 {
 						p3abs *= -1
 					}
@@ -683,34 +615,33 @@ func fixup_qgc_mission(mission *Mission, have_jump bool) (*Mission, bool) {
 				if ajump == 0 {
 					ok = false
 				} else {
-					mission.MissionItems[i].P1 = ajump
+					mis[i].P1 = ajump
 				}
 				no := int16(i + 1) // item index
-				if mission.MissionItems[i].P1 < 1 || ((mission.MissionItems[i].P1 > no-2) &&
-					(mission.MissionItems[i].P1 < no+2)) {
+				if mis[i].P1 < 1 || ((mis[i].P1 > no-2) &&
+					(mis[i].P1 < no+2)) {
 					ok = false
 				}
 			}
 		}
 	}
 	if ok {
-		for i := 0; i < len(mission.MissionItems); i++ {
-			if mission.MissionItems[i].P3 < 0 {
-				mission.MissionItems[i].P3 = 1
+		for i := range(mis) {
+			if mis[i].P3 < 0 {
+				mis[i].P3 = 1
 			} else {
-				mission.MissionItems[i].P3 = 0
+				mis[i].P3 = 0
 			}
 		}
-		return mission, ok
+		return mis, ok
 	} else {
 		return nil, false
 	}
 }
 
-func process_qgc(dat []byte, mtype string) *Mission {
+func process_qgc(dat []byte, mtype string) *MultiMission {
 	var qs []QGCrec
-	mission := &Mission{}
-
+	var mis = []MissionItem{}
 	if mtype == "qgc-text" {
 		qs = read_qgc_text(dat)
 	} else {
@@ -822,27 +753,29 @@ func process_qgc(dat []byte, mtype string) *Mission {
 			last_lon = q.lon
 			// P3 stores the original ID, which may not match No
 			p3 := int16(q.jindex)
-			no += 1
+			no++
 			item := MissionItem{No: no, Lat: q.lat, Lon: q.lon, Alt: int32(q.alt), Action: action, P1: p1, P2: p2, P3: p3}
-			if item.Is_GeoPoint() && q.altmode == 2 { // AMSL
-				item.P3 *= -1; // -ve P3 indicates amsl
+			if item.is_GeoPoint() && q.altmode == 2 { // AMSL
+				item.P3 *= -1 // -ve P3 indicates amsl
 			}
-			mission.MissionItems = append(mission.MissionItems, item)
+			mis = append(mis, item)
 			if last {
 				break
 			}
 		}
 	}
 
-	mission, ok := fixup_qgc_mission(mission, have_jump)
+	mis, ok := fixup_qgc_mission(mis, have_jump)
 	if !ok {
 		log.Fatalf("Unsupported QGC file\n")
 	}
-	return mission
+	return NewMultiMission(mis)
 }
 
-func read_xml_mission(dat []byte) *Mission {
-	m := &Mission{}
+func read_xml_mission(dat []byte) *MultiMission {
+	v := Version{}
+	mwps := []MissionMWP{}
+	mis := []MissionItem{}
 	buf := bytes.NewBuffer(dat)
 	dec := xml.NewDecoder(buf)
 	for {
@@ -855,46 +788,101 @@ func read_xml_mission(dat []byte) *Mission {
 			switch strings.ToLower(se.Name.Local) {
 			case "mission":
 			case "version":
-				dec.DecodeElement(&m.Version, &se)
-			case "mwp":
-				dec.DecodeElement(&m.Metadata, &se)
+				dec.DecodeElement(&v, &se)
+			case "mwp", "meta":
+				var mwp MissionMWP
+				dec.DecodeElement(&mwp, &se)
+				mwps = append(mwps, mwp)
 			case "missionitem":
 				var mi MissionItem
 				dec.DecodeElement(&mi, &se)
-				m.MissionItems = append(m.MissionItems, mi)
+				mis = append(mis, mi)
 			default:
 				fmt.Printf("Unknown MWXML tag %s\n", se.Name.Local)
 			}
 		}
 	}
-	return m
-}
-
-func read_json(dat []byte) *Mission {
-	m := &Mission{}
-	json.Unmarshal(dat, m)
-	return m
-}
-
-func Read_Mission_File(path string) (string, *Mission, error) {
-	var dat []byte
-	r, err := os.Open(path)
-	if err == nil {
-		defer r.Close()
-		dat, err = ioutil.ReadAll(r)
+	mm := NewMultiMission(mis)
+	mm.Version = v
+	for j := range mm.Segment {
+		if j < len(mwps) {
+			mm.Segment[j].Metadata = mwps[j]
+		}
 	}
+	return mm
+}
+
+func read_kmz(path string) (string, *MultiMission) {
+	r, err := zip.OpenReader(path)
 	if err != nil {
-		return "?", nil, err
-	} else {
-		mtype, m := handle_mission_data(dat, path)
-		m.mission_file = 	filepath.Base(path)
-		return mtype, m, nil
+		log.Fatal(err)
+	}
+	defer r.Close()
+	for _, f := range r.File {
+		rc, err := f.Open()
+		defer rc.Close()
+		if err == nil {
+			dat, err := ioutil.ReadAll(rc)
+			if err == nil {
+				mtype, m := handle_mission_data(dat, path)
+				if m != nil {
+					return mtype, m
+				}
+			}
+		}
+	}
+	return "", nil
+}
+
+func read_json(dat []byte, flg int) *MultiMission {
+	switch flg {
+	case 0:
+		m := &Mission{}
+		json.Unmarshal(dat, m)
+		mm := NewMultiMission(m.MissionItems)
+		return mm
+	case 1:
+		mm := &MultiMission{}
+		json.Unmarshal(dat, mm)
+		return mm
+	default:
+		return nil
 	}
 }
 
-func handle_mission_data(dat []byte, path string) (string, *Mission) {
-	var m *Mission
-	mtype := ""
+func read_inav_cli(dat []byte) *MultiMission {
+	mis := []MissionItem{}
+	for _, ln := range strings.Split(string(dat), "\n") {
+		if strings.HasPrefix(ln, "wp ") {
+			parts := strings.Split(ln, " ")
+			if len(parts) == 10 {
+				no, _ := strconv.Atoi(parts[1])
+				iact, _ := strconv.Atoi(parts[2])
+				ilat, _ := strconv.Atoi(parts[3])
+				ilon, _ := strconv.Atoi(parts[4])
+				alt, _ := strconv.Atoi(parts[5])
+				p1, _ := strconv.Atoi(parts[6])
+				p2, _ := strconv.Atoi(parts[7])
+				p3, _ := strconv.Atoi(parts[8])
+				flg, _ := strconv.Atoi(parts[9])
+				lat := float64(ilat) / 1.0e7
+				lon := float64(ilon) / 1.0e7
+				action := decode_action(byte(iact))
+				if iact == 6 {
+					p1++
+				}
+				alt /= 100
+				item := MissionItem{no, action, lat, lon, int32(alt), int16(p1), int16(p2), int16(p3), uint8(flg)}
+				mis = append(mis, item)
+			}
+		}
+	}
+	return NewMultiMission(mis)
+}
+
+func handle_mission_data(dat []byte, path string) (string, *MultiMission) {
+	var m *MultiMission
+	mtype := "unknown"
 	switch {
 	case bytes.HasPrefix(dat, []byte("<?xml")):
 		switch {
@@ -905,6 +893,9 @@ func handle_mission_data(dat []byte, path string) (string, *Mission) {
 		case bytes.Contains(dat, []byte("<gpx ")):
 			m = read_gpx(dat)
 			mtype = "gpx"
+		case bytes.Contains(dat, []byte("<kml ")):
+			m = read_kml(dat)
+			mtype = "kml"
 		default:
 			m = nil
 		}
@@ -915,12 +906,20 @@ func handle_mission_data(dat []byte, path string) (string, *Mission) {
 		bytes.HasPrefix(dat, []byte("wp,lat,lon,alt,p1")):
 		m = read_simple(dat)
 		mtype = "csv"
-	case bytes.HasPrefix(dat, []byte("{\"meta\":{")):
-		mtype = "mwp-json"
-		m = read_json(dat)
-	case bytes.Contains(dat[0:100], []byte("\"fileType\": \"Plan\"")):
+	case bytes.HasPrefix(dat, []byte("PK\003\004")):
+		mtype, m = read_kmz(path)
+	case bytes.HasPrefix(dat, []byte(`{"meta":{`)):
+		mtype = "mwp-json-s"
+		m = read_json(dat, 0)
+	case bytes.HasPrefix(dat, []byte(`{"missions":[`)):
+		mtype = "mwp-json-m"
+		m = read_json(dat, 1)
+	case bytes.Contains(dat[0:100], []byte(`"fileType": "Plan"`)):
 		mtype = "qgc-json"
 		m = process_qgc(dat, mtype)
+	case bytes.HasPrefix(dat, []byte("# wp")), bytes.HasPrefix(dat, []byte("#wp")), bytes.HasPrefix(dat, []byte("wp 0")):
+		mtype = "inav cli"
+		m = read_inav_cli(dat)
 	default:
 		m = nil
 	}

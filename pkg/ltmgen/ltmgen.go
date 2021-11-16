@@ -198,7 +198,7 @@ func read_mission() *mission.Mission {
 	ms = nil
 	if len(options.Config.Mission) > 0 {
 		var err error
-		_, ms, err = mission.Read_Mission_File(options.Config.Mission)
+		_, ms, err = mission.Read_Mission_File_Index(options.Config.Mission, options.Config.MissionIndex)
 		if err == nil {
 			for k, mi := range ms.MissionItems {
 				if mi.Is_GeoPoint() && geo.Getfrobnication() {
