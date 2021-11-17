@@ -649,12 +649,13 @@ func (lg *BBLOG) Reader(meta types.FlightMeta, ch chan interface{}) (types.LogSe
 				homes.HomeAlt = b.GAlt
 				homes.Flags = types.HOME_ARM | types.HOME_ALT
 				if b.Bearing == -2 {
-					_, dh := geo.Csedist(b.Hlat, b.Hlon, b.Lat, b.Lon)
-
-					if dh > 2.0/1852.0 {
-						homes.SafeLat = b.Hlat
-						homes.SafeLon = b.Hlon
-						homes.Flags |= types.HOME_SAFE
+					if b.Hlat != 0.0 && b.Hlon != 0.0 {
+						_, dh := geo.Csedist(b.Hlat, b.Hlon, b.Lat, b.Lon)
+						if dh > 2.0/1852.0 {
+							homes.SafeLat = b.Hlat
+							homes.SafeLon = b.Hlon
+							homes.Flags |= types.HOME_SAFE
+						}
 					}
 				} else if b.Bearing > -1 {
 					hlat, hlon := geo.Posit(b.Lat, b.Lon, float64(b.Bearing), b.Vrange/1852.0, true)
