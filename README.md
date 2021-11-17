@@ -37,6 +37,8 @@ Usage of flightlog2kml [options] file...
     	Generate KML (vice default KMZ)
   -mission string
     	Optional mission file name
+  -mission-index int
+    	Optional mission file index (default 1)
   -outdir string
     	Output directory for generated KML
   -rebase string
@@ -49,11 +51,9 @@ Usage of flightlog2kml [options] file...
     	Just show summary
   -visibility int
     	0=folder value,-1=don't set,1=all on
-
-flightlog2kml 0.9.11, commit: 5a3e331/2021-05-25
 ```
 
-Multiple logs (with multiple indices) may be given. A KML/Z will be generated for each file / index.
+Multiple logs (with multiple log indices) may be given. A KML/Z will be generated for each file / index.
 
 The output file is named from the base name of the source log file, appended with the index number and `.kml` or `.kmz` as appropriate. For example:
 
@@ -83,6 +83,8 @@ Where `-mission <file>` is given, the given waypoint `<mission file>` will be in
 * GPX and CSV (as described in the [impload user guide](https://github.com/stronnag/impload/wiki/impload-User-Guide))
 
 If you use a format other than MW-XML or mwp JSON, it is recommended that you review any relevant format constraints as described in the [impload user guide](https://github.com/stronnag/impload/wiki/impload-User-Guide).
+
+For inav 4.0 multi-mission files, `-mission-index` may be used to define which segment of a multi-mission file to use (1 based).
 
 ### Output
 
