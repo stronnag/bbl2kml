@@ -400,7 +400,7 @@ func MQTTGen(s types.LogSegment, meta types.FlightMeta) {
 	wps := ""
 	if len(options.Config.Mission) > 0 {
 		var err error
-		_, ms, err = mission.Read_Mission_File(options.Config.Mission)
+		_, ms, err = mission.Read_Mission_File_Index(options.Config.Mission, options.Config.MissionIndex)
 		if err == nil {
 			var sb strings.Builder
 			for k, mi := range ms.MissionItems {

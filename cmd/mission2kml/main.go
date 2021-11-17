@@ -17,6 +17,7 @@ var GitTag = "0.0.0"
 var (
 	dms     bool
 	homepos string
+	idx int
 )
 
 func getVersion() string {
@@ -67,6 +68,7 @@ Examples:
 
 	flag.BoolVar(&dms, "dms", dms, "Show positions as DMS (vice decimal degrees)")
 	flag.StringVar(&homepos, "home", homepos, "Use home location")
+	flag.IntVar(&idx, "mission-index", 1, "Mission Index")
 	flag.Parse()
 	files := flag.Args()
 	if len(files) == 0 {
@@ -97,8 +99,15 @@ Examples:
 			}
 		}
 	}
-	_, m, err := mission.Read_Mission_File(files[0])
+
+	_, m, err := mission.Read_Mission_File_Index(files[0], idx)
 	if m != nil && err == nil {
+		if len(home) == 0 {
+			if m.Metadata.Homey != 0 && m.Metadata.Homex != 0 {
+				home = append(home, m.Metadata.Homey, m.Metadata.Homex)
+			}
+		}
+
 		m.Dump(dms, home...)
 	}
 	if err != nil {

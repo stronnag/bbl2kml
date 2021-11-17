@@ -214,9 +214,11 @@ func (mi *MissionItem) Is_GeoPoint() bool {
 
 func (m *Mission) Dump(dms bool, homep ...float64) {
 	var hpos types.HomeRec
-	hpos.HomeLat = homep[0]
-	hpos.HomeLon = homep[1]
-	hpos.Flags = types.HOME_ARM
+	if len(homep) == 2 {
+		hpos.HomeLat = homep[0]
+		hpos.HomeLon = homep[1]
+		hpos.Flags = types.HOME_ARM
+	}
 	if len(homep) > 2 {
 		hpos.HomeAlt = homep[2]
 		hpos.Flags |= types.HOME_ALT

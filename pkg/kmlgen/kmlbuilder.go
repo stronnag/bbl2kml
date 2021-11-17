@@ -431,7 +431,7 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 	d.Add(add_ground_track(rec))
 
 	if len(options.Config.Mission) > 0 {
-		 _, ms, err := mission.Read_Mission_File(options.Config.Mission)
+		 _, ms, err := mission.Read_Mission_File_Index(options.Config.Mission, options.Config.MissionIndex)
 		if err == nil {
 			if geo.Getfrobnication() {
 				for k,mi := range ms.MissionItems {
