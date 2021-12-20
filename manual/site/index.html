@@ -191,12 +191,12 @@
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          Home
+          flightlog2X
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <a href="." class="md-nav__link md-nav__link--active">
-        Home
+        flightlog2X
       </a>
       
         
@@ -364,9 +364,29 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#building" class="md-nav__link">
-    Building
+  <a href="#build-and-install" class="md-nav__link">
+    Build and Install
   </a>
+  
+    <nav class="md-nav" aria-label="Build and Install">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#release-media" class="md-nav__link">
+    Release media
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#building-from-source" class="md-nav__link">
+    Building from source
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -554,9 +574,29 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#building" class="md-nav__link">
-    Building
+  <a href="#build-and-install" class="md-nav__link">
+    Build and Install
   </a>
+  
+    <nav class="md-nav" aria-label="Build and Install">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#release-media" class="md-nav__link">
+    Release media
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#building-from-source" class="md-nav__link">
+    Building from source
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -575,11 +615,11 @@
 
 <h1 id="flightlog2x">flightlog2x<a class="headerlink" href="#flightlog2x" title="Permanent link">#</a></h1>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">#</a></h2>
-<p>A suite of tools to generate annotated KML/KMZ files (and other data) from <strong>inav</strong> blackbox logs, OpenTX log files (inav S.Port telemetry, some support for OpenTX logs from Ardupilot), BulletGCSS and Aurduplot <code>.bin</code> logs.</p>
+<p>A suite of tools to generate beautifully annotated KML/KMZ files (and other data) from <strong><a href="https://github.com/iNavFlight/inav">inav</a></strong> blackbox logs, OpenTX log files (inav S.Port telemetry, some support for OpenTX logs from Ardupilot), BulletGCSS and Aurduplot <code>.bin</code> logs.</p>
 <ul>
 <li><a href="#flightlog2kml">flightlog2kml</a> - Generates KML/Z file(s) from Blackbox log(s), OpenTX (OTX) and Bullet GCSS logs</li>
 <li><a href="#fl2mqtt">fl2mqtt</a> - Generates MQTT data to stimulate the on-line Ground Control Station <a href="https://bulletgcss.fpvsampa.com/">BulletGCSS</a></li>
-<li>fl2ltm - If <code>fl2mqtt</code> is installed (typically by hard or soft link) as <code>fl2ltm</code> it generates LTM  (inav's Lightweight Telemetry). This is primarily for use by <a href="https://github.com/stronnag/mwptools/">mwp</a> as a unified replay tool for Blackbox, OpenTx, BulletGCSS and Aurduplot <code>.bin</code> logs.</li>
+<li>fl2ltm - If <code>fl2mqtt</code> is installed (typically by hard or soft link) as <code>fl2ltm</code> it generates LTM  (inav's Lightweight Telemetry). This is primarily for use by <a href="https://github.com/stronnag/mwptools">mwp</a> as a unified replay tool for Blackbox, OpenTx, BulletGCSS and Aurduplot <code>.bin</code> logs.</li>
 <li><a href="#log2mission">log2mission</a> - Converts a flight log (Blackbox, OpenTx, BulletGCSS, AP) into a valid inav mission. A number of filters may be applied (time, flight mode).</li>
 <li><a href="#mission2kml">mission2kml</a> - Generate KML file from inav mission files (and other formats)</li>
 </ul>
@@ -641,13 +681,13 @@ Disarm   : Switch
 results in the KMZ file "LOG00044.1.kmz"</p>
 <p>Where <code>-mission &lt;file&gt;</code> is given, the given waypoint <code>&lt;mission file&gt;</code> will be included in the generated KML/Z; mission files may be one of the following formats as supported by <a href="https://github.com/stronnag/impload">impload</a>:</p>
 <ul>
-<li>MultiWii / XML mission files (MW-XML) (<a href="https://github.com/stronnag/mwptools/">mwp</a>, <a href="https://github.com/iNavFlight/inav-configurator">inav-configurator</a>, <a href="https://play.google.com/store/apps/details?id=com.ezio.multiwii&amp;hl=en_GB">ezgui</a>, <a href="https://play.google.com/store/apps/details?id=com.eziosoft.ezgui.inav&amp;hl=en">mission planner for inav</a>, drone-helper).</li>
+<li>MultiWii / XML mission files (MW-XML) <a href="https://github.com/stronnag/mwptools">mwp</a>, <a href="https://github.com/iNavFlight/inav-configurator">inav-configurator</a>, <a href="https://play.google.com/store/apps/details?id=com.ezio.multiwii&amp;hl=en_GB">ezgui</a>, <a href="https://play.google.com/store/apps/details?id=com.eziosoft.ezgui.inav&amp;hl=en">mission planner for inav</a>, drone-helper).</li>
 <li><a href="https://github.com/stronnag/mwptools/">mwp JSON files</a></li>
 <li><a href="https://ardupilot.org/planner2/">apmplanner2</a> "QGC WPL 110" text files</li>
 <li><a href="http://qgroundcontrol.com/">qgroundcontrol</a> JSON plan files</li>
 <li>GPX and CSV (as described in the <a href="https://github.com/stronnag/impload/wiki/impload-User-Guide">impload user guide</a>)</li>
 </ul>
-<p>If you use a format other than MW-XML or mwp JSON, it is recommended that you review any relevant format constraints as described in the <a href="https://github.com/stronnag/impload/wiki/impload-User-Guide">impload user guide</a>.</p>
+<p>If you use a format other than MW-XML or <a href="https://github.com/stronnag/mwptools">mwp</a> JSON, it is recommended that you review any relevant format constraints as described in the <a href="https://github.com/stronnag/impload/wiki/impload-User-Guide">impload user guide</a>.</p>
 <p>For inav 4.0 multi-mission files, <code>-mission-index</code> may be used to define which segment of a multi-mission file to use (1 based).</p>
 <h3 id="output">Output<a class="headerlink" href="#output" title="Permanent link">#</a></h3>
 <p>KML/Z file defining tracks which may be displayed Google Earth. Tracks can be animated with the time slider.</p>
@@ -678,7 +718,7 @@ results in the KMZ file "LOG00044.1.kmz"</p>
 * <code>yor</code> : Yellow/Orange/Red, yellow representing the best (100%), red the worst (0%)</p>
 <p>If no option is given, <code>red</code> is assumed. Values are set by the <code>--gradient</code> command line option or  in the <a href="#setting-default-options">configuration file</a>.</p>
 <h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">#</a></h3>
-<p>Note: These images are rather old, it looks much better now.</p>
+<p>Note: These images are rather old, it looks rather better now.</p>
 <h4 id="flight-modes">Flight Modes<a class="headerlink" href="#flight-modes" title="Permanent link">#</a></h4>
 <p><img alt="Example 1" src="https://github.com/stronnag/mwptools/wiki/images/bbl2kml-1.png" /></p>
 <p><img alt="Example 2" src="https://github.com/stronnag/mwptools/wiki/images/bbl2kml-2.png" /></p>
@@ -686,10 +726,12 @@ results in the KMZ file "LOG00044.1.kmz"</p>
 <h4 id="rssi">RSSI<a class="headerlink" href="#rssi" title="Permanent link">#</a></h4>
 <p><img alt="Example 4" src="https://github.com/stronnag/mwptools/wiki/images/inav-tracer-rssi.jpg" /></p>
 <h3 id="using-opentx-logs">Using OpenTX logs<a class="headerlink" href="#using-opentx-logs" title="Permanent link">#</a></h3>
-<p>There are a few issues with OpenTX logs, the first of which needs OpenTX 2.3.11 (released 2021-01-08) to be resolved:
-* CRSF logs in OpenTX 2.3.10 do not record the FM (Flight Mode) field. This makes it impossible to determine flight mode, or even if the craft is armed. Currently <code>flightlog2kml</code> tries to evince the armed state from other data.
-* GPS Elevation. Unless you have a GPS attached to the TX, you don't get GPS altitude. This can be set by the <code>-home-alt H</code> value (in metres). Otherwise <code>flightlog2kml</code> will use an online elevation service.
-* OpenTX creates a log per calendar day (IIRC), this means there may be multiple logs in the same file. Delimiting these individual logs is less than trivial, to some degree due to the prior CRSF issue which means arm / disarm is not reliably available. Currently, <code>flightlog2kml</code> assumes that a gap of more than 120 seconds indicates a new flight. The <code>-split-time</code> value allows a user-defined split time (seconds). Setting this to zero disables the log splitting function.</p>
+<p>There are a few issues with OpenTX logs, the first of which needs OpenTX 2.3.11 (released 2021-01-08) to be resolved:</p>
+<ul>
+<li>CRSF logs in OpenTX 2.3.10 do not record the FM (Flight Mode) field. This makes it impossible to determine flight mode, or even if the craft is armed. Currently <code>flightlog2kml</code> tries to evince the armed state from other data.</li>
+<li>GPS Elevation. Unless you have a GPS attached to the TX, you don't get GPS altitude. This can be set by the <code>-home-alt H</code> value (in metres). Otherwise <code>flightlog2kml</code> will use an online elevation service.</li>
+<li>OpenTX creates a log per calendar day (IIRC), this means there may be multiple logs in the same file. Delimiting these individual logs is less than trivial, to some degree due to the prior CRSF issue which means arm / disarm is not reliably available. Currently, <code>flightlog2kml</code> assumes that a gap of more than 120 seconds indicates a new flight. The <code>-split-time</code> value allows a user-defined split time (seconds). Setting this to zero disables the log splitting function.</li>
+</ul>
 <h2 id="fl2mqtt">fl2mqtt<a class="headerlink" href="#fl2mqtt" title="Permanent link">#</a></h2>
 <p>The MQTT option (for BulletGCSS) uses a MQTT broker URI, which may include a username/password and cafile if required for authentication and/or encryption. It can also generate compatible log files that may be replayed by BulletGCSS' internal log player (without requiring a MQTT broker).</p>
 <div class="highlight"><pre><span></span><code>$ fl2mqtt --help
@@ -829,7 +871,7 @@ Examples:
 <p>A KML file is generated to stdout, which may be redirected to a file, e.g:</p>
 <div class="highlight"><pre><span></span><code>$ mission2kml -home 54.125229,-4.730443 barrule-h.mission &gt; mtest.kml
 </code></pre></div>
-<p>Note that for recent MW-XML mission files generated by mwp or the inav-configurator, the planned home located may be saved in the mission files; in which csae it will be used.</p>
+<p>Note that for recent MW-XML mission files generated by <a href="https://github.com/stronnag/mwptools">mwp</a> or the inav-configurator, the planned home located may be saved in the mission files; in which csae it will be used.</p>
 <h2 id="setting-default-options">Setting default options<a class="headerlink" href="#setting-default-options" title="Permanent link">#</a></h2>
 <p>Default settings may be set in a JSON formatted configuration file.</p>
 <ul>
@@ -872,7 +914,10 @@ Examples:
 <li>Provide the blackbox log that illustrates the problem. If you don't want to post the log into an essentially public forum (the Github issue), then please propose a private delivery channel.</li>
 </ul>
 <p>Replaying Ardupilot logs requires <a href="https://github.com/ArduPilot/pymavlink">mavlogdump.py</a>.</p>
-<h2 id="building">Building<a class="headerlink" href="#building" title="Permanent link">#</a></h2>
+<h2 id="build-and-install">Build and Install<a class="headerlink" href="#build-and-install" title="Permanent link">#</a></h2>
+<h3 id="release-media">Release media<a class="headerlink" href="#release-media" title="Permanent link">#</a></h3>
+<p>Binaries are provided for common operating systems in the <a href="https://github.com/stronnag/bbl2kml/releases">Release folder</a>.</p>
+<h3 id="building-from-source">Building from source<a class="headerlink" href="#building-from-source" title="Permanent link">#</a></h3>
 <p>Requires Go v1.13 or later.
 Compiled with:</p>
 <div class="highlight"><pre><span></span><code>$ go build cmd/flightlog2kml/main.go
@@ -889,9 +934,15 @@ cd build
 ninja install
 </code></pre></div>
 <p><strong>flightlog2kml</strong> depends on <a href="https://github.com/twpayne/go-kml">twpayne/go-kml</a>, an outstanding open source Golang KML library.</p>
-<p><code>flightlog2kml</code> may be build for all OS for which a suitable Golang is available. It also requires inav's <a href="https://github.com/iNavFlight/blackbox-tools">blackbox_decode</a>; 0.4.5 (or future) is recommended; the minimum <code>blackbox_decode</code> version is 0.4.4. For Windows' users it is probably easiest to copy inav's <code>blackbox_decode.exe</code> into the same directory as <code>flightlog2kml.exe</code>.</p>
-<p>Binaries are provided for common operating systems in the <a href="https://github.com/stronnag/bbl2kml/releases">Release folder</a>. <code>fl2ltm</code> is a link to <code>fl2mqtt</code>; <code>bbsummary</code> is a link to <code>flightlog2kml</code> and will behave as <code>flightlog2kml -summary</code>.</p>
-<p><code>fl2ltm</code> will be automatically detected by <a href="https://github.com/stronnag/mwptools/">mwp</a> and used in preference to its older <code>replay_bbox_ltm.rb</code> and <code>otxlog</code> helpers.</p>
+<p><code>flightlog2kml</code> may be built for all OS for which a suitable Golang is available. It also requires inav's <a href="https://github.com/iNavFlight/blackbox-tools">blackbox_decode</a>; the latest version is recommended; the minimum <code>blackbox_decode</code> version is 0.4.4. For Windows' users it is probably easiest to copy inav's <code>blackbox_decode.exe</code> into the same directory as <code>flightlog2kml.exe</code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Notes</p>
+</div>
+<ul>
+<li><code>fl2ltm</code> is a link to <code>fl2mqtt</code></li>
+<li><code>bbsummary</code> is a link to <code>flightlog2kml</code> and will behave as <code>flightlog2kml -summary</code>.</li>
+<li><code>fl2ltm</code> will be automatically detected by <a href="https://github.com/stronnag/mwptools">mwp</a> and used in preference to its older <code>replay_bbox_ltm.rb</code> and <code>otxlog</code> helpers.</li>
+</ul>
 
               
             </article>

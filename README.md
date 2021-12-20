@@ -20,3 +20,7 @@ A suite of tools to generate beautiful annotated, animated KML/KMZ files (and ot
   <img src="manual/docs/images/v4.png" alt="Efficiency" style="width:100%">
   <figcaption>Point Annotation</figcaption>
 </figure>
+
+## Documentation
+
+[User Guide & Installation Instructions](https://stronnag.github.io/bbl2kml/)
