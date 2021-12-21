@@ -5,7 +5,11 @@ theme:
   name: material
   palette:
     scheme: slate
-    primary: blue
+    primary: grey
+    accent: dark orange
+  font:
+    text: Roboto
+    code: Roboto Mono
 
 markdown_extensions:
   - admonition
@@ -20,6 +24,16 @@ markdown_extensions:
 plugins:
   - search
   - macros
+  - with-pdf:
+      cover_subtitle: inav Mission Plan tool
+      toc_level: 3
+      output_path: ../bbl2kml.pdf
+      enabled_if_env: ENABLE_PDF_EXPORT
+      copyright: (c) Jonathan Hudson 2021
+
+extra_css:
+  - assets/extra.css
+  - assets/pdf.css
 
 nav:
   - index.md
