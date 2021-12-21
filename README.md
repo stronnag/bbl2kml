@@ -21,6 +21,23 @@ A suite of tools to generate beautiful annotated, animated KML/KMZ files (and ot
   <figcaption>Point Annotation</figcaption>
 </figure>
 
+### Statistics
+
+```
+$ bbsummary /t/inav-contrib/LOG00031.TXT
+Log      : LOG00031.TXT / 1
+Flight   :  on 2021-05-24 14:07:28
+Firmware : INAV 2.6.1 (5510259e) OMNIBUSF4PRO of May  7 2021 14:19:33
+Size     : 29.48 MB
+Altitude : 113.0 m at 10:34
+Speed    : 20.8 m/s at 07:24
+Range    : 4461 m at 08:08
+Current  : 7.4 A at 00:05
+Distance : 12170 m
+Duration : 14:05
+Disarm   : Switch
+```
+
 ## Documentation
 
 [User Guide & Installation Instructions](https://stronnag.github.io/bbl2kml/)
