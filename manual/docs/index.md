@@ -120,9 +120,10 @@ Both Flight Mode and RSSI tracks are generated; the default for display is Fligh
 ### Colour Gradients
 
 The RSSI and Efficiency modes are displayed using a colour gradient. Three gradients are available:
-* `red` : The default, white representing the best (100%), red the worst (0%)
-* `rdgn` : Red to green, green representing the best (100%), red the worst (0%)
-* `yor` : Yellow/Orange/Red, yellow representing the best (100%), red the worst (0%)
+
+* **red** : The default, white representing the best (100%), red the worst (0%)
+* **rdgn** : Red to green, green representing the best (100%), red the worst (0%)
+* **yor** : Yellow/Orange/Red, yellow representing the best (100%), red the worst (0%)
 
 If no option is given, `red` is assumed. Values are set by the `--gradient` command line option or  in the [configuration file](#setting-default-options).
 
