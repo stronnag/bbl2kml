@@ -193,7 +193,7 @@ Note that the scheme (**mqtt**:// in the `--help` text) is interpreted as:
 * mqtts,ssl - Secure (TLS) TCP connection. Ensure the TLS port is specified. TLS validation is performed using the operating system, unless `?cafile=file` is specified.
 * mqtt (or any-other scheme) - TCP connection. If `?cafile=file` is specified, then that is used for TLS validation (and the TLS port should be specified).
 
-There is a [bb2kml wiki article](https://github.com/stronnag/bbl2kml/wiki/Self-Hosting-a-MQTT-server-(e.g.-for-fl2mqtt-&--BulletGCSS)) describing how to host your own MQTT broker, for reasons of convenience of better privacy.
+There is a [bb2kml wiki article](https://github.com/stronnag/bbl2kml/wiki/Self-Hosting-a-MQTT-server-(e.g.-for-fl2mqtt-&--BulletGCSS)) describing how to host your own MQTT broker, for reasons of convenience or better privacy.
 
 Example:
 ```
