@@ -384,6 +384,19 @@
     Release media
   </a>
   
+    <nav class="md-nav" aria-label="Release media">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-from-release-archive" class="md-nav__link">
+    Install from release archive
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -594,6 +607,19 @@
   <a href="#release-media" class="md-nav__link">
     Release media
   </a>
+  
+    <nav class="md-nav" aria-label="Release media">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-from-release-archive" class="md-nav__link">
+    Install from release archive
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -928,6 +954,25 @@ Examples:
 <h2 id="build-and-install">Build and Install<a class="headerlink" href="#build-and-install" title="Permanent link">#</a></h2>
 <h3 id="release-media">Release media<a class="headerlink" href="#release-media" title="Permanent link">#</a></h3>
 <p>Binaries are provided for common operating systems in the <a href="https://github.com/stronnag/bbl2kml/releases">Release folder</a>.</p>
+<h4 id="install-from-release-archive">Install from release archive<a class="headerlink" href="#install-from-release-archive" title="Permanent link">#</a></h4>
+<p>For example (adjust version number, OS, archiver as necessary).</p>
+<div class="highlight"><pre><span></span><code>$ wget https://github.com/stronnag/bbl2kml/releases/download/0.12.0/flightlog2kml-0.12.0-linux-x86_64.tar.gz
+$ tar -xf $ tar -xvf flightlog2kml-0.12.0-linux-x86_64.tar.gz
+fl2x/linux-x86_64/
+fl2x/linux-x86_64/bin/
+fl2x/linux-x86_64/bin/flightlog2kml
+fl2x/linux-x86_64/bin/fl2mqtt
+fl2x/linux-x86_64/bin/log2mission
+fl2x/linux-x86_64/bin/mission2kml
+fl2x/linux-x86_64/bin/fl2ltm
+fl2x/linux-x86_64/bin/bbsummary
+
+# install locally
+$ cp -a fl2x/linux-x86_64/bin/* ~/.local/bin/
+
+# Or system wide
+$ sudo cp -a fl2x/linux-x86_64/bin/* /usr/local/bin/
+</code></pre></div>
 <h3 id="building-from-source">Building from source<a class="headerlink" href="#building-from-source" title="Permanent link">#</a></h3>
 <p>Requires Go v1.13 or later.
 Compiled with:</p>
