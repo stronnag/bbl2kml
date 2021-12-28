@@ -807,7 +807,7 @@ Usage of fl2mqtt [options] file...
 <li>mqtts,ssl - Secure (TLS) TCP connection. Ensure the TLS port is specified. TLS validation is performed using the operating system, unless <code>?cafile=file</code> is specified.</li>
 <li>mqtt (or any-other scheme) - TCP connection. If <code>?cafile=file</code> is specified, then that is used for TLS validation (and the TLS port should be specified).</li>
 </ul>
-<p>There is a <a href="https://github.com/stronnag/bbl2kml/wiki/Self-Hosting-a-MQTT-server-(e.g.-for-fl2mqtt-&amp;--BulletGCSS)">bb2kml wiki article</a> describing how to host your own MQTT broker, for reasons of convenience of better privacy.</p>
+<p>There is a <a href="https://github.com/stronnag/bbl2kml/wiki/Self-Hosting-a-MQTT-server-(e.g.-for-fl2mqtt-&amp;--BulletGCSS)">bb2kml wiki article</a> describing how to host your own MQTT broker, for reasons of convenience or better privacy.</p>
 <p>Example:
 <div class="highlight"><pre><span></span><code>## the default broker is used ##
 $ fl2mqtt -broker mqtt://broker.emqx.io/org/mwptools/mqtt/playotx openTXlog.csv
