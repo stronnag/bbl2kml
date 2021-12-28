@@ -381,6 +381,29 @@ Replaying Ardupilot logs requires [mavlogdump.py](https://github.com/ArduPilot/p
 
 Binaries are provided for common operating systems in the [Release folder](https://github.com/stronnag/bbl2kml/releases).
 
+#### Install from release archive
+
+For example (adjust version number, OS, archiver as necessary).
+
+```
+$ wget https://github.com/stronnag/bbl2kml/releases/download/0.12.0/flightlog2kml-0.12.0-linux-x86_64.tar.gz
+$ tar -xf $ tar -xvf flightlog2kml-0.12.0-linux-x86_64.tar.gz
+fl2x/linux-x86_64/
+fl2x/linux-x86_64/bin/
+fl2x/linux-x86_64/bin/flightlog2kml
+fl2x/linux-x86_64/bin/fl2mqtt
+fl2x/linux-x86_64/bin/log2mission
+fl2x/linux-x86_64/bin/mission2kml
+fl2x/linux-x86_64/bin/fl2ltm
+fl2x/linux-x86_64/bin/bbsummary
+
+# install locally
+$ cp -a fl2x/linux-x86_64/bin/* ~/.local/bin/
+
+# Or system wide
+$ sudo cp -a fl2x/linux-x86_64/bin/* /usr/local/bin/
+```
+
 ### Building from source
 
 Requires Go v1.13 or later.
