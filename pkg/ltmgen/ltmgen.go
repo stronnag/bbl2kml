@@ -156,6 +156,8 @@ func ltm_flight_mode(fm uint8) uint8 {
 		fms = 9
 	case types.FM_AH:
 		fms = 8
+	case types.FM_EMERG:
+		fms = 19
 	default:
 		fms = 0
 	}

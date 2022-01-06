@@ -169,6 +169,8 @@ func NavMode(vers, val int) byte {
 		return 10
 	} else if is_hover(vers, val) {
 		return 13
+	} else if IsEmerg(vers, val) {
+		return 14
 	} else {
 		return 0
 	}
