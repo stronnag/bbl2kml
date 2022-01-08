@@ -404,6 +404,10 @@ $ cp -a fl2x/linux-x86_64/bin/* ~/.local/bin/
 $ sudo cp -a fl2x/linux-x86_64/bin/* /usr/local/bin/
 ```
 
+The fl2x tools require that [inav blackbox_decode](https://github.com/iNavFlight/blackbox-tools) is installed and can be found by the operating system `$PATH` / `%PATH%`.
+
+On Windows, as long as [inav blackbox_decode](https://github.com/iNavFlight/blackbox-tools) can be found (`%PATH%`), dropping a log file on  the application is supported.
+
 ### Building from source
 
 Requires Go v1.13 or later.

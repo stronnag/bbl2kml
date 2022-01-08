@@ -5,6 +5,7 @@ commit = get_option('commit')
 
 golang = find_program('go')
 env = environment()
+
 env.set('CGO_ENABLED', '0')
 
 ldflags =  '-extldflags -static -s -w'
@@ -14,6 +15,15 @@ endif
 
 if version != ''
   ldflags += ' -X main.GitTag='+ version
+endif
+
+# This is beyond stupid ....
+pymodule = import('python3')
+python3 = pymodule.find_python()
+exe=''
+res = run_command(python3, '-c', 'import os; print(os.environ["EXE"])')
+if res.returncode() == 0
+  exe = res.stdout().strip()
 endif
 
 # This is for old distros like Debain 10, in which case the '-v' is harmles
@@ -78,10 +88,10 @@ mission2kml_files =  r.stdout().strip().split()
 flightlog2kml_build_path = join_paths(meson.current_source_dir(), 'cmd' , 'flightlog2kml')
 flightlog2kml = custom_target(
     'flightlog2kml',
-    output: 'flightlog2kml',
+    output: 'flightlog2kml'+exe,
     env : env,
     input: [flightlog2kml_files, fl2kml_deps],
-    command: [ golang, 'build', trimpath, '-o', 'flightlog2kml', '-ldflags' , ldflags, flightlog2kml_files ],
+    command: [ golang, 'build', trimpath, '-o', '@OUTPUT@', '-ldflags' , ldflags, flightlog2kml_files ],
     build_by_default: true,
     install: true,
     install_dir: 'bin',
@@ -90,7 +100,7 @@ flightlog2kml = custom_target(
 fl2mqtt_build_path = join_paths(meson.current_source_dir(), 'cmd' , 'fl2mqtt')
 fl2mqtt = custom_target(
     'fl2mqtt',
-    output: 'fl2mqtt',
+    output: 'fl2mqtt'+exe,
     input: [fl2mqtt_files, fl2mqtt_deps ],
     env : env,
     command: [ golang, 'build', trimpath, '-o', '@OUTPUT@', '-ldflags', ldflags, fl2mqtt_files ],
@@ -102,7 +112,7 @@ fl2mqtt = custom_target(
 log2mission_build_path = join_paths(meson.current_source_dir(), 'cmd' , 'log2mission')
 log2mission = custom_target(
     'log2mission',
-    output: 'log2mission',
+    output: 'log2mission'+exe,
     input: [ log2mission_files, log2mission_deps ],
     env : env,
     command: [ golang, 'build', trimpath, '-o', '@OUTPUT@', '-ldflags', ldflags, log2mission_files ],
@@ -114,7 +124,7 @@ log2mission = custom_target(
 mission2kml_build_path = join_paths(meson.current_source_dir(), 'cmd' , 'mission2kml')
 mission2kml = custom_target(
     'mission2kml',
-    output: 'mission2kml',
+    output: 'mission2kml'+exe,
     input: [ mission2kml_files, mission2kml_deps ],
     env : env,
     command: [ golang, 'build', trimpath, '-o', '@OUTPUT@', '-ldflags', ldflags, mission2kml_files ],
