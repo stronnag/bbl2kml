@@ -941,6 +941,10 @@ Examples:
 }
 </code></pre></div>
 <p>A warning will be displayed if the configuration file in not syntactically correct; in such cases its contents will be ignored. There is a somewhat <a href="https://github.com/stronnag/bbl2kml/wiki/Sample-Config-file">complete example</a> in the wiki that can be used as a template.</p>
+<div class="admonition note">
+<p class="admonition-title">JSON Syntax</p>
+<p>The keys in the JSON file use hyphen (<code>-</code>), not underscore (<code>_</code>).</p>
+</div>
 <p>Note also that the command interpreter allows <code>-flag</code> or <code>--flag</code> for any option.</p>
 <h2 id="limitations-bugs-bug-reporting">Limitations, Bugs, Bug Reporting<a class="headerlink" href="#limitations-bugs-bug-reporting" title="Permanent link">#</a></h2>
 <p><code>flightlog2kml</code> aims to support as wide a range of inav firmware and log decoders as possible. During its development, inav has changed both the data logged and in some cases, the meaning of logged items; thus for versions of inav prior to 2.0, the reported flight mode might not be completely accurate. <code>flightlog2kml</code> is known to work with logs from 2015-10-30 (i.e. pre inav 1.0), and if you have a Blackbox log that is not decoded / visualised correctly, please raise a <a href="https://github.com/stronnag/bbl2kml/issues">Github issue</a>; this is a bug.</p>
