@@ -992,7 +992,7 @@ cd build
 ninja install
 </code></pre></div>
 <p><strong>flightlog2kml</strong> depends on <a href="https://github.com/twpayne/go-kml">twpayne/go-kml</a>, an outstanding open source Golang KML library.</p>
-<p><code>flightlog2kml</code> may be built for all OS for which a suitable Golang is available. It also requires inav's <a href="https://github.com/iNavFlight/blackbox-tools">blackbox_decode</a>; the latest version is recommended; the minimum <code>blackbox_decode</code> version is 0.4.4. For Windows' users it is probably easiest to copy inav's <code>blackbox_decode.exe</code> into the same directory as <code>flightlog2kml.exe</code>.</p>
+<p><code>flightlog2kml</code> may be built for all OS for which a suitable Golang is available. At runtime, it also requires inav's <a href="https://github.com/iNavFlight/blackbox-tools">blackbox_decode</a>; the latest version is recommended; the minimum <code>blackbox_decode</code> version is 0.4.4. For Windows' users it is probably easiest to copy inav's <code>blackbox_decode.exe</code> into the same directory as <code>flightlog2kml.exe</code>. However, note that for Windows File Manager / Drag and drop of log files, it is necessary that <code>blackbox_decode.exe</code> is found on <code>%PATH%</code>.</p>
 <div class="admonition note">
 <p class="admonition-title">Notes</p>
 </div>
