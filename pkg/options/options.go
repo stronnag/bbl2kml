@@ -187,6 +187,11 @@ func ParseCLI(gv func() string) ([]string, string) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: config file ignored due to error: %v\n", err)
 	}
+
+	if os.Getenv("DUMP_CONFIG") != "" {
+		fmt.Fprintf(os.Stderr, "%+v\n", Config)
+	}
+
 	files := flag.Args()
 	return files, app
 }

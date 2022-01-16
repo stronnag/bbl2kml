@@ -306,7 +306,7 @@ func get_durations(fn string, meta []types.FlightMeta) {
 }
 
 func get_bb_duration(bbfile string, idx string) time.Duration {
-	cmd := exec.Command("blackbox_decode", "--stdout", "--index", idx, bbfile)
+	cmd := exec.Command(options.Config.Blackbox_decode, "--stdout", "--index", idx, bbfile)
 	out, err := cmd.StdoutPipe()
 	defer cmd.Wait()
 	defer out.Close()
