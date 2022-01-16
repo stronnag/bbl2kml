@@ -435,7 +435,7 @@ ninja install
 
 **flightlog2kml** depends on [twpayne/go-kml](https://github.com/twpayne/go-kml), an outstanding open source Golang KML library.
 
-`flightlog2kml` may be built for all OS for which a suitable Golang is available. It also requires inav's [blackbox_decode](https://github.com/iNavFlight/blackbox-tools); the latest version is recommended; the minimum `blackbox_decode` version is 0.4.4. For Windows' users it is probably easiest to copy inav's `blackbox_decode.exe` into the same directory as `flightlog2kml.exe`.
+`flightlog2kml` may be built for all OS for which a suitable Golang is available. At runtime, it also requires inav's [blackbox_decode](https://github.com/iNavFlight/blackbox-tools); the latest version is recommended; the minimum `blackbox_decode` version is 0.4.4. For Windows' users it is probably easiest to copy inav's `blackbox_decode.exe` into the same directory as `flightlog2kml.exe`. However, note that for Windows File Manager / Drag and drop of log files, it is necessary that `blackbox_decode.exe` is found on `%PATH%`.
 
 !!! note "Notes"
    * `fl2ltm` is a link to `fl2mqtt`
