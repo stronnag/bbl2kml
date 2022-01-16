@@ -21,13 +21,13 @@ endif
 pymodule = import('python3')
 python3 = pymodule.find_python()
 exe=''
-res = run_command(python3, '-c', 'import os; print(os.environ["EXE"])')
+res = run_command(python3, '-c', 'import os; print(os.environ["EXE"])', check: false)
 if res.returncode() == 0
   exe = res.stdout().strip()
 endif
 
 # This is for old distros like Debain 10, in which case the '-v' is harmles
-r = run_command('go', 'env', 'GOVERSION')
+r = run_command('go', 'env', 'GOVERSION', check: false)
 res = r.stdout().strip()
 trimpath = '-trimpath'
 if res == ''
@@ -39,32 +39,32 @@ fl2mqtt_path = join_paths(meson.current_source_dir(), 'cmd', 'fl2mqtt')
 log2mission_path = join_paths(meson.current_source_dir(), 'cmd', 'log2mission')
 mission2kml_path = join_paths(meson.current_source_dir(), 'cmd', 'mission2kml')
 
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'api','types'))
+r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'api','types'), check: true)
 common_files = r.stdout().strip().split()
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'mission'))
+r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'mission'), check: true)
 common_files += r.stdout().strip().split()
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'geo'))
+r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'geo'), check: true)
 common_files += r.stdout().strip().split()
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'options'))
+r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'options'), check: true)
 common_files += r.stdout().strip().split()
 
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'bbl'))
+r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'bbl'), check: true)
 bbl_files = r.stdout().strip().split()
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'otx'))
+r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'otx'), check: true)
 otx_files = r.stdout().strip().split()
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'inav'))
+r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'inav'), check: true)
 inav_files = r.stdout().strip().split()
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'kmlgen'))
+r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'kmlgen'), check: true)
 kml_files = r.stdout().strip().split()
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'bltmqtt'))
+r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'bltmqtt'), check: true)
 blt_files = r.stdout().strip().split()
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'ltmgen'))
+r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'ltmgen'), check: true)
 ltm_files = r.stdout().strip().split()
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'bltreader'))
+r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'bltreader'), check: true)
 bltr_files = r.stdout().strip().split()
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'log2mission'))
+r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'log2mission'), check: true)
 l2m_files = r.stdout().strip().split()
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'aplog'))
+r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'aplog'), check: true)
 aplog_files = r.stdout().strip().split()
 
 fl2kml_deps = [common_files, bbl_files, otx_files, inav_files, kml_files, bltr_files, aplog_files]
@@ -73,16 +73,16 @@ fl2mqtt_deps = [common_files, bbl_files, otx_files, inav_files, blt_files, bltr_
 log2mission_deps = [common_files, bbl_files, otx_files, inav_files, blt_files, bltr_files, ltm_files, aplog_files ]
 mission2kml_deps = [common_files]
 
-r = run_command('meson/find_files.sh', flightlog2kml_path)
+r = run_command('meson/find_files.sh', flightlog2kml_path, check: true)
 flightlog2kml_files = r.stdout().strip().split()
 
-r = run_command('meson/find_files.sh', fl2mqtt_path)
+r = run_command('meson/find_files.sh', fl2mqtt_path, check: true)
 fl2mqtt_files =  r.stdout().strip().split()
 
-r = run_command('meson/find_files.sh', log2mission_path)
+r = run_command('meson/find_files.sh', log2mission_path, check: true)
 log2mission_files =  r.stdout().strip().split()
 
-r = run_command('meson/find_files.sh', mission2kml_path)
+r = run_command('meson/find_files.sh', mission2kml_path, check: true)
 mission2kml_files =  r.stdout().strip().split()
 
 flightlog2kml_build_path = join_paths(meson.current_source_dir(), 'cmd' , 'flightlog2kml')
