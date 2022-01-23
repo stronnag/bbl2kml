@@ -1,21 +1,22 @@
 package mission
 
 import (
+	"archive/zip"
 	"bytes"
 	"encoding/csv"
+	"encoding/json"
+	"encoding/xml"
 	"fmt"
+	types "github.com/stronnag/bbl2kml/pkg/api/types"
+	options "github.com/stronnag/bbl2kml/pkg/options"
+	kml "github.com/twpayne/go-kml"
 	"io"
 	"io/ioutil"
 	"log"
+	"os"
 	"strconv"
 	"strings"
-	"os"
-	"encoding/json"
-	"encoding/xml"
-	kml "github.com/twpayne/go-kml"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	"time"
-	"archive/zip"
 )
 
 type QGCrec struct {
@@ -150,11 +151,7 @@ var ActionMap = map[string]int{
 	"LAND":          wp_LAND,
 }
 
-var (
-	MaxWP = 120
-)
-
-func (m *Mission)Decode_action(b byte) string {
+func (m *Mission) Decode_action(b byte) string {
 	return decode_action(b)
 }
 
@@ -188,13 +185,13 @@ func (m *Mission) is_valid() bool {
 	if len(force) > 0 {
 		return true
 	}
-	mlen := int16(len(m.MissionItems))
-	if mlen > 60 {
+	mlen := len(m.MissionItems)
+	if mlen > options.Config.MaxWP {
 		return false
 	}
 	// Urg, Urg array index v. WP Nos ......
-	for i := int16(0); i < mlen; i++ {
-		var target = m.MissionItems[i].P1 - 1
+	for i := 0; i < mlen; i++ {
+		var target = int(m.MissionItems[i].P1 - 1)
 		if m.MissionItems[i].Action == "JUMP" {
 			if (i == 0) || ((target > (i - 2)) && (target < (i + 2))) || (target >= mlen) || (m.MissionItems[i].P2 < -1) {
 				return false
@@ -279,8 +276,8 @@ func find_kml_coords(dat []byte) *PlaceMark {
 	return nil
 }
 
-func NewMultiMission (mis []MissionItem) *MultiMission {
-	mm := 	&MultiMission{Segment: []MissionSegment{{}}}
+func NewMultiMission(mis []MissionItem) *MultiMission {
+	mm := &MultiMission{Segment: []MissionSegment{{}}}
 	if mis != nil {
 		segno := 0
 		no := 1
@@ -289,7 +286,7 @@ func NewMultiMission (mis []MissionItem) *MultiMission {
 			no++
 			mm.Segment[segno].MissionItems = append(mm.Segment[segno].MissionItems, mis[j])
 			if mis[j].Flag == 0xa5 {
-				if j != len(mis) -1 {
+				if j != len(mis)-1 {
 					mm.Segment = append(mm.Segment, MissionSegment{})
 					segno++
 					no = 1
@@ -297,7 +294,7 @@ func NewMultiMission (mis []MissionItem) *MultiMission {
 			}
 		}
 		if no > 1 {
-			mm.Segment[segno].MissionItems[no-2].Flag = 0xa5;
+			mm.Segment[segno].MissionItems[no-2].Flag = 0xa5
 		}
 	}
 	return mm
@@ -336,7 +333,6 @@ func read_kml(dat []byte) *MultiMission {
 	return NewMultiMission(mis)
 }
 
-
 func read_gpx(dat []byte) *MultiMission {
 	mis := []MissionItem{}
 	var pts []Pts
@@ -374,12 +370,12 @@ func (mm *MultiMission) is_valid() bool {
 		return true
 	}
 	// Urg, Urg array index v. WP Nos ......
-	xmlen := int16(0)
+	xmlen := 0
 	for _, m := range mm.Segment {
-		mlen := int16(len(m.MissionItems))
+		mlen := len(m.MissionItems)
 		xmlen += mlen
-		for i := int16(0); i < mlen; i++ {
-			var target = m.MissionItems[i].P1 - 1
+		for i := 0; i < mlen; i++ {
+			var target = int(m.MissionItems[i].P1 - 1)
 			if m.MissionItems[i].Action == "JUMP" {
 				if (i == 0) || ((target > (i - 2)) && (target < (i + 2))) || (target >= mlen) || (m.MissionItems[i].P2 < -1) {
 					return false
@@ -390,7 +386,7 @@ func (mm *MultiMission) is_valid() bool {
 			}
 		}
 	}
-	if xmlen > int16(MaxWP) {
+	if xmlen > options.Config.MaxWP {
 		return false
 	}
 	return true
@@ -598,11 +594,11 @@ func read_qgc_text(dat []byte) []QGCrec {
 func fixup_qgc_mission(mis []MissionItem, have_jump bool) ([]MissionItem, bool) {
 	ok := true
 	if have_jump {
-		for i := range(mis) {
+		for i := range mis {
 			if mis[i].Action == "JUMP" {
 				jumptgt := mis[i].P1
 				ajump := int16(0)
-				for j := range(mis) {
+				for j := range mis {
 					p3abs := mis[j].P3 // -ve indicate amsl
 					if p3abs < 0 {
 						p3abs *= -1
@@ -626,7 +622,7 @@ func fixup_qgc_mission(mis []MissionItem, have_jump bool) ([]MissionItem, bool) 
 		}
 	}
 	if ok {
-		for i := range(mis) {
+		for i := range mis {
 			if mis[i].P3 < 0 {
 				mis[i].P3 = 1
 			} else {

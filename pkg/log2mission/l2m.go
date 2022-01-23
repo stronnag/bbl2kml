@@ -1,16 +1,16 @@
 package log2mission
 
 import (
-	"os"
 	"fmt"
-	"time"
-	"strings"
-	"log"
-	"path/filepath"
 	"github.com/deet/simpleline"
+	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	mission "github.com/stronnag/bbl2kml/pkg/mission"
 	options "github.com/stronnag/bbl2kml/pkg/options"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
+	"log"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
 )
 
 func generate_filename(m types.FlightMeta) string {
@@ -23,7 +23,6 @@ func generate_filename(m types.FlightMeta) string {
 	outfn = outfn + ext
 	return outfn
 }
-
 
 func Generate_mission(seg types.LogSegment, meta types.FlightMeta) {
 	points := []simpleline.Point{}
@@ -81,8 +80,8 @@ func Generate_mission(seg types.LogSegment, meta types.FlightMeta) {
 		if needrth {
 			nmi += 1
 		}
-		if nmi > 60 {
-			ep += float64(float64(nmi-60) * ep * 0.02) // 0.00025
+		if nmi > options.Config.MaxWP {
+			ep += float64(float64(nmi-options.Config.MaxWP) * ep * 0.02) // 0.00025
 			ntry += 1
 			if ntry > 42 {
 				log.Fatalln("l2m: Failed to generate an aceeptable mission after 42 iterations")

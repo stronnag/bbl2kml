@@ -1,14 +1,13 @@
 package options
 
-
 import (
-	"flag"
-	"strings"
-	"path/filepath"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 type Configuration struct {
@@ -33,6 +32,7 @@ type Configuration struct {
 	LTMdev          string  `json:"-"`
 	Mission         string  `json:"-"`
 	MissionIndex    int     `json:"-"`
+	MaxWP           int     `json:"max-wp"`
 	Mqttopts        string  `json:"-"`
 	Outdir          string  `json:"outdir"`
 	Rebase          string  `json:"-"`
@@ -45,7 +45,7 @@ type Configuration struct {
 	UseTopo         bool    `json:"-"`
 }
 
-var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120, Epsilon: 0.015, StartOff: 30, EndOff: -30, Engunit: "mah"}
+var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120, Epsilon: 0.015, StartOff: 30, EndOff: -30, Engunit: "mah", MaxWP: 120}
 
 func isFlagSet(name string) bool {
 	found := false
@@ -150,6 +150,7 @@ func ParseCLI(gv func() string) ([]string, string) {
 		flag.IntVar(&Config.StartOff, "start-offset", Config.StartOff, "Start Offset (seconds)")
 		flag.IntVar(&Config.EndOff, "end-offset", Config.EndOff, "End Offset (seconds)")
 		flag.StringVar(&Config.Modefilter, "mode-filter", Config.Modefilter, "Mode filter (cruise,wp)")
+		flag.IntVar(&Config.MaxWP, "max-wp", Config.MaxWP, "Maximum WPs in mission")
 	} else {
 		flag.BoolVar(&Config.Kml, "kml", Config.Kml, "Generate KML (vice default KMZ)")
 		flag.BoolVar(&Config.Rssi, "rssi", Config.Rssi, "Set RSSI view as default")
