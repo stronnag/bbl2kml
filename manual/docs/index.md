@@ -217,7 +217,7 @@ If a mission file is given, this will also be displayed by BulletGCSS, albeit in
 
 ## log2mission
 
-`log2mission` will create an inav XML mission file from a supported flight log (Blackbox, OpenTX, BulletGCSS). The mission will not exceed the inav maximum of 60 mission points.
+`log2mission` will create an inav XML mission file from a supported flight log (Blackbox, OpenTX, BulletGCSS). The mission will not exceed the inav maximum of 120 mission points (or configurated maximum).
 
 ```
 $ log2mission
@@ -230,6 +230,8 @@ Usage of log2mission [options] file...
     	Log index
   -interval int
     	Sampling Interval (ms) (default 1000)
+  -max-wp int
+    	Maximum WPs in mission (default 120)
   -mode-filter string
     	Mode filter (cruise,wp)
   -rebase string
@@ -238,6 +240,8 @@ Usage of log2mission [options] file...
     	[OTX] Time(s) determining log split, 0 disables (default 120)
   -start-offset int
     	Start Offset (seconds) (default 30)
+
+log2mission 0.12.3, commit: 43e033d
 ```
 
 * The `start-offset` and `end-offset` compensate for the fact that the start / end of the flight is usually on the ground, and thus is not a good WP choice. The defaults are 30 seconds for the start offset and -30 seconds (i.e. 30 seconds from the end) for the end offset. The end offset may be specified as either a positive number of seconds from the start of the log or a negative number (from the end). Locations prior to the start offset and after the end offset are not considered for mission generation. If the `end-offset` is specified (0 cancels it), and there is no flight mode filter, then RTH is included in the generated mission.
@@ -245,10 +249,10 @@ Usage of log2mission [options] file...
 
 ### `epsilon` tuning
 
-The `epsilon` value is an opaque factor that controls the point simplification process (using the Ramer–Douglas–Peucker algorithm). The default value should be a good starting point for fixed wing with reasonably sedate flying. On a multi-rotor in a small flight area, a much smaller value (e.g. 0.001) would be more appropriate.  Increasing the value will decrease the number of mission points generated. `log2mission` will do this automatically if the default value results in greater than 60 mission points, for example: the log below would generate 77 points with the default `epsilon` value.
+The `epsilon` value is an opaque factor that controls the point simplification process (using the Ramer–Douglas–Peucker algorithm). The default value should be a good starting point for fixed wing with reasonably sedate flying. On a multi-rotor in a small flight area, a much smaller value (e.g. 0.001) would be more appropriate.  Increasing the value will decrease the number of mission points generated. `log2mission` will do this automatically if the default value results in greater than `max-wp` mission points, for example: the log below would generate more than 70 points with the default `epsilon` value; too many if we are targeting inav 3.0.2 or earlier .
 
 ```
-$ log2mission -start-offset 60 -end-offset -120 /t/inav-contrib/otxlogs/demolog.TXT
+$ log2mission -start-offset 60 -end-offset -120 -max-wp 60 /t/inav-contrib/otxlogs/demolog.TXT
 Flight   : MrPlane on 2021-04-08 13:24:07
 Firmware : INAV 3.0.0 (fc0e5e274) MATEKF405 of Apr 7 2021 / 17:02:08
 Size     : 19.36 MB
@@ -283,7 +287,7 @@ Log      : logfs.TXT / 1
 Mission  : 14 points (reprocess: 1, epsilon: 0.001000)
 ```
 
-Some experimentation may still be required to get a good mission, particularly for shorter MR flights. In particular, if reprocessing is indicated and the number of generated points is close to 60, then it's probably worth running again with a slightly larger epsilon than that shown in the output. Likewise, where `log2mission` has decreased the `epsilon`, it's probably worth running `log2mission` again with a slightly smaller `epsilon` than indicated.
+Some experimentation may still be required to get a good mission, particularly for shorter MR flights. In particular, if reprocessing is indicated and the number of generated points is close to `max-wp`, then it's probably worth running again with a slightly larger epsilon than that shown in the output. Likewise, where `log2mission` has decreased the `epsilon`, it's probably worth running `log2mission` again with a slightly smaller `epsilon` than indicated.
 
 ## mission2kml
 
