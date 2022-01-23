@@ -825,7 +825,7 @@ $ fl2mqtt -broker wss://test.mosquitto.org:8081/fl2mqtt/fl2mtqq/test -mission si
 <p>If a mission file is given, this will also be displayed by BulletGCSS, albeit incorrectly if there WP contains types other than <code>WAYPOINT</code> and <code>RTH</code>.</p>
 <p><a href="https://github.com/stronnag/mwptools">mwp</a> can also process / display the BulletGCSS MQTT protocol, using a similar <a href="https://github.com/stronnag/mwptools/wiki/mqtt---bulletgcss-telemetry">URI definition</a>.</p>
 <h2 id="log2mission">log2mission<a class="headerlink" href="#log2mission" title="Permanent link">#</a></h2>
-<p><code>log2mission</code> will create an inav XML mission file from a supported flight log (Blackbox, OpenTX, BulletGCSS). The mission will not exceed the inav maximum of 60 mission points.</p>
+<p><code>log2mission</code> will create an inav XML mission file from a supported flight log (Blackbox, OpenTX, BulletGCSS). The mission will not exceed the inav maximum of 120 mission points (or configurated maximum).</p>
 <div class="highlight"><pre><span></span><code>$ log2mission
 Usage of log2mission [options] file...
   -end-offset int
@@ -836,6 +836,8 @@ Usage of log2mission [options] file...
         Log index
   -interval int
         Sampling Interval (ms) (default 1000)
+  -max-wp int
+        Maximum WPs in mission (default 120)
   -mode-filter string
         Mode filter (cruise,wp)
   -rebase string
@@ -844,14 +846,16 @@ Usage of log2mission [options] file...
         [OTX] Time(s) determining log split, 0 disables (default 120)
   -start-offset int
         Start Offset (seconds) (default 30)
+
+log2mission 0.12.3, commit: 43e033d
 </code></pre></div>
 <ul>
 <li>The <code>start-offset</code> and <code>end-offset</code> compensate for the fact that the start / end of the flight is usually on the ground, and thus is not a good WP choice. The defaults are 30 seconds for the start offset and -30 seconds (i.e. 30 seconds from the end) for the end offset. The end offset may be specified as either a positive number of seconds from the start of the log or a negative number (from the end). Locations prior to the start offset and after the end offset are not considered for mission generation. If the <code>end-offset</code> is specified (0 cancels it), and there is no flight mode filter, then RTH is included in the generated mission.</li>
 <li>The <code>mode-filter</code> allows the log to filtered on Cruise and WP modes, e.g. <code>-mode-filter=cruise</code>, <code>-mode-filter=wp</code>, <code>-mode-filter=cruise,wp</code>. If <code>mode-filter</code> is specified, log entries not in the required flight mode(s) are discarded. Cruise includes both 2D and 3D cruise.</li>
 </ul>
 <h3 id="epsilon-tuning"><code>epsilon</code> tuning<a class="headerlink" href="#epsilon-tuning" title="Permanent link">#</a></h3>
-<p>The <code>epsilon</code> value is an opaque factor that controls the point simplification process (using the Ramer–Douglas–Peucker algorithm). The default value should be a good starting point for fixed wing with reasonably sedate flying. On a multi-rotor in a small flight area, a much smaller value (e.g. 0.001) would be more appropriate.  Increasing the value will decrease the number of mission points generated. <code>log2mission</code> will do this automatically if the default value results in greater than 60 mission points, for example: the log below would generate 77 points with the default <code>epsilon</code> value.</p>
-<div class="highlight"><pre><span></span><code>$ log2mission -start-offset 60 -end-offset -120 /t/inav-contrib/otxlogs/demolog.TXT
+<p>The <code>epsilon</code> value is an opaque factor that controls the point simplification process (using the Ramer–Douglas–Peucker algorithm). The default value should be a good starting point for fixed wing with reasonably sedate flying. On a multi-rotor in a small flight area, a much smaller value (e.g. 0.001) would be more appropriate.  Increasing the value will decrease the number of mission points generated. <code>log2mission</code> will do this automatically if the default value results in greater than <code>max-wp</code> mission points, for example: the log below would generate more than 70 points with the default <code>epsilon</code> value; too many if we are targeting inav 3.0.2 or earlier .</p>
+<div class="highlight"><pre><span></span><code>$ log2mission -start-offset 60 -end-offset -120 -max-wp 60 /t/inav-contrib/otxlogs/demolog.TXT
 Flight   : MrPlane on 2021-04-08 13:24:07
 Firmware : INAV 3.0.0 (fc0e5e274) MATEKF405 of Apr 7 2021 / 17:02:08
 Size     : 19.36 MB
@@ -877,7 +881,7 @@ Log      : logfs.TXT / 1
 ...
 Mission  : 14 points (reprocess: 1, epsilon: 0.001000)
 </code></pre></div>
-<p>Some experimentation may still be required to get a good mission, particularly for shorter MR flights. In particular, if reprocessing is indicated and the number of generated points is close to 60, then it's probably worth running again with a slightly larger epsilon than that shown in the output. Likewise, where <code>log2mission</code> has decreased the <code>epsilon</code>, it's probably worth running <code>log2mission</code> again with a slightly smaller <code>epsilon</code> than indicated.</p>
+<p>Some experimentation may still be required to get a good mission, particularly for shorter MR flights. In particular, if reprocessing is indicated and the number of generated points is close to <code>max-wp</code>, then it's probably worth running again with a slightly larger epsilon than that shown in the output. Likewise, where <code>log2mission</code> has decreased the <code>epsilon</code>, it's probably worth running <code>log2mission</code> again with a slightly smaller <code>epsilon</code> than indicated.</p>
 <h2 id="mission2kml">mission2kml<a class="headerlink" href="#mission2kml" title="Permanent link">#</a></h2>
 <p>A standalone mission file to KML/Z converter is also provided.</p>
 <div class="highlight"><pre><span></span><code>$ mission2kml --help

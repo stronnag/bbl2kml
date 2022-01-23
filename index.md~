@@ -361,6 +361,9 @@ For example:
 
 A warning will be displayed if the configuration file in not syntactically correct; in such cases its contents will be ignored. There is a somewhat [complete example](https://github.com/stronnag/bbl2kml/wiki/Sample-Config-file) in the wiki that can be used as a template.
 
+!!! Note "JSON Syntax"
+    The keys in the JSON file use hyphen (`-`), not underscore (`_`).
+
 Note also that the command interpreter allows `-flag` or `--flag` for any option.
 
 ## Limitations, Bugs, Bug Reporting
