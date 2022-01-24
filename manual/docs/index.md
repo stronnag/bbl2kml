@@ -351,6 +351,7 @@ The keys in the file are the relevant command line options, the following are re
 * `type`
 * `visibility`
 * `energy-unit`
+* `max-wp`
 
 For example:
 
@@ -413,7 +414,28 @@ $ sudo cp -a fl2x/linux-x86_64/bin/* /usr/local/bin/
 
 The fl2x tools require that [inav blackbox_decode](https://github.com/iNavFlight/blackbox-tools) is installed and can be found by the operating system `$PATH` / `%PATH%`.
 
-On Windows, as long as [inav blackbox_decode](https://github.com/iNavFlight/blackbox-tools) can be found (which may mean on `%PATH%` or in the same directory as `flightlog2kml`), dropping a log file on  the application is supported. One can always set the absolute location of `blackbox_decode` in the [config file](#setting-default-options) if unsure.
+On Windows, as long as [inav blackbox_decode](https://github.com/iNavFlight/blackbox-tools) can be found (which may mean on `%PATH%` or defined in the [config file / blackbox-decode stanza](#setting-the-windows-path)), dropping a log file on  the application is supported.
+
+#### Setting the Windows path
+
+In order to have a sane setup on Windows drag and drop for both `blackbox_decode` and `flightlog2kml`, one strategy might be to have the required applications in a single directory, for example, `C:\Users\MyUser\fl2x\bin` (i.e. the user name is `MyUser`).
+
+In order that `blackbox_decode` is found by `flightlog2kml` regardless of how it is invoked (d'n'd, command line etc.), then set the location in the configuration file,  `%APPDATA%\fl2x\config.json`, either using escaped Windows back-slashes or POSIX slashes.
+
+Windows Path separator
+```
+{
+ "blackbox-decode" : "C:\\Users\\MyUser\\fl2x\\bin\\blackbox_decode.exe"
+}
+```
+or
+
+POSIX Path separator
+```
+{
+ "blackbox-decode" : "/Users/MyUser/fl2x/bin/blackbox_decode.exe"
+}
+```
 
 ### Building from source
 
@@ -442,7 +464,9 @@ ninja install
 
 **flightlog2kml** depends on [twpayne/go-kml](https://github.com/twpayne/go-kml), an outstanding open source Golang KML library.
 
-`flightlog2kml` may be built for all OS for which a suitable Golang is available. At runtime, it also requires inav's [blackbox_decode](https://github.com/iNavFlight/blackbox-tools); the latest version is recommended; the minimum `blackbox_decode` version is 0.4.4. For Windows' users it is probably easiest to copy inav's `blackbox_decode.exe` into the same directory as `flightlog2kml.exe`. However, note that for Windows File Manager / Drag and drop of log files, it is necessary that `blackbox_decode.exe` is found on `%PATH%` and / or in the same directory as `flightlog2kml.exe`. One can always set the absolute location of `blackbox_decode` in the [config file](#setting-default-options) if unsure.
+`flightlog2kml` may be built for all OS for which a suitable Golang is available. At runtime, it also requires inav's [blackbox_decode](https://github.com/iNavFlight/blackbox-tools); the latest version is recommended; the minimum `blackbox_decode` version is 0.4.4.
+
+For Windows' users it is probably easiest to copy inav's `blackbox_decode.exe` into the same directory as `flightlog2kml.exe` and use the [config file / blackbox-decode stanza](#setting-the-windows-path), to ensure dropping a log file on  the application is supported.
 
 !!! note "Notes"
    * `fl2ltm` is a link to `fl2mqtt`
