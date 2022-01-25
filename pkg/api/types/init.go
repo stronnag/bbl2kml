@@ -11,7 +11,7 @@ import (
 
 func Init() {
 	dir := GetCacheDir()
-	os.Mkdir(dir, 0755)
+	os.MkdirAll(dir, 0755)
 }
 
 func get_cache_name(lname string) (string, error) {
