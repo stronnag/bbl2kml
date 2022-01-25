@@ -1,30 +1,16 @@
 package api
 
 import (
-	"path/filepath"
+	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
-	b64 "encoding/base64"
+	"path/filepath"
 )
 
-
-func get_cache_dir() string {
-	def := os.Getenv("APPDATA")
-	if def == "" {
-		def = os.Getenv("HOME")
-		if def != "" {
-			def = filepath.Join(def, ".cache")
-		} else {
-			def = "./"
-		}
-	}
-	return filepath.Join(def, "fl2x")
-}
-
 func Init() {
-	dir := get_cache_dir()
+	dir := GetCacheDir()
 	os.Mkdir(dir, 0755)
 }
 
@@ -38,7 +24,7 @@ func get_cache_name(lname string) (string, error) {
 	base := filepath.Base(lname)
 	uenc := b64.URLEncoding.EncodeToString([]byte(base))
 	fn := fmt.Sprintf("%s.%x.%x", uenc, sz, mt)
-	dn := get_cache_dir()
+	dn := GetCacheDir()
 	return filepath.Join(dn, fn), nil
 }
 

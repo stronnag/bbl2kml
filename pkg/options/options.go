@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -63,15 +64,7 @@ func Usage() {
 
 func parse_config_file() error {
 	var err error
-	def := os.Getenv("APPDATA")
-	if def == "" {
-		def = os.Getenv("HOME")
-		if def != "" {
-			def = filepath.Join(def, ".config")
-		} else {
-			def = "./"
-		}
-	}
+	def := types.GetConfigDir()
 	fn := filepath.Join(def, "fl2x", "config.json")
 	data, oerr := ioutil.ReadFile(fn)
 	if oerr == nil {
