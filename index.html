@@ -951,7 +951,7 @@ Examples:
 <li><code>energy-unit</code></li>
 <li><code>max-wp</code></li>
 </ul>
-<p>For example:</p>
+<p>For example, the author's <code>config.json</code>:</p>
 <div class="highlight"><pre><span></span><code>{
     &quot;dms&quot;: true,
     &quot;extrude&quot;: true,
@@ -1000,7 +1000,7 @@ $ sudo cp -a fl2x/linux-x86_64/bin/* /usr/local/bin/
 <p>On Windows, as long as <a href="https://github.com/iNavFlight/blackbox-tools">inav blackbox_decode</a> can be found (which may mean on <code>%PATH%</code> or defined in the <a href="#setting-the-windows-path">config file / blackbox-decode stanza</a>), dropping a log file on  the application is supported.</p>
 <h4 id="setting-the-windows-path">Setting the Windows path<a class="headerlink" href="#setting-the-windows-path" title="Permanent link">#</a></h4>
 <p>In order to have a sane setup on Windows drag and drop for both <code>blackbox_decode</code> and <code>flightlog2kml</code>, one strategy might be to have the required applications in a single directory, for example, <code>C:\Users\MyUser\fl2x\bin</code> (i.e. the user name is <code>MyUser</code>).</p>
-<p>In order that <code>blackbox_decode</code> is found by <code>flightlog2kml</code> regardless of how it is invoked (d'n'd, command line etc.), then set the location in the configuration file,  <code>%APPDATA%\fl2x\config.json</code>, either using escaped Windows back-slashes or POSIX slashes.</p>
+<p>In order that <code>blackbox_decode</code> is found by <code>flightlog2kml</code> regardless of how it is invoked (d'n'd, command line etc.), then set the location in the configuration file,  <code>%APPDATA%\fl2x\config.json</code>, either using escaped Windows back-slashes or POSIX slashes (Windows accepts either).</p>
 <p>Windows Path separator
 <div class="highlight"><pre><span></span><code>{
  &quot;blackbox-decode&quot; : &quot;C:\\Users\\MyUser\\fl2x\\bin\\blackbox_decode.exe&quot;
