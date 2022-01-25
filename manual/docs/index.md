@@ -353,7 +353,7 @@ The keys in the file are the relevant command line options, the following are re
 * `energy-unit`
 * `max-wp`
 
-For example:
+For example, the author's `config.json`:
 
 ```
 {
@@ -420,7 +420,7 @@ On Windows, as long as [inav blackbox_decode](https://github.com/iNavFlight/blac
 
 In order to have a sane setup on Windows drag and drop for both `blackbox_decode` and `flightlog2kml`, one strategy might be to have the required applications in a single directory, for example, `C:\Users\MyUser\fl2x\bin` (i.e. the user name is `MyUser`).
 
-In order that `blackbox_decode` is found by `flightlog2kml` regardless of how it is invoked (d'n'd, command line etc.), then set the location in the configuration file,  `%APPDATA%\fl2x\config.json`, either using escaped Windows back-slashes or POSIX slashes.
+In order that `blackbox_decode` is found by `flightlog2kml` regardless of how it is invoked (d'n'd, command line etc.), then set the location in the configuration file,  `%APPDATA%\fl2x\config.json`, either using escaped Windows back-slashes or POSIX slashes (Windows accepts either).
 
 Windows Path separator
 ```
