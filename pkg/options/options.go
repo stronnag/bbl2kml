@@ -74,6 +74,7 @@ func parse_config_file() error {
 }
 
 func ParseCLI(gv func() string) ([]string, string) {
+	types.Init()
 	app := filepath.Base(os.Args[0])
 	var err error
 

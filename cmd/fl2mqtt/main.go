@@ -1,19 +1,19 @@
 package main
 
 import (
-	"os"
 	"fmt"
-	"log"
-	"path/filepath"
-	otx "github.com/stronnag/bbl2kml/pkg/otx"
-	bbl "github.com/stronnag/bbl2kml/pkg/bbl"
-	options "github.com/stronnag/bbl2kml/pkg/options"
 	types "github.com/stronnag/bbl2kml/pkg/api/types"
-	geo "github.com/stronnag/bbl2kml/pkg/geo"
-	mqttgen "github.com/stronnag/bbl2kml/pkg/bltmqtt"
-	ltmgen "github.com/stronnag/bbl2kml/pkg/ltmgen"
-	blt "github.com/stronnag/bbl2kml/pkg/bltreader"
 	ap "github.com/stronnag/bbl2kml/pkg/aplog"
+	bbl "github.com/stronnag/bbl2kml/pkg/bbl"
+	mqttgen "github.com/stronnag/bbl2kml/pkg/bltmqtt"
+	blt "github.com/stronnag/bbl2kml/pkg/bltreader"
+	geo "github.com/stronnag/bbl2kml/pkg/geo"
+	ltmgen "github.com/stronnag/bbl2kml/pkg/ltmgen"
+	options "github.com/stronnag/bbl2kml/pkg/options"
+	otx "github.com/stronnag/bbl2kml/pkg/otx"
+	"log"
+	"os"
+	"path/filepath"
 )
 
 var GitCommit = "local"
@@ -24,7 +24,6 @@ func getVersion() string {
 }
 
 func main() {
-	types.Init()
 	files, app := options.ParseCLI(getVersion)
 	if len(files) == 0 || (len(options.Config.Mqttopts) == 0 && len(options.Config.Outdir) == 0 &&
 		options.Config.Dump == false && len(options.Config.LTMdev) == 0 && options.Config.Metas == false) {
