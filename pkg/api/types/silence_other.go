@@ -32,3 +32,7 @@ func GetCacheDir() string {
 	}
 	return filepath.Join(def, ".cache", "fl2x")
 }
+
+func SetBBLFallback(bblname string) string {
+	return bblname
+}

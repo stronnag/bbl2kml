@@ -412,30 +412,13 @@ $ cp -a fl2x/linux-x86_64/bin/* ~/.local/bin/
 $ sudo cp -a fl2x/linux-x86_64/bin/* /usr/local/bin/
 ```
 
-The fl2x tools require that [inav blackbox_decode](https://github.com/iNavFlight/blackbox-tools) is installed and can be found by the operating system `$PATH` / `%PATH%`.
+The fl2x tools require that [inav blackbox_decode](https://github.com/iNavFlight/blackbox-tools) is installed and can be found by the operating system (e.g. `$PATH` / `%PATH%`).
 
-On Windows, as long as [inav blackbox_decode](https://github.com/iNavFlight/blackbox-tools) can be found (which may mean on `%PATH%` or defined in the [config file / blackbox-decode stanza](#setting-the-windows-path)), dropping a log file on  the application is supported.
+On Windows, as long as [inav blackbox_decode](https://github.com/iNavFlight/blackbox-tools) can be found (which may mean on `%PATH%` or in the same directory as `flightlog2kml` (and the other tools), then dropping logs onto `flightlog2kml` is supported.
 
 #### Setting the Windows path
 
-In order to have a sane setup on Windows drag and drop for both `blackbox_decode` and `flightlog2kml`, one strategy might be to have the required applications in a single directory, for example, `C:\Users\MyUser\fl2x\bin` (i.e. the user name is `MyUser`).
-
-In order that `blackbox_decode` is found by `flightlog2kml` regardless of how it is invoked (d'n'd, command line etc.), then set the location in the configuration file,  `%APPDATA%\fl2x\config.json`, either using escaped Windows back-slashes or POSIX slashes (Windows accepts either).
-
-Windows Path separator
-```
-{
- "blackbox-decode" : "C:\\Users\\MyUser\\fl2x\\bin\\blackbox_decode.exe"
-}
-```
-or
-
-POSIX Path separator
-```
-{
- "blackbox-decode" : "/Users/MyUser/fl2x/bin/blackbox_decode.exe"
-}
-```
+In order to have a simple setup on Windows / drag and drop for both `blackbox_decode` and `flightlog2kml`, one strategy might be to have the required applications in a single directory.
 
 ### Building from source
 

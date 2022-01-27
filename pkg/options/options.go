@@ -89,6 +89,7 @@ func ParseCLI(gv func() string) ([]string, string) {
 	}
 
 	err = parse_config_file()
+	Config.Blackbox_decode = types.SetBBLFallback(Config.Blackbox_decode)
 
 	defs := os.Getenv("BBL2KML_OPTS")
 	if defs != "" {

@@ -25,3 +25,18 @@ func GetCacheDir() string {
 	}
 	return filepath.Join(def, "fl2x", ".cache")
 }
+
+func SetBBLFallback(bblname string) string {
+	if bblname == "blackbox_decode" {
+		ex, err := os.Executable()
+		if err != nil {
+			panic(err)
+		}
+		exPath := filepath.Dir(ex)
+		bblpath := filepath.Join(exPath, "blackbox_decode.exe")
+		if _, err := os.Stat(bblpath); err == nil {
+			return bblpath
+		}
+	}
+	return bblname
+}
