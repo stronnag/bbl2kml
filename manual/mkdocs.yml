@@ -25,11 +25,11 @@ plugins:
   - search
   - macros
   - with-pdf:
-      cover_subtitle: inav Mission Plan tool
+      cover_subtitle: Flightlog Conversion to KML/Z
       toc_level: 3
       output_path: ../bbl2kml.pdf
       enabled_if_env: ENABLE_PDF_EXPORT
-      copyright: (c) Jonathan Hudson 2021
+      copyright: (c) Jonathan Hudson 2022
 
 extra_css:
   - assets/extra.css
@@ -41,4 +41,4 @@ nav:
 extra:
     inav: "[inav](https://github.com/iNavFlight/inav)"
     mwp: "[mwp](https://github.com/stronnag/mwptools)"
-    bbl2kml: "[mwp](https://github.com/stronnag/bbl2kml)"
+    bbl2kml: "[bbl2kml](https://github.com/stronnag/bbl2kml)"
