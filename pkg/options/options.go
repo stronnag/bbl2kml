@@ -69,6 +69,11 @@ func parse_config_file() error {
 	data, oerr := ioutil.ReadFile(fn)
 	if oerr == nil {
 		err = json.Unmarshal(data, &Config)
+	} else {
+		res, xerr := json.MarshalIndent(Config, "", "  ")
+		if xerr == nil {
+			ioutil.WriteFile(fn, res, 0644)
+		}
 	}
 	return err
 }
