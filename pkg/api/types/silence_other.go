@@ -15,22 +15,20 @@ func SetSilentProcess(cmd *exec.Cmd) {
 	 */
 }
 
-func GetConfigDir() string {
-	def := os.Getenv("HOME")
-	if def != "" {
-		def = filepath.Join(def, ".config")
-	} else {
-		def = "./"
-	}
-	return def
-}
-
-func GetCacheDir() string {
+func getcommondir(p string) string {
 	def := os.Getenv("HOME")
 	if def == "" {
 		def = "./"
 	}
-	return filepath.Join(def, ".cache", "fl2x")
+	return filepath.Join(def, p, "fl2x")
+}
+
+func GetConfigDir() string {
+	return getcommondir(".config")
+}
+
+func GetCacheDir() string {
+	return getcommondir(".cache")
 }
 
 func SetBBLFallback(bblname string) string {

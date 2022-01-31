@@ -65,7 +65,7 @@ func Usage() {
 func parse_config_file() error {
 	var err error
 	def := types.GetConfigDir()
-	fn := filepath.Join(def, "fl2x", "config.json")
+	fn := filepath.Join(def, "config.json")
 	data, oerr := ioutil.ReadFile(fn)
 	if oerr == nil {
 		err = json.Unmarshal(data, &Config)
