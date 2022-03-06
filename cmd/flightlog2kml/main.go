@@ -1,19 +1,20 @@
 package main
 
 import (
-	"os"
 	"fmt"
-	"log"
-	"path/filepath"
-	"io/ioutil"
-	otx "github.com/stronnag/bbl2kml/pkg/otx"
+	types "github.com/stronnag/bbl2kml/pkg/api/types"
+	ap "github.com/stronnag/bbl2kml/pkg/aplog"
 	bbl "github.com/stronnag/bbl2kml/pkg/bbl"
 	blt "github.com/stronnag/bbl2kml/pkg/bltreader"
-	ap "github.com/stronnag/bbl2kml/pkg/aplog"
-	options "github.com/stronnag/bbl2kml/pkg/options"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	geo "github.com/stronnag/bbl2kml/pkg/geo"
 	kmlgen "github.com/stronnag/bbl2kml/pkg/kmlgen"
+	options "github.com/stronnag/bbl2kml/pkg/options"
+	otx "github.com/stronnag/bbl2kml/pkg/otx"
+	"github.com/yookoala/realpath"
+	"io/ioutil"
+	"log"
+	"os"
+	"path/filepath"
 )
 
 var GitCommit = "local"
@@ -66,6 +67,7 @@ func main() {
 			defer os.RemoveAll(options.Config.Tmpdir)
 
 			for _, b := range metas {
+				outfn := ""
 				if (options.Config.Idx == 0 || options.Config.Idx == b.Index) && b.Flags&types.Is_Valid != 0 {
 					for k, v := range b.Summary() {
 						fmt.Printf("%-8.8s : %s\n", k, v)
@@ -77,7 +79,7 @@ func main() {
 								fmt.Fprintf(os.Stderr, "%+v\n", b)
 							}
 						} else if options.Config.Summary == false {
-							outfn := kmlgen.GenKmlName(b.Logname, b.Index)
+							outfn = kmlgen.GenKmlName(b.Logname, b.Index)
 							kmlgen.GenerateKML(ls.H, ls.L, outfn, b, ls.M)
 						}
 					}
@@ -89,6 +91,11 @@ func main() {
 					}
 					if !res {
 						fmt.Fprintf(os.Stderr, "*** skipping KML/Z for log  with no valid geospatial data\n")
+					} else {
+						if outfn != "" {
+							rp, _ := realpath.Realpath(outfn)
+							fmt.Printf("%-8.8s : %s\n", "Output", rp)
+						}
 					}
 					fmt.Println()
 				}
