@@ -22,19 +22,16 @@ const (
 	state_CMD
 	state_DATA
 	state_CRC
-	/*
-		state_X_HEADER2
-		state_X_FLAGS
-		state_X_ID1
-		state_X_ID2
-		state_X_LEN1
-		state_X_LEN2
-		state_X_DATA
-		state_X_CHECKSUM
-	*/
+	state_X_HEADER2
+	state_X_FLAGS
+	state_X_ID1
+	state_X_ID2
+	state_X_LEN1
+	state_X_LEN2
+	state_X_DATA
+	state_X_CHECKSUM
 )
 
-/*
 func crc8_dvb_s2(crc byte, a byte) byte {
 	crc ^= a
 	for i := 0; i < 8; i++ {
@@ -55,7 +52,7 @@ func encode_msp2(cmd uint16, payload []byte) []byte {
 	buf := make([]byte, 9+paylen)
 	buf[0] = '$'
 	buf[1] = 'X'
-	buf[2] = '<'
+	buf[2] = '>'
 	buf[3] = 0 // flags
 	binary.LittleEndian.PutUint16(buf[4:6], cmd)
 	binary.LittleEndian.PutUint16(buf[6:8], uint16(paylen))
@@ -69,8 +66,8 @@ func encode_msp2(cmd uint16, payload []byte) []byte {
 	buf[8+paylen] = crc
 	return buf
 }
-*/
-func encode_msp(cmd uint16, payload []byte) []byte {
+
+func encode_msp1(cmd uint16, payload []byte) []byte {
 	var paylen byte
 	if len(payload) > 0 {
 		paylen = byte(len(payload))
@@ -91,6 +88,10 @@ func encode_msp(cmd uint16, payload []byte) []byte {
 	}
 	buf[5+paylen] = crc
 	return buf
+}
+
+func encode_msp(cmd uint16, payload []byte) []byte {
+	return encode_msp2(cmd, payload)
 }
 
 func MSP_serialise_ident(typ byte) []byte {

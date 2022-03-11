@@ -1,17 +1,17 @@
 package ltmgen
 
 import (
-	"strings"
-	"fmt"
 	"encoding/binary"
-	"time"
-	"os"
-	"log"
+	"fmt"
 	types "github.com/stronnag/bbl2kml/pkg/api/types"
-	options "github.com/stronnag/bbl2kml/pkg/options"
 	geo "github.com/stronnag/bbl2kml/pkg/geo"
-	mission "github.com/stronnag/bbl2kml/pkg/mission"
 	inav "github.com/stronnag/bbl2kml/pkg/inav"
+	mission "github.com/stronnag/bbl2kml/pkg/mission"
+	options "github.com/stronnag/bbl2kml/pkg/options"
+	"log"
+	"os"
+	"strings"
+	"time"
 )
 
 type ltmbuf struct {
