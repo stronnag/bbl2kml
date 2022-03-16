@@ -1,23 +1,23 @@
 package bbl
 
 import (
+	"bufio"
+	"encoding/csv"
+	"errors"
 	"fmt"
+	types "github.com/stronnag/bbl2kml/pkg/api/types"
+	geo "github.com/stronnag/bbl2kml/pkg/geo"
+	inav "github.com/stronnag/bbl2kml/pkg/inav"
+	options "github.com/stronnag/bbl2kml/pkg/options"
 	"io"
 	"log"
 	"os"
 	"os/exec"
-	"encoding/csv"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
-	"path/filepath"
-	"bufio"
-	"errors"
-	geo "github.com/stronnag/bbl2kml/pkg/geo"
-	inav "github.com/stronnag/bbl2kml/pkg/inav"
-	options "github.com/stronnag/bbl2kml/pkg/options"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
 )
 
 var inav_vers int
@@ -369,7 +369,6 @@ func dataCapability() uint8 {
 	return ret
 }
 
-
 func get_bbl_line(r []string, have_origin bool) types.LogItem {
 	status := types.Is_ARMED
 	b := types.LogItem{}
@@ -392,6 +391,9 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 	}
 
 	if s, ok = get_rec_value(r, "navPos[2]"); ok {
+		b.Alt, _ = strconv.ParseFloat(s, 64)
+		b.Alt = b.Alt / 100.0
+	} else if s, ok = get_rec_value(r, "BaroAlt (cm)"); ok {
 		b.Alt, _ = strconv.ParseFloat(s, 64)
 		b.Alt = b.Alt / 100.0
 	}
