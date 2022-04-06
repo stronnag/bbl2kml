@@ -1,9 +1,9 @@
 package api
 
 import (
-	"time"
 	"fmt"
 	"strings"
+	"time"
 )
 
 const (
@@ -130,7 +130,6 @@ func (b *LogStats) Show_time(t uint64) string {
 	s := secs % 60
 	return fmt.Sprintf("%02d:%02d", m, s)
 }
-
 
 func (b *LogStats) Summary(t uint64) MapRec {
 	var m MapRec

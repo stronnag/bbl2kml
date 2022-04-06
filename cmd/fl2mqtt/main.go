@@ -71,7 +71,7 @@ func main() {
 							fmt.Printf("%-8.8s : %s\n", k, v)
 						}
 						if metas[options.Config.Idx-1].Flags&types.Is_Suspect != 0 {
-							fmt.Println("Warning  : Log entry may be corrupt")
+							fmt.Println("Warning  : Log entry may be corrupt\n")
 						}
 
 						switch app {
@@ -85,9 +85,9 @@ func main() {
 							go lfr.Reader(metas[options.Config.Idx-1], ch)
 							ltmgen.LTMGen(ch, metas[options.Config.Idx-1])
 						}
-						fmt.Println()
+						//						fmt.Println()
 					} else {
-						fmt.Println("Not valid")
+						fmt.Println("Log: Not valid\n")
 					}
 				}
 			}
