@@ -1,19 +1,19 @@
 package kmlgen
 
 import (
-	"image/color"
-	"log"
-	"os"
 	"fmt"
-	"strings"
 	"github.com/bmizerany/perks/quantile"
-	kml "github.com/twpayne/go-kml"
-	kmz "github.com/twpayne/go-kmz"
-	"github.com/twpayne/go-kml/icon"
+	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	geo "github.com/stronnag/bbl2kml/pkg/geo"
 	mission "github.com/stronnag/bbl2kml/pkg/mission"
 	options "github.com/stronnag/bbl2kml/pkg/options"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
+	kml "github.com/twpayne/go-kml"
+	"github.com/twpayne/go-kml/icon"
+	kmz "github.com/twpayne/go-kmz"
+	"image/color"
+	"log"
+	"os"
+	"strings"
 )
 
 const (
@@ -22,6 +22,8 @@ const (
 	COL_STYLE_MODE
 	COL_STYLE_RSSI
 	COL_STYLE_EFFIC
+	COL_STYLE_SPEED
+	COL_STYLE_ALTITUDE
 )
 
 func getflightColour(mode uint8) color.Color {
@@ -54,7 +56,11 @@ func getStyleURL(r types.LogItem, colmode uint8) string {
 	if colmode == COL_STYLE_RSSI {
 		s = fmt.Sprintf("#styleGrad%03d", 5*(r.Rssi/5))
 	} else if colmode == COL_STYLE_EFFIC {
-		s= fmt.Sprintf("#styleGrad%03d", 5*(int(r.Qval)/5))
+		s = fmt.Sprintf("#styleGrad%03d", 5*(int(r.Qval)/5))
+	} else if colmode == COL_STYLE_SPEED {
+		s = fmt.Sprintf("#styleGrad%03d", 5*(int(r.Sval)/5))
+	} else if colmode == COL_STYLE_ALTITUDE {
+		s = fmt.Sprintf("#styleGrad%03d", 5*(int(r.Aval)/5))
 	} else {
 		switch r.Fmode {
 		case types.FM_LAUNCH:
@@ -66,7 +72,7 @@ func getStyleURL(r types.LogItem, colmode uint8) string {
 		case types.FM_CRUISE3D, types.FM_CRUISE2D:
 			s = "#styleCRS"
 		case types.FM_PH:
-		s = "#stylePH"
+			s = "#stylePH"
 		case types.FM_EMERG:
 			s = "#styleEMERG"
 		default:
@@ -78,7 +84,7 @@ func getStyleURL(r types.LogItem, colmode uint8) string {
 
 func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []kml.Element {
 	var pt []kml.Element
-	var qval0,qval1 float64
+	var qval0, qval1 float64
 	if colmode == COL_STYLE_EFFIC {
 		q := quantile.NewTargeted(0.05, 0.95)
 		for _, r := range rec.Items {
@@ -90,13 +96,30 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 		}
 		qval0 = q.Query(0.05)
 		qval1 = q.Query(0.95)
+	} else if colmode == COL_STYLE_SPEED {
+		q := quantile.NewTargeted(0.05, 0.95)
+		for _, r := range rec.Items {
+			q.Insert(r.Spd)
+		}
+		qval0 = q.Query(0.05)
+		qval1 = q.Query(0.95)
+		fmt.Fprintf(os.Stderr, "SPD: Qvals %v %v\n", qval0, qval1)
+	} else if colmode == COL_STYLE_ALTITUDE {
+		q := quantile.NewTargeted(0.05, 0.95)
+		for _, r := range rec.Items {
+			q.Insert(r.Alt)
+		}
+		qval0 = q.Query(0.05)
+		qval1 = q.Query(0.95)
+		fmt.Fprintf(os.Stderr, "ALT: Qvals %v %v\n", qval0, qval1)
 	}
+
 	tpts := len(rec.Items)
 	effic := 0.0
 	for np, r := range rec.Items {
 		if options.Config.Engunit == "wh" {
 			effic = r.Whkm
-		}	else {
+		} else {
 			effic = r.Effic
 		}
 
@@ -120,7 +143,23 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 			} else if effic < qval0 {
 				r.Qval = 100
 			} else {
-				r.Qval = 100*(1-(effic-qval0)/(qval1-qval0))
+				r.Qval = 100 * (1 - (effic-qval0)/(qval1-qval0))
+			}
+		} else if colmode == COL_STYLE_SPEED {
+			if r.Spd < qval0 {
+				r.Sval = 0
+			} else if r.Spd > qval1 {
+				r.Sval = 100
+			} else {
+				r.Sval = 100 * ((r.Spd - qval0) / (qval1 - qval0))
+			}
+		} else if colmode == COL_STYLE_ALTITUDE {
+			if r.Alt < qval0 {
+				r.Aval = 0
+			} else if r.Alt > qval1 {
+				r.Aval = 100
+			} else {
+				r.Aval = 100 * ((r.Alt - qval0) / (qval1 - qval0))
 			}
 		}
 
@@ -129,7 +168,7 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 
 		sb.Write([]byte(`<table style="border="1px" silver; border="1" silver; rules="all";;">`))
 
-		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%s</td></tr>","Time", tfmt)))
+		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%s</td></tr>", "Time", tfmt)))
 		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%s</td></tr>", "Position", geo.PositionFormat(r.Lat, r.Lon, options.Config.Dms))))
 		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.0f m</td></tr>", "Elevation", r.Alt)))
 		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.0f m</td></tr>", "GPS Altitude", alt)))
@@ -143,24 +182,24 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%s</td></tr>", "Mode", fmtxt)))
 		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.0f m</td></tr>", "Cumulative Distance", r.Tdist)))
 		if r.Volts > 0 {
-			sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.1f V</br>", "Voltage",  r.Volts)))
+			sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.1f V</br>", "Voltage", r.Volts)))
 		}
 		if (rec.Cap & types.CAP_AMPS) == types.CAP_AMPS {
 			sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.1f A</td></tr>", "Current", r.Amps)))
 			if (rec.Cap & types.CAP_ENERGY) == types.CAP_ENERGY {
 				sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.1f mah / %.2f Wh</td></tr>", "Total Energy", r.Energy, r.WhAcc)))
-				ceav := r.Energy*1000/r.Tdist
-				ceav1 := r.WhAcc*1000/r.Tdist
-				sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.1f mah/km / %.2f Wh/km</td></tr>", "Efficiency",r.Effic,r.Whkm)))
-				sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.1f mah/km / %.2f Wh/km</td></tr>", "Average Efficiency",ceav,ceav1)))
+				ceav := r.Energy * 1000 / r.Tdist
+				ceav1 := r.WhAcc * 1000 / r.Tdist
+				sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.1f mah/km / %.2f Wh/km</td></tr>", "Efficiency", r.Effic, r.Whkm)))
+				sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.1f mah/km / %.2f Wh/km</td></tr>", "Average Efficiency", ceav, ceav1)))
 			}
 		}
 		sb.Write([]byte("</table>"))
 
 		po := kml.Point(
-				kml.AltitudeMode(altmode),
-				kml.Coordinates(kml.Coordinate{Lon: r.Lon, Lat: r.Lat, Alt: alt}),
-			)
+			kml.AltitudeMode(altmode),
+			kml.Coordinates(kml.Coordinate{Lon: r.Lon, Lat: r.Lat, Alt: alt}),
+		)
 
 		k := kml.Placemark(
 			kml.Description(sb.String()),
@@ -174,10 +213,10 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 				k.Add(kml.Visibility(viz))
 			}
 		}
-		se:= kml.Style()
+		se := kml.Style()
 
 		if options.Config.Extrude {
-			po.Add (
+			po.Add(
 				kml.Extrude(true),
 				kml.Tessellate(false),
 			)
@@ -198,7 +237,7 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 			)
 		}
 
-		if options.Config.Extrude || (r.Status & types.Is_FAIL) == types.Is_FAIL {
+		if options.Config.Extrude || (r.Status&types.Is_FAIL) == types.Is_FAIL {
 			k.Add(se)
 		}
 		k.Add(po)
@@ -260,7 +299,7 @@ func getHomes(hpos types.HomeRec) []kml.Element {
 func balloon_style(bs uint8) *kml.CompoundElement {
 	if bs == BS_NAME_DESC {
 		return kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
-		kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`))
+			kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`))
 	} else {
 		return kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
 			kml.Text(`$[description]`))
@@ -376,7 +415,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 			}
 			gcols := Get_gradset(gidx)
 			icons := []kml.Element{}
-			for j,c := range gcols {
+			for j, c := range gcols {
 				sname := fmt.Sprintf("styleGrad%03d", j*5)
 				el := kml.SharedStyle(
 					sname,
@@ -395,7 +434,7 @@ func generate_shared_styles(style uint8) []kml.Element {
 	}
 }
 
-func add_ground_track (rec types.LogRec) kml.Element {
+func add_ground_track(rec types.LogRec) kml.Element {
 	f := kml.Folder(kml.Name("Ground Track")).Add(kml.Visibility(true))
 	var points []kml.Coordinate
 
@@ -410,7 +449,7 @@ func add_ground_track (rec types.LogRec) kml.Element {
 				kml.Color(color.RGBA{R: 0xd0, G: 0xd0, B: 0xd0, A: 0x66}),
 			),
 		),
-		kml.LineString(kml.Coordinates(points...),),
+		kml.LineString(kml.Coordinates(points...)),
 	)
 	f.Add(tk)
 	return f
@@ -431,10 +470,10 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 	d.Add(add_ground_track(rec))
 
 	if len(options.Config.Mission) > 0 {
-		 _, ms, err := mission.Read_Mission_File_Index(options.Config.Mission, options.Config.MissionIndex)
+		_, ms, err := mission.Read_Mission_File_Index(options.Config.Mission, options.Config.MissionIndex)
 		if err == nil {
 			if geo.Getfrobnication() {
-				for k,mi := range ms.MissionItems {
+				for k, mi := range ms.MissionItems {
 					if mi.Is_GeoPoint() {
 						ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, _ = geo.Frobnicate_move(ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, 0)
 					}
@@ -443,19 +482,19 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 			mf := ms.To_kml(hpos, options.Config.Dms, false)
 			d.Add(mf)
 		} else {
-			fmt.Fprintf(os.Stderr,"* Failed to read mission file %s\n", options.Config.Mission)
+			fmt.Fprintf(os.Stderr, "* Failed to read mission file %s\n", options.Config.Mission)
 		}
 	}
 
 	e := kml.ExtendedData(kml.Data(kml.Name("Log"), kml.Value(meta.LogName())))
 
-	for k,v := range meta.Summary() {
+	for k, v := range meta.Summary() {
 		e.Add(kml.Data(kml.Name(k), kml.Value(v)))
 	}
-	for k,v := range smap {
+	for k, v := range smap {
 		e.Add(kml.Data(kml.Name(k), kml.Value(v)))
 	}
-	if s,ok := meta.ShowDisarm(); ok {
+	if s, ok := meta.ShowDisarm(); ok {
 		e.Add(kml.Data(kml.Name("Disarm"), kml.Value(s)))
 	}
 	d.Add(e)
@@ -463,18 +502,30 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 	d.Add(kml.TimeSpan(kml.Begin(ts0), kml.End(ts1)))
 	d.Add(getHomes(hpos)...)
 	d.Add(f0)
-	if rec.Cap&types.CAP_RSSI_VALID !=0 || options.Config.Efficiency {
+	if rec.Cap&types.CAP_RSSI_VALID != 0 || options.Config.Efficiency {
 		d.Add(generate_shared_styles(COL_STYLE_RSSI)...)
 	}
 
-	if rec.Cap&types.CAP_RSSI_VALID !=0  {
+	if rec.Cap&types.CAP_RSSI_VALID != 0 {
 		f1 := kml.Folder(kml.Name("RSSI")).Add(kml.Visibility(!defviz)).
-			Add(getPoints(rec,hpos,COL_STYLE_RSSI,!defviz)...)
+			Add(getPoints(rec, hpos, COL_STYLE_RSSI, !defviz)...)
 		d.Add(f1)
 	}
 	if options.Config.Efficiency {
 		f1 := kml.Folder(kml.Name("Efficiency")).Add(kml.Visibility(false)).
-			Add(getPoints(rec,hpos,COL_STYLE_EFFIC,!defviz)...)
+			Add(getPoints(rec, hpos, COL_STYLE_EFFIC, !defviz)...)
+		d.Add(f1)
+	}
+
+	{
+		f1 := kml.Folder(kml.Name("Speed")).Add(kml.Visibility(false)).
+			Add(getPoints(rec, hpos, COL_STYLE_SPEED, !defviz)...)
+		d.Add(f1)
+	}
+
+	{
+		f1 := kml.Folder(kml.Name("Altitude")).Add(kml.Visibility(false)).
+			Add(getPoints(rec, hpos, COL_STYLE_ALTITUDE, !defviz)...)
 		d.Add(f1)
 	}
 

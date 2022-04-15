@@ -72,7 +72,9 @@ type LogItem struct {
 	Energy   float64
 	Whkm     float64
 	WhAcc    float64
-	Qval     float64
+	Qval     float64 // scaled efficiency
+	Sval     float64 // scaled speed
+	Aval     float64 // scaled Altitude
 	Throttle int
 	Roll     int16
 	Pitch    int16
