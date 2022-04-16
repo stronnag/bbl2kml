@@ -24,6 +24,7 @@ const (
 	COL_STYLE_EFFIC
 	COL_STYLE_SPEED
 	COL_STYLE_ALTITUDE
+	COL_STYLE_BATTERY
 )
 
 func getflightColour(mode uint8) color.Color {
@@ -61,6 +62,8 @@ func getStyleURL(r types.LogItem, colmode uint8) string {
 		s = fmt.Sprintf("#styleGrad%03d", 5*(int(r.Sval)/5))
 	} else if colmode == COL_STYLE_ALTITUDE {
 		s = fmt.Sprintf("#styleGrad%03d", 5*(int(r.Aval)/5))
+	} else if colmode == COL_STYLE_BATTERY {
+		s = fmt.Sprintf("#styleGrad%03d", 5*(int(r.Bval)/5))
 	} else {
 		switch r.Fmode {
 		case types.FM_LAUNCH:
@@ -80,6 +83,29 @@ func getStyleURL(r types.LogItem, colmode uint8) string {
 		}
 	}
 	return s
+}
+
+func makeqval(val, vmin, vmax float64, invert bool) float64 {
+	var rval float64
+
+	if invert {
+		if val > vmax {
+			rval = 0
+		} else if val < vmin {
+			rval = 100
+		} else {
+			rval = 100 * (1 - (val-vmin)/(vmax-vmin))
+		}
+	} else {
+		if val < vmin {
+			rval = 0
+		} else if val > vmax {
+			rval = 100
+		} else {
+			rval = 100 * ((val - vmin) / (vmax - vmin))
+		}
+	}
+	return rval
 }
 
 func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []kml.Element {
@@ -103,7 +129,6 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 		}
 		qval0 = q.Query(0.05)
 		qval1 = q.Query(0.95)
-		fmt.Fprintf(os.Stderr, "SPD: Qvals %v %v\n", qval0, qval1)
 	} else if colmode == COL_STYLE_ALTITUDE {
 		q := quantile.NewTargeted(0.05, 0.95)
 		for _, r := range rec.Items {
@@ -111,7 +136,13 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 		}
 		qval0 = q.Query(0.05)
 		qval1 = q.Query(0.95)
-		fmt.Fprintf(os.Stderr, "ALT: Qvals %v %v\n", qval0, qval1)
+	} else if colmode == COL_STYLE_BATTERY {
+		q := quantile.NewTargeted(0.05, 0.95)
+		for _, r := range rec.Items {
+			q.Insert(r.Volts)
+		}
+		qval0 = q.Query(0.05)
+		qval1 = q.Query(0.95)
 	}
 
 	tpts := len(rec.Items)
@@ -138,29 +169,13 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 			altmode = kml.AltitudeModeRelativeToGround
 		}
 		if colmode == COL_STYLE_EFFIC {
-			if effic > qval1 {
-				r.Qval = 0
-			} else if effic < qval0 {
-				r.Qval = 100
-			} else {
-				r.Qval = 100 * (1 - (effic-qval0)/(qval1-qval0))
-			}
+			r.Qval = makeqval(effic, qval0, qval1, true)
 		} else if colmode == COL_STYLE_SPEED {
-			if r.Spd < qval0 {
-				r.Sval = 0
-			} else if r.Spd > qval1 {
-				r.Sval = 100
-			} else {
-				r.Sval = 100 * ((r.Spd - qval0) / (qval1 - qval0))
-			}
+			r.Sval = makeqval(r.Spd, qval0, qval1, options.Config.RedIsFast)
 		} else if colmode == COL_STYLE_ALTITUDE {
-			if r.Alt < qval0 {
-				r.Aval = 0
-			} else if r.Alt > qval1 {
-				r.Aval = 100
-			} else {
-				r.Aval = 100 * ((r.Alt - qval0) / (qval1 - qval0))
-			}
+			r.Aval = makeqval(r.Alt, qval0, qval1, !options.Config.RedIsLow)
+		} else if colmode == COL_STYLE_BATTERY {
+			r.Bval = makeqval(r.Volts, qval0, qval1, false)
 		}
 
 		var sb strings.Builder
@@ -502,7 +517,7 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 	d.Add(kml.TimeSpan(kml.Begin(ts0), kml.End(ts1)))
 	d.Add(getHomes(hpos)...)
 	d.Add(f0)
-	if rec.Cap&types.CAP_RSSI_VALID != 0 || options.Config.Efficiency {
+	if rec.Cap&types.CAP_RSSI_VALID != 0 || options.Config.Aflags != 0 {
 		d.Add(generate_shared_styles(COL_STYLE_RSSI)...)
 	}
 
@@ -511,21 +526,28 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 			Add(getPoints(rec, hpos, COL_STYLE_RSSI, !defviz)...)
 		d.Add(f1)
 	}
-	if options.Config.Efficiency {
+
+	if (options.Config.Aflags & types.AFlags_EFFIC) == types.AFlags_EFFIC {
 		f1 := kml.Folder(kml.Name("Efficiency")).Add(kml.Visibility(false)).
 			Add(getPoints(rec, hpos, COL_STYLE_EFFIC, !defviz)...)
 		d.Add(f1)
 	}
 
-	{
+	if (options.Config.Aflags & types.AFlags_SPEED) == types.AFlags_SPEED {
 		f1 := kml.Folder(kml.Name("Speed")).Add(kml.Visibility(false)).
 			Add(getPoints(rec, hpos, COL_STYLE_SPEED, !defviz)...)
 		d.Add(f1)
 	}
 
-	{
+	if (options.Config.Aflags & types.AFlags_ALTITUDE) == types.AFlags_ALTITUDE {
 		f1 := kml.Folder(kml.Name("Altitude")).Add(kml.Visibility(false)).
 			Add(getPoints(rec, hpos, COL_STYLE_ALTITUDE, !defviz)...)
+		d.Add(f1)
+	}
+
+	if (options.Config.Aflags & types.AFlags_BATTERY) == types.AFlags_BATTERY {
+		f1 := kml.Folder(kml.Name("Battery")).Add(kml.Visibility(false)).
+			Add(getPoints(rec, hpos, COL_STYLE_BATTERY, !defviz)...)
 		d.Add(f1)
 	}
 

@@ -44,6 +44,10 @@ type Configuration struct {
 	EndOff          int     `json:"end-offset"`
 	Modefilter      string  `json:"-"`
 	UseTopo         bool    `json:"-"`
+	Attribs         string  `json:"attributes"`
+	Aflags          int     `json:"-"`
+	RedIsFast       bool    `json:"fast-is-red"`
+	RedIsLow        bool    `json:"low-is-red"`
 }
 
 var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120, Epsilon: 0.015, StartOff: 30, EndOff: -30, Engunit: "mah", MaxWP: 120}
@@ -96,35 +100,37 @@ func ParseCLI(gv func() string) ([]string, string) {
 	err = parse_config_file()
 	Config.Blackbox_decode = types.SetBBLFallback(Config.Blackbox_decode)
 
-	defs := os.Getenv("BBL2KML_OPTS")
-	if defs != "" {
-		_parts := strings.Split(defs, " ")
-		var parts []string
-		for _, p := range _parts {
-			if p != "" {
-				parts = append(parts, p)
+	/**
+		defs := os.Getenv("BBL2KML_OPTS")
+		if defs != "" {
+			_parts := strings.Split(defs, " ")
+			var parts []string
+			for _, p := range _parts {
+				if p != "" {
+					parts = append(parts, p)
+				}
+			}
+
+			envflags := flag.NewFlagSet("$BBL2KML_OPTS", flag.ExitOnError)
+			kml := envflags.Bool("kml", Config.Kml, "kml")
+			rssi := envflags.Bool("rssi", Config.Rssi, "rssi")
+			extrude := envflags.Bool("extrude", Config.Extrude, "extrude")
+			dms := envflags.Bool("dms", Config.Dms, "dms")
+			grad := envflags.String("gradient", Config.Gradset, "gradient")
+			bbldec := envflags.String("decoder", Config.Blackbox_decode, "decoder")
+			effic := envflags.Bool("efficiency", Config.Efficiency, "efficiency")
+			envflags.Parse(parts)
+			Config.Dms = *dms
+			Config.Extrude = *extrude
+			Config.Rssi = *rssi
+			Config.Kml = *kml
+			Config.Gradset = *grad
+			Config.Efficiency = *effic
+			if *bbldec != "" {
+				Config.Blackbox_decode = *bbldec
 			}
 		}
-
-		envflags := flag.NewFlagSet("$BBL2KML_OPTS", flag.ExitOnError)
-		kml := envflags.Bool("kml", Config.Kml, "kml")
-		rssi := envflags.Bool("rssi", Config.Rssi, "rssi")
-		extrude := envflags.Bool("extrude", Config.Extrude, "extrude")
-		dms := envflags.Bool("dms", Config.Dms, "dms")
-		grad := envflags.String("gradient", Config.Gradset, "gradient")
-		bbldec := envflags.String("decoder", Config.Blackbox_decode, "decoder")
-		effic := envflags.Bool("efficiency", Config.Efficiency, "efficiency")
-		envflags.Parse(parts)
-		Config.Dms = *dms
-		Config.Extrude = *extrude
-		Config.Rssi = *rssi
-		Config.Kml = *kml
-		Config.Gradset = *grad
-		Config.Efficiency = *effic
-		if *bbldec != "" {
-			Config.Blackbox_decode = *bbldec
-		}
-	}
+	**/
 
 	flag.IntVar(&Config.Idx, "index", 0, "Log index")
 	flag.IntVar(&Config.SplitTime, "split-time", Config.SplitTime, "[OTX] Time(s) determining log split, 0 disables")
@@ -162,6 +168,7 @@ func ParseCLI(gv func() string) ([]string, string) {
 		flag.StringVar(&Config.Outdir, "outdir", Config.Outdir, "Output directory for generated KML")
 		flag.IntVar(&Config.Visibility, "visibility", Config.Visibility, "0=folder value,-1=don't set,1=all on")
 		flag.BoolVar(&Config.Summary, "summary", Config.Summary, "Just show summary")
+		flag.StringVar(&Config.Attribs, "attributes", Config.Attribs, "Attributes to plot (effic,speed,altitude)")
 	}
 	flag.IntVar(&Config.Intvl, "interval", Config.Intvl, "Sampling Interval (ms)")
 	flag.Parse()
@@ -191,6 +198,25 @@ func ParseCLI(gv func() string) ([]string, string) {
 
 	if os.Getenv("DUMP_CONFIG") != "" {
 		fmt.Fprintf(os.Stderr, "%+v\n", Config)
+	}
+
+	if Config.Efficiency {
+		Config.Aflags |= types.AFlags_EFFIC
+	}
+
+	if Config.Attribs != "" {
+		if strings.Contains(Config.Attribs, "effic") {
+			Config.Aflags |= types.AFlags_EFFIC
+		}
+		if strings.Contains(Config.Attribs, "speed") {
+			Config.Aflags |= types.AFlags_SPEED
+		}
+		if strings.Contains(Config.Attribs, "altitude") {
+			Config.Aflags |= types.AFlags_ALTITUDE
+		}
+		if strings.Contains(Config.Attribs, "battery") {
+			Config.Aflags |= types.AFlags_BATTERY
+		}
 	}
 
 	files := flag.Args()

@@ -75,6 +75,7 @@ type LogItem struct {
 	Qval     float64 // scaled efficiency
 	Sval     float64 // scaled speed
 	Aval     float64 // scaled Altitude
+	Bval     float64 // scaled Battery
 	Throttle int
 	Roll     int16
 	Pitch    int16
@@ -190,6 +191,13 @@ const (
 	Feature_GPS     = (1 << 7)
 	Feature_VBAT    = (1 << 1)
 	Feature_CURRENT = (1 << 11)
+)
+
+const (
+	AFlags_EFFIC = 1 << iota
+	AFlags_SPEED
+	AFlags_ALTITUDE
+	AFlags_BATTERY
 )
 
 type FlightMeta struct {
