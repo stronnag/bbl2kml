@@ -93,7 +93,11 @@ func main() {
 						fmt.Fprintf(os.Stderr, "*** skipping KML/Z for log  with no valid geospatial data\n")
 					} else {
 						if outfn != "" {
-							rp, _ := realpath.Realpath(outfn)
+							rp, err := realpath.Realpath(outfn)
+							if err != nil || rp == "" {
+								fmt.Printf("%-8.8s : <%s> <%s>\n", "RealPath", rp, err)
+								rp = outfn
+							}
 							fmt.Printf("%-8.8s : %s\n", "Output", rp)
 						}
 					}
