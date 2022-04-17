@@ -21,7 +21,7 @@ var GitCommit = "local"
 var GitTag = "0.0.0"
 
 func getVersion() string {
-	return fmt.Sprintf("%s %s, commit: %s", filepath.Base(os.Args[0]), GitTag, GitCommit)
+	return fmt.Sprintf("%s %s commit:%s", filepath.Base(os.Args[0]), GitTag, GitCommit)
 }
 
 func main() {

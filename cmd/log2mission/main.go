@@ -2,26 +2,25 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-	"log"
-	otx "github.com/stronnag/bbl2kml/pkg/otx"
+	types "github.com/stronnag/bbl2kml/pkg/api/types"
+	ap "github.com/stronnag/bbl2kml/pkg/aplog"
 	bbl "github.com/stronnag/bbl2kml/pkg/bbl"
 	blt "github.com/stronnag/bbl2kml/pkg/bltreader"
+	geo "github.com/stronnag/bbl2kml/pkg/geo"
 	ltom "github.com/stronnag/bbl2kml/pkg/log2mission"
 	options "github.com/stronnag/bbl2kml/pkg/options"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
-	geo "github.com/stronnag/bbl2kml/pkg/geo"
-	ap "github.com/stronnag/bbl2kml/pkg/aplog"
+	otx "github.com/stronnag/bbl2kml/pkg/otx"
+	"log"
+	"os"
+	"path/filepath"
 )
 
 var GitCommit = "local"
 var GitTag = "0.0.0"
 
 func getVersion() string {
-	return fmt.Sprintf("%s %s, commit: %s", filepath.Base(os.Args[0]), GitTag, GitCommit)
+	return fmt.Sprintf("%s %s commit:%s", filepath.Base(os.Args[0]), GitTag, GitCommit)
 }
-
 
 func main() {
 	files, _ := options.ParseCLI(getVersion)

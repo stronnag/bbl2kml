@@ -132,6 +132,7 @@ func ParseCLI(gv func() string) ([]string, string) {
 		}
 	**/
 
+	showversion := false
 	flag.IntVar(&Config.Idx, "index", 0, "Log index")
 	flag.IntVar(&Config.SplitTime, "split-time", Config.SplitTime, "[OTX] Time(s) determining log split, 0 disables")
 	flag.StringVar(&Config.Rebase, "rebase", "", "rebase all positions on lat,lon[,alt]")
@@ -171,7 +172,14 @@ func ParseCLI(gv func() string) ([]string, string) {
 		flag.StringVar(&Config.Attribs, "attributes", Config.Attribs, "Attributes to plot (effic,speed,altitude)")
 	}
 	flag.IntVar(&Config.Intvl, "interval", Config.Intvl, "Sampling Interval (ms)")
+	flag.BoolVar(&showversion, "version", false, "Just show version")
+
 	flag.Parse()
+
+	if showversion {
+		fmt.Println(gv())
+		os.Exit(0)
+	}
 
 	if app == "flightlog2kml" {
 		Config.UseTopo = true

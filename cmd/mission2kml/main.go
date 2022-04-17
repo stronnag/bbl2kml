@@ -2,13 +2,13 @@ package main
 
 import (
 	"flag"
-	"os"
-	"log"
 	"fmt"
-	"strings"
-	"strconv"
-	"path/filepath"
 	mission "github.com/stronnag/bbl2kml/pkg/mission"
+	"log"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 )
 
 var GitCommit = "local"
@@ -17,11 +17,11 @@ var GitTag = "0.0.0"
 var (
 	dms     bool
 	homepos string
-	idx int
+	idx     int
 )
 
 func getVersion() string {
-	return fmt.Sprintf("%s %s, commit: %s", filepath.Base(os.Args[0]), GitTag, GitCommit)
+	return fmt.Sprintf("%s %s commit:%s", filepath.Base(os.Args[0]), GitTag, GitCommit)
 }
 
 func split(s string, separators []rune) []string {
