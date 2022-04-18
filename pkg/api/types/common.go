@@ -27,6 +27,7 @@ const (
 	CAP_VOLTS
 	CAP_ENERGY
 	CAP_RSSI_VALID
+	CAP_ENERGYC
 )
 
 const (

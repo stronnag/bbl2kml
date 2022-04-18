@@ -2,6 +2,7 @@ package otx
 
 import (
 	"encoding/csv"
+	"errors"
 	"fmt"
 	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	geo "github.com/stronnag/bbl2kml/pkg/geo"
@@ -14,7 +15,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"errors"
 	"time"
 )
 
@@ -75,7 +75,7 @@ var hdrs map[string]hdrrec
 
 func read_headers(r []string) {
 	hdrs = make(map[string]hdrrec)
-	rx := regexp.MustCompile(`(\w+)\(([A-Za-z/@]*)\)`)
+	rx := regexp.MustCompile(`(\w+)\(([A-Za-z/@%]*)\)`)
 	var k string
 	var u string
 	for i, s := range r {
@@ -203,19 +203,27 @@ func get_rec_value(r []string, key string) (string, string, bool) {
 
 func dataCapability() uint8 {
 	var ret uint8 = 0
-	if _, ok := hdrs["Curr"]; ok {
+	var ok bool
+	if _, ok = hdrs["Curr"]; ok {
 		ret |= types.CAP_AMPS
 	}
-	if _, ok := hdrs["VFAS"]; ok {
+	if _, ok = hdrs["VFAS"]; ok {
 		ret |= types.CAP_VOLTS
-	} else if _, ok := hdrs["RxBt"]; ok {
+	} else if _, ok = hdrs["RxBt"]; ok {
 		ret |= types.CAP_VOLTS
 	}
-	if _, ok := hdrs["Fuel"]; ok {
+
+	var v hdrrec
+	if v, ok = hdrs["Fuel"]; ok {
 		ret |= types.CAP_ENERGY
-	} else if _, ok := hdrs["Capa"]; ok {
+	} else if v, ok = hdrs["Capa"]; ok {
 		ret |= types.CAP_ENERGY
 	}
+
+	if ret&types.CAP_VOLTS|types.CAP_AMPS == types.CAP_VOLTS|types.CAP_AMPS && !(v.u == "mwh" || v.u == "mWh") {
+		ret |= (types.CAP_ENERGY | types.CAP_ENERGYC)
+	}
+
 	return ret
 }
 
@@ -554,6 +562,7 @@ func (lg *OTXLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegm
 	leffic := 0.0
 	lwhkm := 0.0
 	whacc := 0.0
+	accEnergy := 0.0
 	for i := 1; ; i++ {
 		record, err := r.Read()
 		if err == io.EOF {
@@ -561,10 +570,10 @@ func (lg *OTXLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegm
 		}
 		if i == 1 {
 			read_headers(record)
+			rec.Cap = dataCapability()
 			continue
 		}
 		if i >= m.Start && i <= m.End {
-			rec.Cap = dataCapability()
 			b := get_otx_line(record)
 			if (b.Status&types.Is_ARMED) == 0 && b.Alt < 10 && b.Spd < 7 {
 				continue
@@ -669,6 +678,10 @@ func (lg *OTXLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegm
 						whacc += b.Amps * b.Volts * deltat / 3600
 						b.WhAcc = whacc
 						lwhkm = b.Whkm
+						if rec.Cap&types.CAP_ENERGYC == types.CAP_ENERGYC {
+							accEnergy += (b.Amps * deltat / 3.6)
+							b.Energy = accEnergy
+						}
 					} else {
 						b.Effic = leffic
 						b.Whkm = lwhkm
