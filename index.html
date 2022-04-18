@@ -10,7 +10,7 @@
       
       
       <link rel="icon" href="assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-7.3.6">
+      <meta name="generator" content="mkdocs-1.3.0, mkdocs-material-7.3.6">
     
     
       
@@ -418,6 +418,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#graphical-user-interface" class="md-nav__link">
+    Graphical User Interface
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -649,6 +656,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#graphical-user-interface" class="md-nav__link">
+    Graphical User Interface
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -675,18 +689,20 @@
 <h2 id="flightlog2kml">flightlog2kml<a class="headerlink" href="#flightlog2kml" title="Permanent link">#</a></h2>
 <div class="highlight"><pre><span></span><code>$ flightlog2kml --help
 Usage of flightlog2kml [options] file...
+  -attributes string
+        Attributes to plot (effic,speed,altitude)
   -dms
-        Show positions as DD:MM:SS.s (vice decimal degrees) (default true)
+        Show positions as DD:MM:SS.s (vice decimal degrees)
   -dump
         Dump log headers and exit
   -efficiency
-        Include efficiency layer in KML/Z (default true)
+        Include efficiency layer in KML/Z
   -energy-unit string
         Energy unit [mah, wh] (default &quot;mah&quot;)
   -extrude
-        Extends track points to ground (default true)
+        Extends track points to ground
   -gradient string
-        Specific colour gradient [red,rdgn,yor] (default &quot;yor&quot;)
+        Specific colour gradient [red,rdgn,yor]
   -home-alt int
         [OTX] home altitude
   -index int
@@ -709,8 +725,12 @@ Usage of flightlog2kml [options] file...
         [OTX] Time(s) determining log split, 0 disables (default 120)
   -summary
         Just show summary
+  -version
+        Just show version
   -visibility int
         0=folder value,-1=don&#39;t set,1=all on
+
+flightlog2kml 0.14.4 commit:dd42959
 </code></pre></div>
 <p>Multiple logs (with multiple log indices) may be given. A KML/Z will be generated for each file / index.</p>
 <p>The output file is named from the base name of the source log file, appended with the index number and <code>.kml</code> or <code>.kmz</code> as appropriate. For example:</p>
@@ -726,6 +746,7 @@ Current  : 30.6 A at 00:05
 Distance : 48437 m
 Duration : 43:44
 Disarm   : Switch
+Output   : /tmp/&quot;LOG00044.1.kmz
 </code></pre></div>
 results in the KMZ file "LOG00044.1.kmz"</p>
 <p>Where <code>-mission &lt;file&gt;</code> is given, the given waypoint <code>&lt;mission file&gt;</code> will be included in the generated KML/Z; mission files may be one of the following formats as supported by <a href="https://github.com/stronnag/impload">impload</a>:</p>
@@ -935,6 +956,7 @@ Examples:
 </ul>
 <p>The keys in the file are the relevant command line options, the following are recognised:</p>
 <ul>
+<li><code>attributes</code></li>
 <li><code>dms</code></li>
 <li><code>extrude</code></li>
 <li><code>kml</code></li>
@@ -950,13 +972,21 @@ Examples:
 <li><code>visibility</code></li>
 <li><code>energy-unit</code></li>
 <li><code>max-wp</code></li>
+<li><code>fast-is-red</code></li>
+<li><code>low-is-red</code></li>
 </ul>
 <p>For example, the author's <code>config.json</code>:</p>
 <div class="highlight"><pre><span></span><code>{
-    &quot;dms&quot;: true,
-    &quot;extrude&quot;: true,
-    &quot;gradient&quot;: &quot;yor&quot;,
-    &quot;efficiency&quot;: true
+  &quot;dms&quot; : true,
+  &quot;extrude&quot; : true,
+  &quot;gradient&quot; : &quot;yor&quot;,
+  &quot;attributes&quot; : &quot;effic,speed,altitude,battery&quot;,
+  &quot;rssi&quot; : false,
+  &quot;efficiency&quot; : true,
+  &quot;outdir&quot; : &quot;/tmp&quot;,
+  &quot;kml&quot; : false,
+  &quot;fast-is-red&quot; : true,
+  &quot;low-is-red&quot; : true
 }
 </code></pre></div>
 <p>A warning will be displayed if the configuration file in not syntactically correct; in such cases its contents will be ignored. There is a somewhat <a href="https://github.com/stronnag/bbl2kml/wiki/Sample-Config-file">complete example</a> in the wiki that can be used as a template.</p>
@@ -1018,7 +1048,7 @@ ninja install
 </code></pre></div>
 <p><strong>flightlog2kml</strong> depends on <a href="https://github.com/twpayne/go-kml">twpayne/go-kml</a>, an outstanding open source Golang KML library.</p>
 <p><code>flightlog2kml</code> may be built for all OS for which a suitable Golang is available. At runtime, it also requires inav's <a href="https://github.com/iNavFlight/blackbox-tools">blackbox_decode</a>; the latest version is recommended; the minimum <code>blackbox_decode</code> version is 0.4.4.</p>
-<p>For Windows' users it is probably easiest to copy inav's <code>blackbox_decode.exe</code> into the same directory as <code>flightlog2kml.exe</code>.</p>
+<p>For Windows' users it is probably easiest to copy inav's <code>blackbox_decode.exe</code> into the same directory as <code>flightlog2kml.exe</code>, or use the <a href="#graphical-user-interface">fl2xui</a> GUI application.</p>
 <div class="admonition note">
 <p class="admonition-title">Notes</p>
 </div>
@@ -1027,6 +1057,8 @@ ninja install
 <li><code>bbsummary</code> is a link to <code>flightlog2kml</code> and will behave as <code>flightlog2kml -summary</code>.</li>
 <li><code>fl2ltm</code> will be automatically detected by <a href="https://github.com/stronnag/mwptools">mwp</a> and used in preference to its older <code>replay_bbox_ltm.rb</code> and <code>otxlog</code> helpers.</li>
 </ul>
+<h2 id="graphical-user-interface">Graphical User Interface<a class="headerlink" href="#graphical-user-interface" title="Permanent link">#</a></h2>
+<p>There is a <a href="https://github.com/stronnag/fl2xui">graphical user interface for <code>flightlog2kml</code></a>. Binaries are provided for Linux (<code>.deb</code>) and Windows.</p>
                 
                   
                 
@@ -1066,7 +1098,7 @@ ninja install
     <div class="md-dialog" data-md-component="dialog">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
-    <script id="__config" type="application/json">{"base": ".", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "assets/javascripts/workers/search.fcfe8b6d.min.js", "version": null}</script>
+    <script id="__config" type="application/json">{"base": ".", "features": [], "search": "assets/javascripts/workers/search.fcfe8b6d.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": null}</script>
     
     
       <script src="assets/javascripts/bundle.b1047164.min.js"></script>
