@@ -2,17 +2,17 @@ package aplog
 
 import (
 	"bufio"
-	"fmt"
 	"encoding/json"
+	"fmt"
+	types "github.com/stronnag/bbl2kml/pkg/api/types"
+	geo "github.com/stronnag/bbl2kml/pkg/geo"
+	options "github.com/stronnag/bbl2kml/pkg/options"
+	"math"
 	"os"
 	"os/exec"
-	"time"
-	"math"
-	"regexp"
 	"path/filepath"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
-	options "github.com/stronnag/bbl2kml/pkg/options"
-	geo "github.com/stronnag/bbl2kml/pkg/geo"
+	"regexp"
+	"time"
 )
 
 type MavMeta struct {
@@ -234,6 +234,7 @@ func create_record(m MavRec, have_origin bool) (types.LogItem, bool) {
 	b.Lon = m.g.Lng
 	b.GAlt = m.g.Alt
 	b.Spd = m.g.Spd
+
 	b.Stamp = uint64(m.g.TimeUS)
 	b.Cog = uint32(m.g.GCrs)
 
@@ -315,6 +316,8 @@ func (lg *APLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegme
 
 	var homes types.HomeRec
 	var rec types.LogRec
+	rec.Cap = (types.CAP_ALTITUDE | types.CAP_SPEED)
+
 	ndelay := 1000 * uint64(options.Config.Intvl)
 
 	stats := types.LogStats{}
@@ -405,6 +408,10 @@ func (lg *APLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegme
 
 						if b.Rssi > 0 {
 							rec.Cap |= types.CAP_RSSI_VALID
+						}
+
+						if b.Energy > 0 {
+							rec.Cap |= types.CAP_ENERGY
 						}
 
 						if (rec.Cap & types.CAP_AMPS) == types.CAP_AMPS {

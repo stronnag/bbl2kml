@@ -8,14 +8,14 @@ import (
 	"path/filepath"
 	//"regexp"
 	//"sort"
+	"bufio"
+	"errors"
+	types "github.com/stronnag/bbl2kml/pkg/api/types"
+	mission "github.com/stronnag/bbl2kml/pkg/mission"
+	options "github.com/stronnag/bbl2kml/pkg/options"
 	"strconv"
 	"strings"
-	"errors"
 	"time"
-	"bufio"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
-	options "github.com/stronnag/bbl2kml/pkg/options"
-	mission "github.com/stronnag/bbl2kml/pkg/mission"
 )
 
 var (
@@ -118,7 +118,8 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 	return metas, err
 }
 
-func parse_bullet(line string, b *types.LogItem) {
+func parse_bullet(line string, b *types.LogItem) uint8 {
+	cap := uint8(0)
 	if parts := strings.Split(line, "|"); len(parts) == 2 {
 		lasttm, _ := strconv.ParseInt(parts[0], 10, 64)
 		b.Utc = time.Unix(lasttm/1000, 1000*1000*(lasttm%1000))
@@ -136,16 +137,21 @@ func parse_bullet(line string, b *types.LogItem) {
 					b.Cse = uint32(tmp)
 				case "alt":
 					b.Alt = float64(tmp) / 100.0
+					cap |= types.CAP_ALTITUDE
 				case "asl":
 					b.GAlt = float64(tmp)
 				case "gsp":
 					b.Spd = float64(tmp) / 100.0
+					cap |= types.CAP_SPEED
 				case "bpv":
 					b.Volts = float64(tmp) / 100.0
+					cap |= types.CAP_VOLTS
 				case "cad":
 					b.Energy = float64(tmp)
+					cap |= types.CAP_ENERGY
 				case "rsi":
 					b.Rssi = uint8(tmp)
+					cap |= types.CAP_RSSI_VALID
 				case "ghp":
 					b.Hdop = uint16(tmp)
 				case "fs":
@@ -190,6 +196,7 @@ func parse_bullet(line string, b *types.LogItem) {
 					homes.Flags |= types.HOME_ALT
 				case "cud":
 					b.Amps = float64(tmp) / 100.0
+					cap |= types.CAP_AMPS
 				case "wpno":
 					if mok == false {
 						parse_mission(vals)
@@ -221,6 +228,7 @@ func parse_bullet(line string, b *types.LogItem) {
 	if b.Lat == 0.0 && b.Lon == 0 {
 		b.Fix = 0
 	}
+	return cap
 }
 
 func parse_mission(vals []string) {
@@ -286,11 +294,14 @@ func (lg *BLTLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegm
 	rec := types.LogRec{}
 	b := types.LogItem{}
 	hseen := false
-
+	leffic := 0.0
+	lwhkm := 0.0
+	whacc := 0.0
 	for scanner.Scan() {
 		line := scanner.Text()
 		if i >= m.Start && i <= m.End {
-			parse_bullet(line, &b)
+			cap := parse_bullet(line, &b)
+			rec.Cap |= cap
 			if ch != nil {
 				if !hseen && (homes.Flags&types.HOME_ARM) != 0 {
 					hseen = true
@@ -307,29 +318,41 @@ func (lg *BLTLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegm
 
 					if b.Vrange > stats.Max_range {
 						stats.Max_range = b.Vrange
-						stats.Max_range_time = uint64(b.Utc.Sub(st).Nanoseconds()/1000)
+						stats.Max_range_time = uint64(b.Utc.Sub(st).Nanoseconds() / 1000)
 					}
 
 					if b.Alt > stats.Max_alt {
 						stats.Max_alt = b.Alt
-						stats.Max_alt_time = uint64(b.Utc.Sub(st).Nanoseconds()/1000)
+						stats.Max_alt_time = uint64(b.Utc.Sub(st).Nanoseconds() / 1000)
 					}
+
+					deltat := b.Utc.Sub(lt).Seconds()
 					if b.Spd > 0 && b.Spd < 400 {
 						if b.Spd > stats.Max_speed {
 							stats.Max_speed = b.Spd
-							stats.Max_speed_time = uint64(b.Utc.Sub(st).Nanoseconds()/1000)
+							stats.Max_speed_time = uint64(b.Utc.Sub(st).Nanoseconds() / 1000)
 						}
 
-						deltat := b.Utc.Sub(lt).Seconds()
-						if deltat != 0 {
+						if deltat > 0 {
 							deltad := b.Spd / deltat
 							b.Tdist += deltad
+							if (rec.Cap & types.CAP_AMPS) == types.CAP_AMPS {
+								b.Effic = b.Amps * 1000 / (3.6 * b.Spd) // efficiency
+								leffic = b.Effic
+								b.Whkm = b.Amps * b.Volts / (3.6 * b.Spd)
+								whacc += b.Amps * b.Volts * deltat / 3600
+								b.WhAcc = whacc
+								lwhkm = b.Whkm
+							} else {
+								b.Effic = leffic
+								b.Whkm = lwhkm
+							}
 						}
 					}
 
 					if b.Amps > stats.Max_current {
 						stats.Max_current = b.Amps
-						stats.Max_current_time = uint64(b.Utc.Sub(st).Nanoseconds()/1000)
+						stats.Max_current_time = uint64(b.Utc.Sub(st).Nanoseconds() / 1000)
 					}
 
 					lt = b.Utc
@@ -345,7 +368,7 @@ func (lg *BLTLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegm
 		i += 1
 	}
 
-	srec := stats.Summary(uint64(lt.Sub(st).Nanoseconds()/1000))
+	srec := stats.Summary(uint64(lt.Sub(st).Nanoseconds() / 1000))
 	if mok {
 		options.Config.Mission = filepath.Join(options.Config.Tmpdir, "tmpmission.xml")
 		ms.To_MWXML(options.Config.Mission)

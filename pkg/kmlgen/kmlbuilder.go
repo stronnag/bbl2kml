@@ -527,28 +527,36 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 		d.Add(f1)
 	}
 
-	if (options.Config.Aflags & types.AFlags_EFFIC) == types.AFlags_EFFIC {
-		f1 := kml.Folder(kml.Name("Efficiency")).Add(kml.Visibility(false)).
-			Add(getPoints(rec, hpos, COL_STYLE_EFFIC, !defviz)...)
-		d.Add(f1)
+	if (rec.Cap & types.CAP_ENERGY) == types.CAP_ENERGY {
+		if (options.Config.Aflags & types.AFlags_EFFIC) == types.AFlags_EFFIC {
+			f1 := kml.Folder(kml.Name("Efficiency")).Add(kml.Visibility(false)).
+				Add(getPoints(rec, hpos, COL_STYLE_EFFIC, !defviz)...)
+			d.Add(f1)
+		}
 	}
 
-	if (options.Config.Aflags & types.AFlags_SPEED) == types.AFlags_SPEED {
-		f1 := kml.Folder(kml.Name("Speed")).Add(kml.Visibility(false)).
-			Add(getPoints(rec, hpos, COL_STYLE_SPEED, !defviz)...)
-		d.Add(f1)
+	if (rec.Cap & types.CAP_SPEED) == types.CAP_SPEED {
+		if (options.Config.Aflags & types.AFlags_SPEED) == types.AFlags_SPEED {
+			f1 := kml.Folder(kml.Name("Speed")).Add(kml.Visibility(false)).
+				Add(getPoints(rec, hpos, COL_STYLE_SPEED, !defviz)...)
+			d.Add(f1)
+		}
 	}
 
-	if (options.Config.Aflags & types.AFlags_ALTITUDE) == types.AFlags_ALTITUDE {
-		f1 := kml.Folder(kml.Name("Altitude")).Add(kml.Visibility(false)).
-			Add(getPoints(rec, hpos, COL_STYLE_ALTITUDE, !defviz)...)
-		d.Add(f1)
+	if (rec.Cap & types.CAP_ALTITUDE) == types.CAP_ALTITUDE {
+		if (options.Config.Aflags & types.AFlags_ALTITUDE) == types.AFlags_ALTITUDE {
+			f1 := kml.Folder(kml.Name("Altitude")).Add(kml.Visibility(false)).
+				Add(getPoints(rec, hpos, COL_STYLE_ALTITUDE, !defviz)...)
+			d.Add(f1)
+		}
 	}
 
-	if (options.Config.Aflags & types.AFlags_BATTERY) == types.AFlags_BATTERY {
-		f1 := kml.Folder(kml.Name("Battery")).Add(kml.Visibility(false)).
-			Add(getPoints(rec, hpos, COL_STYLE_BATTERY, !defviz)...)
-		d.Add(f1)
+	if (rec.Cap & types.CAP_VOLTS) == types.CAP_VOLTS {
+		if (options.Config.Aflags & types.AFlags_BATTERY) == types.AFlags_BATTERY {
+			f1 := kml.Folder(kml.Name("Battery")).Add(kml.Visibility(false)).
+				Add(getPoints(rec, hpos, COL_STYLE_BATTERY, !defviz)...)
+			d.Add(f1)
+		}
 	}
 
 	var err error

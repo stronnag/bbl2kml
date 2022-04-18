@@ -365,9 +365,18 @@ func dataCapability() uint8 {
 	}
 	if _, ok := hdrs["energyCumulative (mAh)"]; ok {
 		ret |= types.CAP_ENERGY
-	} else if ret&types.CAP_VOLTS|types.CAP_AMPS == types.CAP_VOLTS|types.CAP_AMPS {
-		ret |= types.CAP_ENERGY
 	}
+
+	if _, ok := hdrs["GPS_speed (m/s)"]; ok {
+		ret |= types.CAP_SPEED
+	}
+
+	if _, ok := hdrs["navPos[2]"]; ok {
+		ret |= types.CAP_ALTITUDE
+	} else if _, ok := hdrs["navPos[2]"]; ok {
+		ret |= types.CAP_ALTITUDE
+	}
+
 	return ret
 }
 
