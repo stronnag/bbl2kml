@@ -20,18 +20,20 @@ A suite of tools to generate beautifully annotated KML/KMZ files (and other data
 ```
 $ flightlog2kml --help
 Usage of flightlog2kml [options] file...
+  -attributes string
+    	Attributes to plot (effic,speed,altitude)
   -dms
-    	Show positions as DD:MM:SS.s (vice decimal degrees) (default true)
+    	Show positions as DD:MM:SS.s (vice decimal degrees)
   -dump
     	Dump log headers and exit
   -efficiency
-    	Include efficiency layer in KML/Z (default true)
+    	Include efficiency layer in KML/Z
   -energy-unit string
     	Energy unit [mah, wh] (default "mah")
   -extrude
-    	Extends track points to ground (default true)
+    	Extends track points to ground
   -gradient string
-    	Specific colour gradient [red,rdgn,yor] (default "yor")
+    	Specific colour gradient [red,rdgn,yor]
   -home-alt int
     	[OTX] home altitude
   -index int
@@ -54,8 +56,12 @@ Usage of flightlog2kml [options] file...
     	[OTX] Time(s) determining log split, 0 disables (default 120)
   -summary
     	Just show summary
+  -version
+    	Just show version
   -visibility int
     	0=folder value,-1=don't set,1=all on
+
+flightlog2kml 0.14.4 commit:dd42959
 ```
 
 Multiple logs (with multiple log indices) may be given. A KML/Z will be generated for each file / index.
@@ -75,7 +81,7 @@ Current  : 30.6 A at 00:05
 Distance : 48437 m
 Duration : 43:44
 Disarm   : Switch
-
+Output   : /tmp/"LOG00044.1.kmz
 ```
 results in the KMZ file "LOG00044.1.kmz"
 
@@ -337,6 +343,7 @@ Default settings may be set in a JSON formatted configuration file.
 
 The keys in the file are the relevant command line options, the following are recognised:
 
+* `attributes`
 * `dms`
 * `extrude`
 * `kml`
@@ -352,15 +359,23 @@ The keys in the file are the relevant command line options, the following are re
 * `visibility`
 * `energy-unit`
 * `max-wp`
+* `fast-is-red`
+* `low-is-red`
 
 For example, the author's `config.json`:
 
 ```
 {
-    "dms": true,
-    "extrude": true,
-    "gradient": "yor",
-    "efficiency": true
+  "dms" : true,
+  "extrude" : true,
+  "gradient" : "yor",
+  "attributes" : "effic,speed,altitude,battery",
+  "rssi" : false,
+  "efficiency" : true,
+  "outdir" : "/tmp",
+  "kml" : false,
+  "fast-is-red" : true,
+  "low-is-red" : true
 }
 ```
 
@@ -449,9 +464,13 @@ ninja install
 
 `flightlog2kml` may be built for all OS for which a suitable Golang is available. At runtime, it also requires inav's [blackbox_decode](https://github.com/iNavFlight/blackbox-tools); the latest version is recommended; the minimum `blackbox_decode` version is 0.4.4.
 
-For Windows' users it is probably easiest to copy inav's `blackbox_decode.exe` into the same directory as `flightlog2kml.exe`.
+For Windows' users it is probably easiest to copy inav's `blackbox_decode.exe` into the same directory as `flightlog2kml.exe`, or use the [fl2xui](#graphical-user-interface) GUI application.
 
 !!! note "Notes"
    * `fl2ltm` is a link to `fl2mqtt`
    * `bbsummary` is a link to `flightlog2kml` and will behave as `flightlog2kml -summary`.
    * `fl2ltm` will be automatically detected by {{ mwp }} and used in preference to its older `replay_bbox_ltm.rb` and `otxlog` helpers.
+
+## Graphical User Interface
+
+There is a [graphical user interface for `flightlog2kml`](https://github.com/stronnag/fl2xui). Binaries are provided for Linux (`.deb`) and Windows.
