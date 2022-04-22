@@ -68,8 +68,14 @@ func Usage() {
 
 func parse_config_file() error {
 	var err error
-	def := types.GetConfigDir()
-	fn := filepath.Join(def, "config.json")
+	var fn string
+	envconf := os.Getenv("FL2X_CONFIG_FILE")
+	if envconf != "" {
+		fn = envconf
+	} else {
+		def := types.GetConfigDir()
+		fn = filepath.Join(def, "config.json")
+	}
 	data, oerr := ioutil.ReadFile(fn)
 	if oerr == nil {
 		err = json.Unmarshal(data, &Config)
