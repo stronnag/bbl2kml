@@ -66,12 +66,11 @@ func Usage() {
 	flag.Usage()
 }
 
-func parse_config_file() error {
+func parse_config_file(cfgfile string) error {
 	var err error
 	var fn string
-	envconf := os.Getenv("FL2X_CONFIG_FILE")
-	if envconf != "" {
-		fn = envconf
+	if cfgfile != "" {
+		fn = cfgfile
 	} else {
 		def := types.GetConfigDir()
 		fn = filepath.Join(def, "config.json")
@@ -103,7 +102,27 @@ func ParseCLI(gv func() string) ([]string, string) {
 		}
 	}
 
-	err = parse_config_file()
+	cfgfile := ""
+	needcf := false
+	for i := 0; i < len(os.Args); i++ {
+		if needcf {
+			if !strings.HasPrefix(os.Args[i], "-") {
+				cfgfile = os.Args[i]
+			}
+			break
+		}
+		if strings.HasPrefix(os.Args[i], "-config") || strings.HasPrefix(os.Args[i], "--config") {
+			parts := strings.Split(os.Args[i], "=")
+			if len(parts) == 2 {
+				cfgfile = parts[i]
+				break
+			} else {
+				needcf = true
+			}
+		}
+	}
+
+	err = parse_config_file(cfgfile)
 	Config.Blackbox_decode = types.SetBBLFallback(Config.Blackbox_decode)
 
 	/**
@@ -179,6 +198,7 @@ func ParseCLI(gv func() string) ([]string, string) {
 	}
 	flag.IntVar(&Config.Intvl, "interval", Config.Intvl, "Sampling Interval (ms)")
 	flag.BoolVar(&showversion, "version", false, "Just show version")
+	flag.StringVar(&cfgfile, "config", "", "alternate file")
 
 	flag.Parse()
 
