@@ -102,7 +102,7 @@ func ParseCLI(gv func() string) ([]string, string) {
 		}
 	}
 
-	cfgfile := ""
+	cfgfile := os.Getenv("FL2X_CONFIG_FILE")
 	needcf := false
 	for i := 0; i < len(os.Args); i++ {
 		if needcf {
