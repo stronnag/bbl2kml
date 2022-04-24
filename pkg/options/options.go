@@ -207,10 +207,10 @@ func ParseCLI(gv func() string) ([]string, string) {
 		os.Exit(0)
 	}
 
-	if app == "flightlog2kml" {
+	if strings.HasPrefix(app, "flightlog2kml") {
 		Config.UseTopo = true
 	}
-	if app == "bbsummary" {
+	if strings.HasPrefix(app, "bbsummary") {
 		Config.Summary = true
 	}
 	if !isFlagSet("home-alt") {

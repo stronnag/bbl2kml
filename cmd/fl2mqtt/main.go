@@ -14,6 +14,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 var GitCommit = "local"
@@ -74,13 +75,13 @@ func main() {
 							fmt.Println("Warning  : Log entry may be corrupt\n")
 						}
 
-						switch app {
-						case "fl2mqtt":
+						switch {
+						case strings.HasPrefix(app, "fl2mqtt"):
 							ls, res := lfr.Reader(metas[options.Config.Idx-1], nil)
 							if res {
 								mqttgen.MQTTGen(ls, metas[options.Config.Idx-1])
 							}
-						case "fl2ltm":
+						case strings.HasPrefix(app, "fl2ltm"):
 							ch := make(chan interface{})
 							go lfr.Reader(metas[options.Config.Idx-1], ch)
 							ltmgen.LTMGen(ch, metas[options.Config.Idx-1])
