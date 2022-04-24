@@ -168,16 +168,16 @@ func ParseCLI(gv func() string) ([]string, string) {
 		flag.StringVar(&Config.Mission, "mission", "", "Optional mission file name")
 		flag.IntVar(&Config.MissionIndex, "mission-index", 1, "Optional mission file index")
 	}
-	if app == "fl2mqtt" {
+	if strings.HasPrefix(app, "fl2mqtt") {
 		flag.StringVar(&Config.Mqttopts, "broker", "", "Mqtt URI (mqtt://[user[:pass]@]broker[:port]/topic[?cafile=file]")
 		flag.IntVar(&Config.Bulletvers, "blt-vers", Config.Bulletvers, "[MQTT] BulletGCSS version")
 		flag.StringVar(&Config.Outdir, "logfile", Config.Outdir, "Log file for browser replay")
-	} else if app == "fl2ltm" {
+	} else if strings.HasPrefix(app, "fl2ltm") {
 		flag.StringVar(&Config.LTMdev, "device", "", "LTM device")
 		flag.BoolVar(&Config.Metas, "metas", false, "list metadata and exit")
 		flag.BoolVar(&Config.Fast, "fast", false, "faster replay")
 		flag.IntVar(&Config.Type, "type", Config.Type, "model type")
-	} else if app == "log2mission" {
+	} else if strings.HasPrefix(app, "log2mission") {
 		flag.Float64Var(&Config.Epsilon, "epsilon", Config.Epsilon, "Epsilon")
 		flag.IntVar(&Config.StartOff, "start-offset", Config.StartOff, "Start Offset (seconds)")
 		flag.IntVar(&Config.EndOff, "end-offset", Config.EndOff, "End Offset (seconds)")
