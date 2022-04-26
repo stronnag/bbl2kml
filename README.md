@@ -4,24 +4,25 @@
 
 A suite of tools to generate beautiful annotated, animated KML/KMZ files (and other data) from **inav** blackbox logs, OpenTX log files (inav S.Port telemetry, some support for OpenTX logs from Ardupilot), BulletGCSS and Aurduplot `.bin` logs.
 
+
+#### INAV Fight Mode layer
 <figure>
   <img src="manual/docs/images/v1.jpeg" alt="FlightModes" style="width:100%">
-  <figcaption style="text-align: center;">inav Flight modes</figcaption>
 </figure>
 
+#### RSSI layer
 <figure>
   <img src="manual/docs/images/v2.jpeg" alt="RSSI" style="width:100%">
-  <figcaption style="text-align: center;">RSSI</figcaption>
 </figure>
 
+#### Efficiency layer
 <figure>
   <img src="manual/docs/images/v3.jpeg" alt="Efficiency" style="width:100%">
-  <figcaption style="text-align: center;">Efficiency</figcaption>
 </figure>
 
+#### Point Annotation
 <figure>
   <img src="manual/docs/images/v4.png" alt="Annotation" style="width:100%">
-  <figcaption style="text-align: center;">Point Annotation</figcaption>
 </figure>
 
 ### Statistics
