@@ -8,14 +8,17 @@ A suite of tools to generate beautiful annotated, animated KML/KMZ files (and ot
   <img src="manual/docs/images/v1.jpeg" alt="FlightModes" style="width:100%">
   <figcaption style="text-align: center;">inav Flight modes</figcaption>
 </figure>
+
 <figure>
   <img src="manual/docs/images/v2.jpeg" alt="RSSI" style="width:100%">
   <figcaption style="text-align: center;">RSSI</figcaption>
 </figure>
+
 <figure>
   <img src="manual/docs/images/v3.jpeg" alt="Efficiency" style="width:100%">
   <figcaption style="text-align: center;">Efficiency</figcaption>
 </figure>
+
 <figure>
   <img src="manual/docs/images/v4.png" alt="Annotation" style="width:100%">
   <figcaption style="text-align: center;">Point Annotation</figcaption>

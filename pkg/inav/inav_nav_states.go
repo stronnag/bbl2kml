@@ -26,7 +26,8 @@ func IsCruise3d(vers, val int) bool {
 func IsRTH(vers, val int) bool {
 	switch {
 	case vers > 0x206ff: // 2.7.0 and later
-		return contains([]int{8, 9, 10, 11, 12, 13, 14, 36}, val)
+		// 38 is 5.0, BACKTRACK. Should not exist earlier
+		return contains([]int{8, 9, 10, 11, 12, 13, 14, 36, 38}, val)
 	case vers > 0x10601: // For 1.6.2, hex = 0x10601
 		return contains([]int{8, 9, 10, 11, 12, 13, 14}, val)
 	case vers > 0x105ff:
