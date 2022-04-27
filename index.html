@@ -687,7 +687,7 @@
 <li><a href="#mission2kml">mission2kml</a> - Generate KML file from inav mission files (and other formats)</li>
 </ul>
 <h2 id="flightlog2kml">flightlog2kml<a class="headerlink" href="#flightlog2kml" title="Permanent link">#</a></h2>
-<div class="highlight"><pre><span></span><code>$ flightlog2kml --help
+<pre><code>$ flightlog2kml --help
 Usage of flightlog2kml [options] file...
   -attributes string
         Attributes to plot (effic,speed,altitude)
@@ -698,7 +698,7 @@ Usage of flightlog2kml [options] file...
   -efficiency
         Include efficiency layer in KML/Z
   -energy-unit string
-        Energy unit [mah, wh] (default &quot;mah&quot;)
+        Energy unit [mah, wh] (default "mah")
   -extrude
         Extends track points to ground
   -gradient string
@@ -728,15 +728,15 @@ Usage of flightlog2kml [options] file...
   -version
         Just show version
   -visibility int
-        0=folder value,-1=don&#39;t set,1=all on
+        0=folder value,-1=don't set,1=all on
 
 flightlog2kml 0.14.4 commit:dd42959
-</code></pre></div>
+</code></pre>
 <p>Multiple logs (with multiple log indices) may be given. A KML/Z will be generated for each file / index.</p>
 <p>The output file is named from the base name of the source log file, appended with the index number and <code>.kml</code> or <code>.kmz</code> as appropriate. For example:</p>
-<p><div class="highlight"><pre><span></span><code>$ flightlog2kml LOG00044.TXT
+<pre><code>$ flightlog2kml LOG00044.TXT
 Log      : LOG00044.TXT / 1
-Flight   : &quot;Model&quot; on 2020-04-12T14:24:01.410+03:00
+Flight   : "Model" on 2020-04-12T14:24:01.410+03:00
 Firmware : INAV 2.4.0 (bcd4caef9) MATEKF722 of Feb 11 2020 22:48:59
 Size     : 19.36 MB
 Altitude : 292.8 m at 25:42
@@ -746,9 +746,9 @@ Current  : 30.6 A at 00:05
 Distance : 48437 m
 Duration : 43:44
 Disarm   : Switch
-Output   : /tmp/&quot;LOG00044.1.kmz
-</code></pre></div>
-results in the KMZ file "LOG00044.1.kmz"</p>
+Output   : /tmp/"LOG00044.1.kmz
+</code></pre>
+<p>results in the KMZ file <code>/tmp/LOG00044.1.kmz</code></p>
 <p>Where <code>-mission &lt;file&gt;</code> is given, the given waypoint <code>&lt;mission file&gt;</code> will be included in the generated KML/Z; mission files may be one of the following formats as supported by <a href="https://github.com/stronnag/impload">impload</a>:</p>
 <ul>
 <li>MultiWii / XML mission files (MW-XML) <a href="https://github.com/stronnag/mwptools">mwp</a>, <a href="https://github.com/iNavFlight/inav-configurator">inav-configurator</a>, <a href="https://play.google.com/store/apps/details?id=com.ezio.multiwii&amp;hl=en_GB">ezgui</a>, <a href="https://play.google.com/store/apps/details?id=com.eziosoft.ezgui.inav&amp;hl=en">mission planner for inav</a>, drone-helper).</li>
@@ -806,7 +806,7 @@ results in the KMZ file "LOG00044.1.kmz"</p>
 </ul>
 <h2 id="fl2mqtt">fl2mqtt<a class="headerlink" href="#fl2mqtt" title="Permanent link">#</a></h2>
 <p>The MQTT option (for BulletGCSS) uses a MQTT broker URI, which may include a username/password and cafile if required for authentication and/or encryption. It can also generate compatible log files that may be replayed by BulletGCSS' internal log player (without requiring a MQTT broker).</p>
-<div class="highlight"><pre><span></span><code>$ fl2mqtt --help
+<pre><code>$ fl2mqtt --help
 Usage of fl2mqtt [options] file...
   -blt-vers int
         [MQTT] BulletGCSS version (default 2)
@@ -828,7 +828,7 @@ Usage of fl2mqtt [options] file...
         rebase all positions on lat,lon[,alt]
   -split-time int
         [OTX] Time(s) determining log split, 0 disables (default 120)
-</code></pre></div>
+</code></pre>
 <p>The <a href="https://github.com/danarrib/BulletGCSS/wiki">BulletGCSS wiki</a> describes how the broker values are chosen; in general:</p>
 <ul>
 <li>It is safe to use <code>broker.emqx.io</code> as the MQTT broker, this is default if no broker host is defined in the URI.</li>
@@ -843,8 +843,8 @@ Usage of fl2mqtt [options] file...
 <li>mqtt (or any-other scheme) - TCP connection. If <code>?cafile=file</code> is specified, then that is used for TLS validation (and the TLS port should be specified).</li>
 </ul>
 <p>There is a <a href="https://github.com/stronnag/bbl2kml/wiki/Self-Hosting-a-MQTT-server-(e.g.-for-fl2mqtt-&amp;--BulletGCSS)">bb2kml wiki article</a> describing how to host your own MQTT broker, for reasons of convenience or better privacy.</p>
-<p>Example:
-<div class="highlight"><pre><span></span><code>## the default broker is used ##
+<p>Example:</p>
+<pre><code>## the default broker is used ##
 $ fl2mqtt -broker mqtt://broker.emqx.io/org/mwptools/mqtt/playotx openTXlog.csv
 $ fl2mqtt -broker mqtt:///org/mwptools/mqtt/playbbl blackbox.TXT
 
@@ -856,12 +856,12 @@ $ fl2mqtt -broker mqtts://broker.emqx.io:8883/fl2mqtt/fl2mtqq/test -mission simp
 ## Web sockets (plain text / TLS); mosquitto:8081 has valid Lets Encrypt cert.
 $ fl2mqtt -broker ws://test.mosquitto.org:8080/fl2mqtt/fl2mtqq/test -mission simple_jump.mission BBL_102629.TXT
 $ fl2mqtt -broker wss://test.mosquitto.org:8081/fl2mqtt/fl2mtqq/test -mission simple_jump.mission BBL_102629.TXT
-</code></pre></div></p>
+</code></pre>
 <p>If a mission file is given, this will also be displayed by BulletGCSS, albeit incorrectly if there WP contains types other than <code>WAYPOINT</code> and <code>RTH</code>.</p>
 <p><a href="https://github.com/stronnag/mwptools">mwp</a> can also process / display the BulletGCSS MQTT protocol, using a similar <a href="https://github.com/stronnag/mwptools/wiki/mqtt---bulletgcss-telemetry">URI definition</a>.</p>
 <h2 id="log2mission">log2mission<a class="headerlink" href="#log2mission" title="Permanent link">#</a></h2>
 <p><code>log2mission</code> will create an inav XML mission file from a supported flight log (Blackbox, OpenTX, BulletGCSS). The mission will not exceed the inav maximum of 120 mission points (or configurated maximum).</p>
-<div class="highlight"><pre><span></span><code>$ log2mission
+<pre><code>$ log2mission
 Usage of log2mission [options] file...
   -end-offset int
         End Offset (seconds) (default -30)
@@ -883,14 +883,14 @@ Usage of log2mission [options] file...
         Start Offset (seconds) (default 30)
 
 log2mission 0.12.3, commit: 43e033d
-</code></pre></div>
+</code></pre>
 <ul>
 <li>The <code>start-offset</code> and <code>end-offset</code> compensate for the fact that the start / end of the flight is usually on the ground, and thus is not a good WP choice. The defaults are 30 seconds for the start offset and -30 seconds (i.e. 30 seconds from the end) for the end offset. The end offset may be specified as either a positive number of seconds from the start of the log or a negative number (from the end). Locations prior to the start offset and after the end offset are not considered for mission generation. If the <code>end-offset</code> is specified (0 cancels it), and there is no flight mode filter, then RTH is included in the generated mission.</li>
 <li>The <code>mode-filter</code> allows the log to filtered on Cruise and WP modes, e.g. <code>-mode-filter=cruise</code>, <code>-mode-filter=wp</code>, <code>-mode-filter=cruise,wp</code>. If <code>mode-filter</code> is specified, log entries not in the required flight mode(s) are discarded. Cruise includes both 2D and 3D cruise.</li>
 </ul>
 <h3 id="epsilon-tuning"><code>epsilon</code> tuning<a class="headerlink" href="#epsilon-tuning" title="Permanent link">#</a></h3>
 <p>The <code>epsilon</code> value is an opaque factor that controls the point simplification process (using the Ramer–Douglas–Peucker algorithm). The default value should be a good starting point for fixed wing with reasonably sedate flying. On a multi-rotor in a small flight area, a much smaller value (e.g. 0.001) would be more appropriate.  Increasing the value will decrease the number of mission points generated. <code>log2mission</code> will do this automatically if the default value results in greater than <code>max-wp</code> mission points, for example: the log below would generate more than 70 points with the default <code>epsilon</code> value; too many if we are targeting inav 3.0.2 or earlier .</p>
-<div class="highlight"><pre><span></span><code>$ log2mission -start-offset 60 -end-offset -120 -max-wp 60 /t/inav-contrib/otxlogs/demolog.TXT
+<pre><code>$ log2mission -start-offset 60 -end-offset -120 -max-wp 60 /t/inav-contrib/otxlogs/demolog.TXT
 Flight   : MrPlane on 2021-04-08 13:24:07
 Firmware : INAV 3.0.0 (fc0e5e274) MATEKF405 of Apr 7 2021 / 17:02:08
 Size     : 19.36 MB
@@ -902,24 +902,24 @@ Distance : 48437 m
 Duration : 43:44
 Altitude : 292.8 m at 25:42
 Mission  : 56 points (reprocess: 1, epsilon: 0.018)
-</code></pre></div>
+</code></pre>
 <p>The output from this example would be <code>demolog.1.mission</code></p>
 <h4 id="multirotor-example">multirotor example<a class="headerlink" href="#multirotor-example" title="Permanent link">#</a></h4>
 <p>With the default <code>epsilon</code> of 0.015, for a "small field" MR flight, it is often the case that no useful mission would be generated from a such "short/complex" flight, prior to the 0.98 release auto-correction, for example:</p>
-<div class="highlight"><pre><span></span><code>$ log2mission logfs.TXT
+<pre><code>$ log2mission logfs.TXT
 ...
 Mission  : 2 points
-</code></pre></div>
-<p>For 0.9.8, <code>log2mission</code> will make an attempt to resolve the "short/complex" 2 point results by increasing <code>epsilon</code> automatically.</p>
-<div class="highlight"><pre><span></span><code>$ log2mission /t/inav-contrib/logfs.TXT
+</code></pre>
+<p>For 0.9.8 and later, <code>log2mission</code> will make an attempt to resolve the "short/complex" 2 point results by increasing <code>epsilon</code> automatically.</p>
+<pre><code>$ log2mission /t/inav-contrib/logfs.TXT
 Log      : logfs.TXT / 1
 ...
 Mission  : 14 points (reprocess: 1, epsilon: 0.001000)
-</code></pre></div>
+</code></pre>
 <p>Some experimentation may still be required to get a good mission, particularly for shorter MR flights. In particular, if reprocessing is indicated and the number of generated points is close to <code>max-wp</code>, then it's probably worth running again with a slightly larger epsilon than that shown in the output. Likewise, where <code>log2mission</code> has decreased the <code>epsilon</code>, it's probably worth running <code>log2mission</code> again with a slightly smaller <code>epsilon</code> than indicated.</p>
 <h2 id="mission2kml">mission2kml<a class="headerlink" href="#mission2kml" title="Permanent link">#</a></h2>
 <p>A standalone mission file to KML/Z converter is also provided.</p>
-<div class="highlight"><pre><span></span><code>$ mission2kml --help
+<pre><code>$ mission2kml --help
 Usage of mission2kml [options] mission_file
   -dms
         Show positions as DMS (vice decimal degrees)
@@ -928,10 +928,10 @@ Usage of mission2kml [options] mission_file
 
 The home location is given as decimal degrees latitude and
 longitude and optional altitude. The values should be separated by a single
-separator, one of &quot;/:; ,&quot;. If space is used, then the values must be enclosed
+separator, one of "/:; ,". If space is used, then the values must be enclosed
 in quotes.
 
-In locales where comma is used as decimal &quot;point&quot;, then comma should not be
+In locales where comma is used as decimal "point", then comma should not be
 used as a separator.
 
 If a syntactically valid home position is given, without altitude, an online
@@ -941,12 +941,12 @@ Examples:
     -home 54.353974/-4.5236
     --home 48,9975:2,5789/104
     -home 54.353974;-4.5236
-    --home &quot;48,9975 2,5789&quot;
+    --home "48,9975 2,5789"
     -home 54.353974,-4.5236,24
-</code></pre></div>
+</code></pre>
 <p>A KML file is generated to stdout, which may be redirected to a file, e.g:</p>
-<div class="highlight"><pre><span></span><code>$ mission2kml -home 54.125229,-4.730443 barrule-h.mission &gt; mtest.kml
-</code></pre></div>
+<pre><code>$ mission2kml -home 54.125229,-4.730443 barrule-h.mission &gt; mtest.kml
+</code></pre>
 <p>Note that for recent MW-XML mission files generated by <a href="https://github.com/stronnag/mwptools">mwp</a> or the inav-configurator, the planned home located may be saved in the mission files; in which csae it will be used.</p>
 <h2 id="setting-default-options">Setting default options<a class="headerlink" href="#setting-default-options" title="Permanent link">#</a></h2>
 <p>Default settings may be set in a JSON formatted configuration file.</p>
@@ -976,19 +976,19 @@ Examples:
 <li><code>low-is-red</code></li>
 </ul>
 <p>For example, the author's <code>config.json</code>:</p>
-<div class="highlight"><pre><span></span><code>{
-  &quot;dms&quot; : true,
-  &quot;extrude&quot; : true,
-  &quot;gradient&quot; : &quot;yor&quot;,
-  &quot;attributes&quot; : &quot;effic,speed,altitude,battery&quot;,
-  &quot;rssi&quot; : false,
-  &quot;efficiency&quot; : true,
-  &quot;outdir&quot; : &quot;/tmp&quot;,
-  &quot;kml&quot; : false,
-  &quot;fast-is-red&quot; : true,
-  &quot;low-is-red&quot; : true
+<pre><code>{
+  "dms" : true,
+  "extrude" : true,
+  "gradient" : "yor",
+  "attributes" : "effic,speed,altitude,battery",
+  "rssi" : false,
+  "efficiency" : true,
+  "outdir" : "/tmp",
+  "kml" : false,
+  "fast-is-red" : true,
+  "low-is-red" : true
 }
-</code></pre></div>
+</code></pre>
 <p>A warning will be displayed if the configuration file in not syntactically correct; in such cases its contents will be ignored. There is a somewhat <a href="https://github.com/stronnag/bbl2kml/wiki/Sample-Config-file">complete example</a> in the wiki that can be used as a template.</p>
 <div class="admonition note">
 <p class="admonition-title">JSON Syntax</p>
@@ -1009,7 +1009,7 @@ Examples:
 <p>Binaries are provided for common operating systems in the <a href="https://github.com/stronnag/bbl2kml/releases">Release folder</a>.</p>
 <h4 id="install-from-release-archive">Install from release archive<a class="headerlink" href="#install-from-release-archive" title="Permanent link">#</a></h4>
 <p>For example (adjust version number, OS, archiver as necessary).</p>
-<div class="highlight"><pre><span></span><code>$ wget https://github.com/stronnag/bbl2kml/releases/download/0.12.0/flightlog2kml-0.12.0-linux-x86_64.tar.gz
+<pre><code>$ wget https://github.com/stronnag/bbl2kml/releases/download/0.12.0/flightlog2kml-0.12.0-linux-x86_64.tar.gz
 $ tar -xf $ tar -xvf flightlog2kml-0.12.0-linux-x86_64.tar.gz
 fl2x/linux-x86_64/
 fl2x/linux-x86_64/bin/
@@ -1025,7 +1025,7 @@ $ cp -a fl2x/linux-x86_64/bin/* ~/.local/bin/
 
 # Or system wide
 $ sudo cp -a fl2x/linux-x86_64/bin/* /usr/local/bin/
-</code></pre></div>
+</code></pre>
 <p>The fl2x tools require that <a href="https://github.com/iNavFlight/blackbox-tools">inav blackbox_decode</a> is installed and can be found by the operating system (e.g. <code>$PATH</code> / <code>%PATH%</code>).</p>
 <p>On Windows, as long as <a href="https://github.com/iNavFlight/blackbox-tools">inav blackbox_decode</a> can be found (which may mean on <code>%PATH%</code> or in the same directory as <code>flightlog2kml</code> (and the other tools), then dropping logs onto <code>flightlog2kml</code> is supported.</p>
 <h4 id="setting-the-windows-path">Setting the Windows path<a class="headerlink" href="#setting-the-windows-path" title="Permanent link">#</a></h4>
@@ -1033,19 +1033,19 @@ $ sudo cp -a fl2x/linux-x86_64/bin/* /usr/local/bin/
 <h3 id="building-from-source">Building from source<a class="headerlink" href="#building-from-source" title="Permanent link">#</a></h3>
 <p>Requires Go v1.13 or later.
 Compiled with:</p>
-<div class="highlight"><pre><span></span><code>$ go build cmd/flightlog2kml/main.go
+<pre><code>$ go build cmd/flightlog2kml/main.go
 $ go build cmd/mission2kml/main.go
-</code></pre></div>
+</code></pre>
 <p>or more simply</p>
-<div class="highlight"><pre><span></span><code># First time
+<pre><code># First time
 meson build --prefix=~/.local
 cd build
 ninja install
-</code></pre></div>
-<div class="highlight"><pre><span></span><code># Subsequently
+
+# Subsequently
 cd build
 ninja install
-</code></pre></div>
+</code></pre>
 <p><strong>flightlog2kml</strong> depends on <a href="https://github.com/twpayne/go-kml">twpayne/go-kml</a>, an outstanding open source Golang KML library.</p>
 <p><code>flightlog2kml</code> may be built for all OS for which a suitable Golang is available. At runtime, it also requires inav's <a href="https://github.com/iNavFlight/blackbox-tools">blackbox_decode</a>; the latest version is recommended; the minimum <code>blackbox_decode</code> version is 0.4.4.</p>
 <p>For Windows' users it is probably easiest to copy inav's <code>blackbox_decode.exe</code> into the same directory as <code>flightlog2kml.exe</code>, or use the <a href="#graphical-user-interface">fl2xui</a> GUI application.</p>
