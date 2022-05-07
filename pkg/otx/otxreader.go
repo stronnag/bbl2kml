@@ -224,6 +224,14 @@ func dataCapability() uint8 {
 		ret |= (types.CAP_ENERGY | types.CAP_ENERGYC)
 	}
 
+	if _, ok = hdrs["GSpd"]; ok {
+		ret |= types.CAP_SPEED
+	}
+
+	if _, ok = hdrs["Alt"]; ok {
+		ret |= types.CAP_ALTITUDE
+	}
+
 	return ret
 }
 
