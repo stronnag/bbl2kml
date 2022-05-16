@@ -634,9 +634,11 @@ func (lg *OTXLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegm
 					}
 				}
 
-				if (b.Status & (types.Is_CRSF | types.Is_ARDU)) != 0 {
-					b.Spd = calc_speed(b, tdiff, llat, llon)
-					rec.Cap |= types.CAP_SPEED
+				if (rec.Cap & types.CAP_SPEED) == 0 {
+					if (b.Status & (types.Is_CRSF | types.Is_ARDU)) != 0 {
+						b.Spd = calc_speed(b, tdiff, llat, llon)
+						rec.Cap |= types.CAP_SPEED
+					}
 				}
 
 				if b.Spd > 200 {
