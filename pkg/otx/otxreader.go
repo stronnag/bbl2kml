@@ -515,25 +515,25 @@ func get_otx_line(r []string) types.LogItem {
 
 	if s, _, ok := get_rec_value(r, "Ail"); ok {
 		i64, _ := strconv.Atoi(s)
-		b.Ail = normalise_stick(int16(i64))
+		b.Ail = normalise_stick(i64)
 		if s, _, ok = get_rec_value(r, "Ele"); ok {
 			i64, _ := strconv.Atoi(s)
-			b.Ele = normalise_stick(int16(i64))
+			b.Ele = normalise_stick(i64)
 		}
 		if s, _, ok = get_rec_value(r, "Rud"); ok {
 			i64, _ := strconv.Atoi(s)
-			b.Rud = normalise_stick(int16(i64))
+			b.Rud = normalise_stick(i64)
 		}
 		if s, _, ok = get_rec_value(r, "Thr"); ok {
 			i64, _ := strconv.Atoi(s)
-			b.Thr = normalise_stick(int16(i64))
+			b.Thr = normalise_stick(i64)
 		}
 	}
 	return b
 }
 
-func normalise_stick(v int16) int16 {
-	return (v+1024)*1000/2048 + 1000
+func normalise_stick(v int) int16 {
+	return int16((v+1024)*1000/2048 + 1000)
 }
 
 func to_degrees(rad float64) float64 {

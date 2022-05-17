@@ -535,6 +535,21 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 			i64, _ := strconv.Atoi(s)
 			b.Thr = int16(i64)
 		}
+	} else if s, ok = get_rec_value(r, "rcCommand[0]"); ok {
+		i64, _ := strconv.Atoi(s)
+		b.Ail = int16(i64) + 1500
+		if s, ok = get_rec_value(r, "rcCommand[1]"); ok {
+			i64, _ := strconv.Atoi(s)
+			b.Ele = int16(i64) + 1500
+		}
+		if s, ok = get_rec_value(r, "rcCommand[2]"); ok {
+			i64, _ := strconv.Atoi(s)
+			b.Rud = int16(i64) + 1500
+		}
+		if s, ok = get_rec_value(r, "rcCommand[3]"); ok {
+			i64, _ := strconv.Atoi(s)
+			b.Thr = int16(i64)
+		}
 	}
 
 	if s, ok = get_rec_value(r, "attitude[0]"); ok {
