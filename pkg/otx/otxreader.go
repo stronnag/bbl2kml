@@ -512,6 +512,24 @@ func get_otx_line(r []string) types.LogItem {
 	}
 	b.Throttle = 100 * (b.Throttle + 1024) / 2048
 	b.Status = status
+
+	if s, _, ok := get_rec_value(r, "Ail"); ok {
+		i64, _ := strconv.Atoi(s)
+		b.Ail = int16(i64)
+		if s, _, ok = get_rec_value(r, "Ele"); ok {
+			i64, _ := strconv.Atoi(s)
+			b.Ele = int16(i64)
+		}
+		if s, _, ok = get_rec_value(r, "Rud"); ok {
+			i64, _ := strconv.Atoi(s)
+			b.Rud = int16(i64)
+		}
+		if s, _, ok = get_rec_value(r, "Thr"); ok {
+			i64, _ := strconv.Atoi(s)
+			b.Thr = int16(i64)
+		}
+	}
+
 	return b
 }
 

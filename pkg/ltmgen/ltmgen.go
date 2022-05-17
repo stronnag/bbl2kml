@@ -40,6 +40,8 @@ func newLTM(mtype byte) *ltmbuf {
 		paylen = 2
 	case 'a':
 		paylen = 2
+	case 'r':
+		paylen = 8
 	default:
 		log.Fatalf("LTM: No payload defined for type '%c'\n", mtype)
 	}
@@ -65,6 +67,14 @@ func (l *ltmbuf) checksum() {
 		c = c ^ s
 	}
 	l.msg[l.len+3] = c
+}
+
+func (l *ltmbuf) prframe(b types.LogItem) {
+	binary.LittleEndian.PutUint16(l.msg[3:5], uint16(b.Ail))
+	binary.LittleEndian.PutUint16(l.msg[5:7], uint16(b.Ele))
+	binary.LittleEndian.PutUint16(l.msg[7:9], uint16(b.Rud))
+	binary.LittleEndian.PutUint16(l.msg[9:11], uint16(b.Thr))
+	l.checksum()
 }
 
 func (l *ltmbuf) aframe(b types.LogItem) {
@@ -359,6 +369,12 @@ func LTMGen(ch chan interface{}, meta types.FlightMeta) {
 				s.Write(l.msg)
 				xcount = (xcount + 1) & 0xff
 				g3t = b.Utc.Add(g3diff)
+			}
+
+			if b.Ail > 0 {
+				l := newLTM('r')
+				l.prframe(b)
+				s.Write(l.msg)
 			}
 
 			if !lt.IsZero() {

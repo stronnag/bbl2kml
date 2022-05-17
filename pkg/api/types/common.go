@@ -86,6 +86,10 @@ type LogItem struct {
 	Hdop     uint16
 	HWfail   bool
 	NavMode  byte
+	Ail      int16
+	Ele      int16
+	Rud      int16
+	Thr      int16
 }
 
 type LogRec struct {
