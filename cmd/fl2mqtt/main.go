@@ -72,7 +72,7 @@ func main() {
 							fmt.Printf("%-8.8s : %s\n", k, v)
 						}
 						if metas[options.Config.Idx-1].Flags&types.Is_Suspect != 0 {
-							fmt.Println("Warning  : Log entry may be corrupt\n")
+							fmt.Println("Warning  : Log entry may be corrupt")
 						}
 
 						switch {
@@ -88,7 +88,7 @@ func main() {
 						}
 						//						fmt.Println()
 					} else {
-						fmt.Println("Log: Not valid\n")
+						fmt.Println("Log: Not valid")
 					}
 				}
 			}

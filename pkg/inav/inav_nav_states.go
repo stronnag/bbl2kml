@@ -35,7 +35,6 @@ func IsRTH(vers, val int) bool {
 	default:
 		return contains([]int{8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21}, val)
 	}
-	return false
 }
 
 func IsWP(vers, val int) bool {
@@ -53,7 +52,6 @@ func IsWP(vers, val int) bool {
 	default:
 		return contains([]int{22, 23, 24, 25, 26}, val)
 	}
-	return false
 }
 
 func IsLaunch(vers, val int) bool {
@@ -111,7 +109,6 @@ func is_start_land(vers, val int) bool {
 	default: // prior to 1.2
 		return contains([]int{18, 27}, val)
 	}
-	return false
 }
 
 func is_landing(vers, val int) bool {
@@ -125,7 +122,6 @@ func is_landing(vers, val int) bool {
 	default: // prior to 1.2
 		return contains([]int{19, 28}, val)
 	}
-	return false
 }
 
 func is_landed(vers, val int) bool {
