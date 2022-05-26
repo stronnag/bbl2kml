@@ -24,46 +24,50 @@ type BBLElement struct {
 }
 
 func main() {
-	fn := os.Args[1]
-	dat, err := os.ReadFile(fn)
-	if err == nil {
-		base := filepath.Base(fn)
-		i := 0
-		needle := []byte("H Product:Blackbox")
-		done := false
-		var parts []BBLElement
+	if len(os.Args) > 1 {
+		for _, fn := range os.Args[1:] {
+			dat, err := os.ReadFile(fn)
+			if err == nil {
+				base := filepath.Base(fn)
+				i := 0
+				needle := []byte("H Product:Blackbox")
+				done := false
+				var parts []BBLElement
 
-		for done != true {
-			p := bytes.Index(dat[i:], needle)
-			done = p == -1
-			if p != 0 {
-				sp := i - len(needle)
-				sz := 0
-				if p == -1 {
-					sz = len(dat) - sp
+				for done != true {
+					p := bytes.Index(dat[i:], needle)
+					done = p == -1
+					if p != 0 {
+						sp := i - len(needle)
+						sz := 0
+						if p == -1 {
+							sz = len(dat) - sp
+						} else {
+							sz = p + len(needle)
+						}
+						parts = append(parts, BBLElement{Start: sp, Length: sz})
+						i += sz
+					} else {
+						i = len(needle)
+					}
+				}
+				if len(parts) > 1 {
+					for n, p := range parts {
+						fname := fmt.Sprintf("%03d_%s", n+1, base)
+						if fh, err := os.Create(fname); err == nil {
+							fmt.Printf("==> %v\n", fname)
+							fh.Write(dat[p.Start : p.Start+p.Length])
+							fh.Close()
+						}
+					}
 				} else {
-					sz = p + len(needle)
+					fmt.Printf("Single part BBL %s\n", base)
 				}
-				parts = append(parts, BBLElement{Start: sp, Length: sz})
-				i += sz
 			} else {
-				i = len(needle)
+				log.Fatalln(fn, err)
 			}
-		}
-		if len(parts) > 1 {
-			for n, p := range parts {
-				fname := fmt.Sprintf("%03d_%s", n+1, base)
-				if fh, err := os.Create(fname); err == nil {
-					fmt.Printf("==> %v\n", fname)
-					fh.Write(dat[p.Start : p.Start+p.Length])
-					fh.Close()
-				}
-			}
-		} else {
-			fmt.Println("Single part BBL")
 		}
 	} else {
-		log.Fatalln(fn, err)
+		fmt.Println("No files given")
 	}
-
 }
