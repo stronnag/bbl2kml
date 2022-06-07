@@ -544,7 +544,7 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 		}
 		if s, ok = get_rec_value(r, "rcCommand[2]"); ok {
 			i64, _ := strconv.Atoi(s)
-			b.Rud = int16(i64) + 1500
+			b.Rud = -1*int16(i64) + 1500
 		}
 		if s, ok = get_rec_value(r, "rcCommand[3]"); ok {
 			i64, _ := strconv.Atoi(s)
