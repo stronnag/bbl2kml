@@ -51,7 +51,7 @@ func main() {
 			l := ap.NewAPReader(fn)
 			lfr = &l
 		default:
-			log.Fatal("Unknown log format")
+			log.Fatalf("%s: unknown log format\n", fn)
 		}
 
 		metas, err := lfr.GetMetas()
