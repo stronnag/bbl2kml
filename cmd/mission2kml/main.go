@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	mission "github.com/stronnag/bbl2kml/pkg/mission"
+	kml "github.com/twpayne/go-kml"
 	"log"
 	"os"
 	"path/filepath"
@@ -68,7 +70,7 @@ Examples:
 
 	flag.BoolVar(&dms, "dms", dms, "Show positions as DMS (vice decimal degrees)")
 	flag.StringVar(&homepos, "home", homepos, "Use home location")
-	flag.IntVar(&idx, "mission-index", 1, "Mission Index")
+	flag.IntVar(&idx, "mission-index", 0, "Mission Index")
 	flag.Parse()
 	files := flag.Args()
 	if len(files) == 0 {
@@ -99,18 +101,44 @@ Examples:
 			}
 		}
 	}
-
-	_, m, err := mission.Read_Mission_File_Index(files[0], idx)
-	if m != nil && err == nil {
-		if len(home) == 0 {
-			if m.Metadata.Homey != 0 && m.Metadata.Homex != 0 {
-				home = append(home, m.Metadata.Homey, m.Metadata.Homex)
-			}
-		}
-
-		m.Dump(dms, home...)
-	}
+	err := generateKML(files[0], idx, dms, home)
 	if err != nil {
 		log.Fatalf("mission2kmk: %+v\n", err)
 	}
+}
+
+func generateKML(mfile string, idx int, dms bool, homep []float64) error {
+	kname := filepath.Base(mfile)
+	d := kml.Folder(kml.Name(kname)).Add(kml.Open(true))
+	_, mm, err := mission.Read_Mission_File(mfile)
+	if err == nil {
+		isviz := true
+		for nm, _ := range mm.Segment {
+			nmx := nm + 1
+			if idx == 0 || nmx == idx {
+				ms := mm.To_mission(nmx)
+				if len(homep) == 0 {
+					if ms.Metadata.Homey != 0 && ms.Metadata.Homex != 0 {
+						homep = append(homep, ms.Metadata.Homey, ms.Metadata.Homex)
+					}
+				}
+				var hpos types.HomeRec
+				if len(homep) == 2 {
+					hpos.HomeLat = homep[0]
+					hpos.HomeLon = homep[1]
+					hpos.Flags = types.HOME_ARM
+				}
+				if len(homep) > 2 {
+					hpos.HomeAlt = homep[2]
+					hpos.Flags |= types.HOME_ALT
+				}
+				mf := ms.To_kml(hpos, dms, false, nmx, isviz)
+				d.Add(mf)
+				isviz = false
+			}
+		}
+		k := kml.KML(d)
+		k.WriteIndent(os.Stdout, "", "  ")
+	}
+	return err
 }

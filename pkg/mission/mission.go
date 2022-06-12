@@ -220,7 +220,7 @@ func (m *Mission) Dump(dms bool, homep ...float64) {
 		hpos.HomeAlt = homep[2]
 		hpos.Flags |= types.HOME_ALT
 	}
-	k := kml.KML(m.To_kml(hpos, dms, true))
+	k := kml.KML(m.To_kml(hpos, dms, true, 1, true))
 	k.WriteIndent(os.Stdout, "", "  ")
 }
 

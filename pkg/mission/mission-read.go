@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func (mm *MultiMission) to_mission(mi int) *Mission {
+func (mm *MultiMission) To_mission(mi int) *Mission {
 	m := &Mission{}
 	if mi > len(mm.Segment) {
 		mi = len(mm.Segment)
@@ -20,7 +20,7 @@ func (mm *MultiMission) to_mission(mi int) *Mission {
 	return m
 }
 
-func Read_Mission_File_Index(path string, idx int) (string, *Mission, error) {
+func Read_Mission_File(path string) (string, *MultiMission, error) {
 	var dat []byte
 	r, err := os.Open(path)
 	if err == nil {
@@ -33,9 +33,17 @@ func Read_Mission_File_Index(path string, idx int) (string, *Mission, error) {
 		mtype, mm := handle_mission_data(dat, path)
 		if mm == nil {
 			fmt.Fprintf(os.Stderr, "Note: Mission fails verification %s\n", mtype)
-			return mtype, nil, nil
 		}
-		m := mm.to_mission(idx)
+		return mtype, mm, nil
+	}
+}
+
+func Read_Mission_File_Index(path string, idx int) (string, *Mission, error) {
+	mtype, mm, err := Read_Mission_File(path)
+	if err == nil {
+		m := mm.To_mission(idx)
 		return mtype, m, nil
+	} else {
+		return mtype, nil, err
 	}
 }

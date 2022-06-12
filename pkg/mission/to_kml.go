@@ -2,16 +2,16 @@ package mission
 
 import (
 	"fmt"
+	types "github.com/stronnag/bbl2kml/pkg/api/types"
+	geo "github.com/stronnag/bbl2kml/pkg/geo"
 	kml "github.com/twpayne/go-kml"
 	"github.com/twpayne/go-kml/icon"
 	"image/color"
-	geo "github.com/stronnag/bbl2kml/pkg/geo"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
 )
 
-func (m *Mission) get_fly_points (addAlt int32) ([]kml.Coordinate, bool) {
+func (m *Mission) get_fly_points(addAlt int32) ([]kml.Coordinate, bool) {
 	var points []kml.Coordinate
-		nsize := len(m.MissionItems)
+	nsize := len(m.MissionItems)
 	ret := false
 
 	jumpC := make([]int16, nsize)
@@ -64,9 +64,9 @@ func (m *Mission) get_fly_points (addAlt int32) ([]kml.Coordinate, bool) {
 	return points, ret
 }
 
-func (m *Mission) To_kml(hpos types.HomeRec, dms bool, fake bool) kml.Element {
+func (m *Mission) To_kml(hpos types.HomeRec, dms bool, fake bool, mmidx int, isvis bool) kml.Element {
 	var points []kml.Coordinate
-	var wps  []kml.Element
+	var wps []kml.Element
 	llat := 0.0
 	llon := 0.0
 	lalt := int32(0)
@@ -78,7 +78,7 @@ func (m *Mission) To_kml(hpos types.HomeRec, dms bool, fake bool) kml.Element {
 		if (hpos.Flags & types.HOME_ALT) == types.HOME_ALT {
 			addAlt = int32(hpos.HomeAlt)
 		} else {
-			bingelev, err :=  geo.GetElevation(hpos.HomeLat, hpos.HomeLon)
+			bingelev, err := geo.GetElevation(hpos.HomeLat, hpos.HomeLon)
 			if err == nil {
 				addAlt = int32(bingelev)
 				hpos.Flags |= types.HOME_ALT
@@ -97,7 +97,7 @@ func (m *Mission) To_kml(hpos types.HomeRec, dms bool, fake bool) kml.Element {
 	var alt int32
 
 	for _, mi := range m.MissionItems {
-		if  mi.Action == "JUMP" || mi.Action == "SET_HEAD" || mi.Action == "RTH" {
+		if mi.Action == "JUMP" || mi.Action == "SET_HEAD" || mi.Action == "RTH" {
 			lat = llat
 			lon = llon
 			alt = lalt
@@ -127,7 +127,7 @@ func (m *Mission) To_kml(hpos types.HomeRec, dms bool, fake bool) kml.Element {
 		default:
 			bname = mi.Action
 		}
-		name:= fmt.Sprintf("%s %d", bname, mi.No)
+		name := fmt.Sprintf("%s %d", bname, mi.No)
 		p := kml.Placemark(
 			kml.Name(name),
 			kml.Description(fmt.Sprintf("Action: %s<br/>Position: %s<br/>Elevation: %dm<br/>GPS Altitude: %dm<br/>",
@@ -138,6 +138,7 @@ func (m *Mission) To_kml(hpos types.HomeRec, dms bool, fake bool) kml.Element {
 				kml.Coordinates(kml.Coordinate{Lon: lon, Lat: lat, Alt: float64(alt)}),
 			),
 		)
+		p.Add(kml.Visibility(isvis))
 		wps = append(wps, p)
 	}
 
@@ -164,7 +165,7 @@ func (m *Mission) To_kml(hpos types.HomeRec, dms bool, fake bool) kml.Element {
 	pts, rth := m.get_fly_points(addAlt)
 	points = append(points, pts...)
 
-	if rth 	&& (hpos.Flags & types.HOME_ALT) == types.HOME_ALT {
+	if rth && (hpos.Flags&types.HOME_ALT) == types.HOME_ALT {
 		points = append(points, kml.Coordinate{Lon: hpos.HomeLon, Lat: hpos.HomeLat, Alt: float64(addAlt)})
 	}
 
@@ -179,8 +180,10 @@ func (m *Mission) To_kml(hpos types.HomeRec, dms bool, fake bool) kml.Element {
 		),
 	)
 
-	return kml.Folder(kml.Name("Mission File")).Add(kml.Description(desc)).
-		Add(kml.Visibility(true)).Add(mission_styles()...).Add(track).Add(wps...)
+	track.Add(kml.Visibility(isvis))
+	fldnam := fmt.Sprintf("Mission #%d", mmidx)
+	return kml.Folder(kml.Name(fldnam)).Add(kml.Description(desc)).
+		Add(kml.Visibility(isvis)).Add(mission_styles()...).Add(track).Add(wps...)
 }
 
 func mission_styles() []kml.Element {
@@ -190,8 +193,7 @@ func mission_styles() []kml.Element {
 			kml.IconStyle(
 				kml.Scale(0.8),
 				kml.Icon(
-					kml.Href(icon.PaddleHref("ylw-diamond"),
-					),
+					kml.Href(icon.PaddleHref("ylw-diamond")),
 				),
 			),
 			kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
@@ -202,45 +204,40 @@ func mission_styles() []kml.Element {
 			kml.IconStyle(
 				kml.Scale(0.8),
 				kml.Icon(
-					kml.Href(icon.PaddleHref("red-diamond"),
-					),
+					kml.Href(icon.PaddleHref("red-diamond")),
 				),
 			),
-				kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
-					kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
+			kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
+				kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
 		),
 		kml.SharedStyle(
 			"styleSET_HEAD",
 			kml.IconStyle(
 				kml.Scale(0.8),
 				kml.Icon(
-					kml.Href(icon.PaddleHref("ylw-diamond"),
-					),
+					kml.Href(icon.PaddleHref("ylw-diamond")),
 				),
 			),
-				kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
-					kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
+			kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
+				kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
 		),
 		kml.SharedStyle(
 			"styleWAYPOINT",
 			kml.IconStyle(
 				kml.Scale(0.8),
 				kml.Icon(
-					kml.Href(icon.PaddleHref("ltblu-circle"),
-					),
+					kml.Href(icon.PaddleHref("ltblu-circle")),
 				),
 			),
 			kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
 				kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
-
 		),
 		kml.SharedStyle(
 			"stylePOSHOLD_UNLIM",
 			kml.IconStyle(
 				kml.Scale(0.8),
 				kml.Icon(
-					kml.Href(icon.PaddleHref("grn-diamond"),
-					),
+					kml.Href(icon.PaddleHref("grn-diamond")),
 				),
 			),
 			kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
@@ -251,20 +248,18 @@ func mission_styles() []kml.Element {
 			kml.IconStyle(
 				kml.Scale(0.8),
 				kml.Icon(
-					kml.Href(icon.PaddleHref("grn-circle"),
-					),
+					kml.Href(icon.PaddleHref("grn-circle")),
 				),
 			),
-				kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
-					kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
+			kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
+				kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
 		),
 		kml.SharedStyle(
 			"styleJUMP",
 			kml.IconStyle(
 				kml.Scale(0.8),
 				kml.Icon(
-					kml.Href(icon.PaddleHref("purple-circle"),
-					),
+					kml.Href(icon.PaddleHref("purple-circle")),
 				),
 			),
 			kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
@@ -275,24 +270,22 @@ func mission_styles() []kml.Element {
 			kml.IconStyle(
 				kml.Scale(0.8),
 				kml.Icon(
-					kml.Href(icon.PaddleHref("pink-stars"),
-					),
+					kml.Href(icon.PaddleHref("pink-stars")),
 				),
 			),
-				kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
-					kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
+			kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
+				kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
 		),
 		kml.SharedStyle(
 			"styleFakeHome",
 			kml.IconStyle(
 				kml.Scale(0.8),
 				kml.Icon(
-					kml.Href(icon.PaddleHref("orange-stars"),
-					),
+					kml.Href(icon.PaddleHref("orange-stars")),
 				),
 			),
-				kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
-					kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
+			kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
+				kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
 		),
 		kml.SharedStyle(
 			"styleWPTrack",

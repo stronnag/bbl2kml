@@ -13,6 +13,7 @@ import (
 	"image/color"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -470,6 +471,39 @@ func add_ground_track(rec types.LogRec) kml.Element {
 	return f
 }
 
+func GenerateMissionOnly(outfn string) {
+	kname := filepath.Base(options.Config.Mission)
+	d := kml.Folder(kml.Name(kname)).Add(kml.Open(true))
+	_, mm, err := mission.Read_Mission_File(options.Config.Mission)
+	if err == nil {
+		isviz := true
+		for nm, _ := range mm.Segment {
+			nmx := nm + 1
+			if options.Config.MissionIndex == 0 || nmx == options.Config.MissionIndex {
+				ms := mm.To_mission(nmx)
+				if geo.Getfrobnication() {
+					for k, mi := range ms.MissionItems {
+						if mi.Is_GeoPoint() {
+							ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, _ = geo.Frobnicate_move(ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, 0)
+						}
+					}
+				}
+				var hpos types.HomeRec
+
+				if ms.Metadata.Homey != 0 && ms.Metadata.Homex != 0 {
+					hpos.HomeLat = ms.Metadata.Homey
+					hpos.HomeLon = ms.Metadata.Homex
+					hpos.Flags = types.HOME_ARM
+				}
+				mf := ms.To_kml(hpos, options.Config.Dms, false, nmx, isviz)
+				d.Add(mf)
+				isviz = false
+			}
+		}
+		write_kml(outfn, d)
+	}
+}
+
 func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 	meta types.FlightMeta, smap types.MapRec) {
 
@@ -485,20 +519,42 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 	d.Add(add_ground_track(rec))
 
 	if len(options.Config.Mission) > 0 {
-		_, ms, err := mission.Read_Mission_File_Index(options.Config.Mission, options.Config.MissionIndex)
+		_, mm, err := mission.Read_Mission_File(options.Config.Mission)
 		if err == nil {
-			if geo.Getfrobnication() {
-				for k, mi := range ms.MissionItems {
-					if mi.Is_GeoPoint() {
-						ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, _ = geo.Frobnicate_move(ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, 0)
+			isviz := true
+			for nm, _ := range mm.Segment {
+				nmx := nm + 1
+				if options.Config.MissionIndex == 0 || nmx == options.Config.MissionIndex {
+					ms := mm.To_mission(nmx)
+					if geo.Getfrobnication() {
+						for k, mi := range ms.MissionItems {
+							if mi.Is_GeoPoint() {
+								ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, _ = geo.Frobnicate_move(ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, 0)
+							}
+						}
 					}
+					mf := ms.To_kml(hpos, options.Config.Dms, false, nmx, isviz)
+					d.Add(mf)
+					isviz = false
 				}
 			}
-			mf := ms.To_kml(hpos, options.Config.Dms, false)
-			d.Add(mf)
-		} else {
-			fmt.Fprintf(os.Stderr, "* Failed to read mission file %s\n", options.Config.Mission)
 		}
+		/**
+				_, ms, err := mission.Read_Mission_File_Index(options.Config.Mission, options.Config.MissionIndex)
+				if err == nil {
+					if geo.Getfrobnication() {
+						for k, mi := range ms.MissionItems {
+							if mi.Is_GeoPoint() {
+								ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, _ = geo.Frobnicate_move(ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, 0)
+							}
+						}
+					}
+					mf := ms.To_kml(hpos, options.Config.Dms, false)
+					d.Add(mf)
+				} else {
+					fmt.Fprintf(os.Stderr, "* Failed to read mission file %s\n", options.Config.Mission)
+				}
+		**/
 	}
 
 	e := kml.ExtendedData(kml.Data(kml.Name("Log"), kml.Value(meta.LogName())))
@@ -558,7 +614,10 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 			d.Add(f1)
 		}
 	}
+	write_kml(outfn, d)
+}
 
+func write_kml(outfn string, d *kml.CompoundElement) {
 	var err error
 	if strings.HasSuffix(outfn, ".kmz") {
 		z := kmz.NewKMZ(d)

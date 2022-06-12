@@ -166,7 +166,7 @@ func ParseCLI(gv func() string) ([]string, string) {
 		flag.IntVar(&Config.HomeAlt, "home-alt", Config.HomeAlt, "[OTX] home altitude")
 		flag.BoolVar(&Config.Dump, "dump", false, "Dump log headers and exit")
 		flag.StringVar(&Config.Mission, "mission", "", "Optional mission file name")
-		flag.IntVar(&Config.MissionIndex, "mission-index", 1, "Optional mission file index")
+		flag.IntVar(&Config.MissionIndex, "mission-index", 0, "Optional mission file index")
 	}
 	if strings.HasPrefix(app, "fl2mqtt") {
 		flag.StringVar(&Config.Mqttopts, "broker", "", "Mqtt URI (mqtt://[user[:pass]@]broker[:port]/topic[?cafile=file]")
@@ -217,15 +217,13 @@ func ParseCLI(gv func() string) ([]string, string) {
 		Config.HomeAlt = -999999 // sentinel
 	}
 	/*
-		if Config.Idx == 0 {
-			Config.Idx = 1
+			if Config.Idx == 0 {
+				Config.Idx = 1
+			}
+		if Config.MissionIndex == 0 {
+			Config.MissionIndex = 1
 		}
 	*/
-
-	if Config.MissionIndex == 0 {
-		Config.MissionIndex = 1
-	}
-
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: config file ignored due to error: %v\n", err)
 	}

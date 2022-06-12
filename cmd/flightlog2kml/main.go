@@ -28,7 +28,13 @@ func main() {
 	dump_log := os.Getenv("DUMP_LOG") != ""
 	files, _ := options.ParseCLI(getVersion)
 	if len(files) == 0 {
-		options.Usage()
+		if len(options.Config.Mission) > 0 {
+			outms := kmlgen.GenKmlName(options.Config.Mission, options.Config.MissionIndex)
+			kmlgen.GenerateMissionOnly(outms)
+			show_output(outms)
+		} else {
+			options.Usage()
+		}
 		os.Exit(1)
 	}
 
@@ -92,14 +98,7 @@ func main() {
 					if !res {
 						fmt.Fprintf(os.Stderr, "*** skipping KML/Z for log  with no valid geospatial data\n")
 					} else {
-						if outfn != "" {
-							rp, err := realpath.Realpath(outfn)
-							if err != nil || rp == "" {
-								fmt.Printf("%-8.8s : <%s> <%s>\n", "RealPath", rp, err)
-								rp = outfn
-							}
-							fmt.Printf("%-8.8s : %s\n", "Output", rp)
-						}
+						show_output(outfn)
 					}
 					fmt.Println()
 				}
@@ -107,5 +106,16 @@ func main() {
 		} else {
 			log.Fatalf("fl2x: %+v\n", err)
 		}
+	}
+}
+
+func show_output(outfn string) {
+	if outfn != "" {
+		rp, err := realpath.Realpath(outfn)
+		if err != nil || rp == "" {
+			fmt.Printf("%-8.8s : <%s> <%s>\n", "RealPath", rp, err)
+			rp = outfn
+		}
+		fmt.Printf("%-8.8s : %s\n", "Output", rp)
 	}
 }
