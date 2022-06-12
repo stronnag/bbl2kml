@@ -373,8 +373,6 @@ func dataCapability() uint8 {
 
 	if _, ok := hdrs["navPos[2]"]; ok {
 		ret |= types.CAP_ALTITUDE
-	} else if _, ok := hdrs["navPos[2]"]; ok {
-		ret |= types.CAP_ALTITUDE
 	}
 
 	return ret
