@@ -95,7 +95,7 @@ func IsEmerg(vers, val int) bool {
 }
 
 func is_rth_start(vers, val int) bool {
-	return val == 8
+	return (val == 8 || val == 9)
 }
 
 func is_start_land(vers, val int) bool {
