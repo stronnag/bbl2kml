@@ -95,7 +95,14 @@ func IsEmerg(vers, val int) bool {
 }
 
 func is_rth_start(vers, val int) bool {
-	return (val == 8 || val == 9)
+	switch {
+	case vers > 0x10601: // For 1.6.2 and later
+		return contains([]int{8, 9}, val)
+	case vers > 0x105ff: // 1.6.0
+		return contains([]int{8, 9, 13, 14}, val)
+	default:
+		return contains([]int{8, 9, 14, 15}, val)
+	}
 }
 
 func is_start_land(vers, val int) bool {
