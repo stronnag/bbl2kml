@@ -12,6 +12,9 @@ func (mm *MultiMission) To_mission(mi int) *Mission {
 		mi = len(mm.Segment)
 	}
 	mi--
+	if mi < 0 {
+		mi = 0
+	}
 	m.Version = mm.Version
 	m.Comment = mm.Comment
 	m.Metadata = mm.Segment[mi].Metadata
