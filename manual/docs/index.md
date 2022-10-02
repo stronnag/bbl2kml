@@ -446,4 +446,4 @@ For Windows' users it is probably easiest to copy inav's `blackbox_decode.exe` i
 
 ## Graphical User Interface
 
-There is a [graphical user interface for `flightlog2kml`](https://github.com/stronnag/fl2xui). Binaries are provided for Linux (`.deb`) and Windows.
+There is a [graphical user interface for `flightlog2kml`](https://github.com/stronnag/fl2xui). Binaries are provided for Linux (`.deb`).

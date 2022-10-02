@@ -48,4 +48,4 @@ Disarm   : Switch
 
 ## Graphical User Interface
 
-There is a [graphical user interface for `flightlog2kml`](https://github.com/stronnag/fl2xui). Binaries are provided for Linux (`.deb`) and Windows.
+There is a [graphical user interface for `flightlog2kml`](https://github.com/stronnag/fl2xui). Binaries are provided for Linux (`.deb`).
