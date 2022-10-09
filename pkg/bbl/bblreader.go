@@ -516,6 +516,13 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 				}
 			}
 		}
+	} else {
+		if s, ok = get_rec_value(r, "GPS_home_lat"); ok {
+			b.Hlat, _ = strconv.ParseFloat(s, 64)
+		}
+		if s, ok = get_rec_value(r, "GPS_home_lon"); ok {
+			b.Hlon, _ = strconv.ParseFloat(s, 64)
+		}
 	}
 
 	if s, ok = get_rec_value(r, "rcData[0]"); ok {
