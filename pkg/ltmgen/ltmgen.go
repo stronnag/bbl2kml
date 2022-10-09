@@ -133,8 +133,8 @@ func (l *ltmbuf) nframe(b types.LogItem, action byte, wpno byte) {
 }
 
 func (l *ltmbuf) oframe(b types.LogItem, hlat float64, hlon float64) {
-	lat := int32(hlat * 1.0e7)
-	lon := int32(hlon * 1.0e7)
+	lat := int32(b.Hlat * 1.0e7)
+	lon := int32(b.Hlon * 1.0e7)
 	binary.LittleEndian.PutUint32(l.msg[3:7], uint32(lat))
 	binary.LittleEndian.PutUint32(l.msg[7:11], uint32(lon))
 	binary.LittleEndian.PutUint32(l.msg[11:15], 0)
