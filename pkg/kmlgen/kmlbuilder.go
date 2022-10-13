@@ -188,7 +188,7 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%s</td></tr>", "Position", geo.PositionFormat(r.Lat, r.Lon, options.Config.Dms))))
 		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.0f m</td></tr>", "Elevation", r.Alt)))
 		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.0f m</td></tr>", "GPS Altitude", alt)))
-		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%d°</td></tr>", "Course", r.Cse)))
+		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%d° / %d°</td></tr>", "Heading / CoG", r.Cse, r.Cog)))
 		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%.1f m/s</td></tr>", "Speed", r.Spd)))
 		sb.Write([]byte(fmt.Sprintf("<tr><td><b>%s</b></td><td>%d</td></tr>", "Satellites", r.Numsat)))
 
