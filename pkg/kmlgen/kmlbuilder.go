@@ -148,6 +148,9 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 
 	tpts := len(rec.Items)
 	effic := 0.0
+
+	startt := rec.Items[0].Stamp
+
 	for np, r := range rec.Items {
 		if options.Config.Engunit == "wh" {
 			effic = r.Whkm
@@ -179,8 +182,10 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 			r.Bval = makeqval(r.Volts, qval0, qval1, false)
 		}
 
+		et := float64(r.Stamp-startt) / 1e6
+
 		var sb strings.Builder
-		sb.Write([]byte(fmt.Sprintf("<h3>Track Point %d of %d</h3>", np, tpts)))
+		sb.Write([]byte(fmt.Sprintf("<h3>Track Point %d of %d (%.3fs)</h3>", np, tpts, et)))
 
 		sb.Write([]byte(`<table style="border="1px" silver; border="1" silver; rules="all";;">`))
 
