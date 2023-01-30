@@ -42,7 +42,7 @@ const (
 type Reason int
 
 func (r Reason) String() string {
-	var reasons = [...]string{"None", "Timeout", "Sticks", "Switch_3d", "Switch", "Killswitch", "Failsafe", "Navigation"}
+	var reasons = [...]string{"None", "Timeout", "Sticks", "Switch_3d", "Switch", "Killswitch", "Failsafe", "Navigation", "Landing"}
 	if r < 0 || int(r) >= len(reasons) {
 		r = 0
 	}
