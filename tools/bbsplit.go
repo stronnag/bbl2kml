@@ -1,13 +1,16 @@
 package main
 
 /*
- * Somewhat resource hungry (in memory) BBL splitter
+ * Somewhat resource hungry (in that it loads the whole file into  memory) BBL splitter
  * (c) Jonathan Hudson 2022
- * 0BSD licence
+ * 0BSD licence <https://opensource.org/licenses/0BSD>
  *
  * go build -ldflags "-s -w" bbsplit.go
- * cross compile Linux to Windows
+ * cross compile Linux to Windows (or other via GOARCH/GOOS)
  * GOOS=windows go build -ldflags "-s -w" bbsplit.go
+ *
+ * # Multiple files may be given, disassebled into unique names (partno_fileN.TXT).
+ * $ bbsplit file1.TXT ... fileN.TXT
  */
 
 import (
@@ -68,6 +71,6 @@ func main() {
 			}
 		}
 	} else {
-		fmt.Println("No files given")
+		fmt.Println("No file(s) given")
 	}
 }
