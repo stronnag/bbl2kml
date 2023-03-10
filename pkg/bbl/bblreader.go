@@ -210,6 +210,17 @@ func metas(fn string) ([]types.FlightMeta, error) {
 					bes[nbes].Servos = 1
 				}
 
+			case strings.HasPrefix(string(l), "H acc_1G:"):
+				if n := strings.Index(string(l), ":"); n != -1 {
+					fstr := string(l)[n+1:]
+					if len(fstr) > 0 {
+						fs, _ := strconv.Atoi(fstr)
+						if fs != 0 {
+							bes[nbes].Acc1G = uint16(fs)
+						}
+					}
+				}
+
 			case strings.HasPrefix(string(l), "H acc_hardware:"):
 				if n := strings.Index(string(l), ":"); n != -1 {
 					fstr := string(l)[n+1:]
@@ -603,6 +614,32 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 		b.Throttle = (b.Throttle - 1000) / 10
 	}
 
+	if s, ok = get_rec_value(r, "gyroADC[0]"); ok {
+		i64, _ := strconv.Atoi(s)
+		b.Gyro_x = int16(i64)
+	}
+	if s, ok = get_rec_value(r, "gyroADC[1]"); ok {
+		i64, _ := strconv.Atoi(s)
+		b.Gyro_y = int16(i64)
+	}
+	if s, ok = get_rec_value(r, "gyroADC[2]"); ok {
+		i64, _ := strconv.Atoi(s)
+		b.Gyro_z = int16(i64)
+	}
+
+	if s, ok = get_rec_value(r, "accSmooth[0]"); ok {
+		i64, _ := strconv.Atoi(s)
+		b.Acc_x = int16(i64)
+	}
+	if s, ok = get_rec_value(r, "accSmooth[1]"); ok {
+		i64, _ := strconv.Atoi(s)
+		b.Acc_y = int16(i64)
+	}
+	if s, ok = get_rec_value(r, "accSmooth[2]"); ok {
+		i64, _ := strconv.Atoi(s)
+		b.Acc_z = int16(i64)
+	}
+
 	if s, ok = get_rec_value(r, "hwHealthStatus"); ok {
 		b.HWfail = false
 		val, _ := strconv.Atoi(s)
@@ -618,6 +655,17 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 	return b
 }
 
+func proc_start(w1 *os.File, args ...string) (p *os.Process, err error) {
+	if args[0], err = exec.LookPath(args[0]); err == nil {
+		var procAttr os.ProcAttr
+		procAttr.Files = []*os.File{nil, w1, nil}
+		p, err := os.StartProcess(args[0], args, &procAttr)
+		if err == nil {
+			return p, nil
+		}
+	}
+	return nil, err
+}
 func (lg *BBLOG) Reader(meta types.FlightMeta, ch chan interface{}) (types.LogSegment, bool) {
 	cmd := exec.Command(options.Config.Blackbox_decode,
 		"--datetime", "--merge-gps", "--stdout", "--index",
@@ -626,6 +674,7 @@ func (lg *BBLOG) Reader(meta types.FlightMeta, ch chan interface{}) (types.LogSe
 	out, err := cmd.StdoutPipe()
 	defer cmd.Wait()
 	defer out.Close()
+
 	var homes types.HomeRec
 	var rec types.LogRec
 	var froboff time.Duration

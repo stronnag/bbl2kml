@@ -48,6 +48,10 @@ type Configuration struct {
 	Aflags          int     `json:"-"`
 	RedIsFast       bool    `json:"fast-is-red"`
 	RedIsLow        bool    `json:"low-is-red"`
+	SitlEEprom      string  `json:"-"`
+	SitlListen      string  `json:"-"`
+	SitlPort        string  `json:"-"`
+	Verbose         int     `json:"-"`
 }
 
 var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120, Epsilon: 0.015, StartOff: 30, EndOff: -30, Engunit: "mah", MaxWP: 120}
@@ -125,48 +129,16 @@ func ParseCLI(gv func() string) ([]string, string) {
 	err = parse_config_file(cfgfile)
 	Config.Blackbox_decode = types.SetBBLFallback(Config.Blackbox_decode)
 
-	/**
-		defs := os.Getenv("BBL2KML_OPTS")
-		if defs != "" {
-			_parts := strings.Split(defs, " ")
-			var parts []string
-			for _, p := range _parts {
-				if p != "" {
-					parts = append(parts, p)
-				}
-			}
-
-			envflags := flag.NewFlagSet("$BBL2KML_OPTS", flag.ExitOnError)
-			kml := envflags.Bool("kml", Config.Kml, "kml")
-			rssi := envflags.Bool("rssi", Config.Rssi, "rssi")
-			extrude := envflags.Bool("extrude", Config.Extrude, "extrude")
-			dms := envflags.Bool("dms", Config.Dms, "dms")
-			grad := envflags.String("gradient", Config.Gradset, "gradient")
-			bbldec := envflags.String("decoder", Config.Blackbox_decode, "decoder")
-			effic := envflags.Bool("efficiency", Config.Efficiency, "efficiency")
-			envflags.Parse(parts)
-			Config.Dms = *dms
-			Config.Extrude = *extrude
-			Config.Rssi = *rssi
-			Config.Kml = *kml
-			Config.Gradset = *grad
-			Config.Efficiency = *effic
-			if *bbldec != "" {
-				Config.Blackbox_decode = *bbldec
-			}
-		}
-	**/
-
 	showversion := false
 	flag.IntVar(&Config.Idx, "index", 0, "Log index")
-	flag.IntVar(&Config.SplitTime, "split-time", Config.SplitTime, "[OTX] Time(s) determining log split, 0 disables")
-	flag.StringVar(&Config.Rebase, "rebase", "", "rebase all positions on lat,lon[,alt]")
-
-	if app != "log2mission" {
-		flag.IntVar(&Config.HomeAlt, "home-alt", Config.HomeAlt, "[OTX] home altitude")
-		flag.BoolVar(&Config.Dump, "dump", false, "Dump log headers and exit")
-		flag.StringVar(&Config.Mission, "mission", "", "Optional mission file name")
-		flag.IntVar(&Config.MissionIndex, "mission-index", 0, "Optional mission file index")
+	if !strings.HasPrefix(app, "fl2sitl") {
+		flag.IntVar(&Config.SplitTime, "split-time", Config.SplitTime, "[OTX] Time(s) determining log split, 0 disables")
+		if !strings.HasPrefix(app, "log2mission") {
+			flag.IntVar(&Config.HomeAlt, "home-alt", Config.HomeAlt, "[OTX] home altitude")
+			flag.BoolVar(&Config.Dump, "dump", false, "Dump log headers and exit")
+			flag.StringVar(&Config.Mission, "mission", "", "Optional mission file name")
+			flag.IntVar(&Config.MissionIndex, "mission-index", 0, "Optional mission file index")
+		}
 	}
 	if strings.HasPrefix(app, "fl2mqtt") {
 		flag.StringVar(&Config.Mqttopts, "broker", "", "Mqtt URI (mqtt://[user[:pass]@]broker[:port]/topic[?cafile=file]")
@@ -183,6 +155,13 @@ func ParseCLI(gv func() string) ([]string, string) {
 		flag.IntVar(&Config.EndOff, "end-offset", Config.EndOff, "End Offset (seconds)")
 		flag.StringVar(&Config.Modefilter, "mode-filter", Config.Modefilter, "Mode filter (cruise,wp)")
 		flag.IntVar(&Config.MaxWP, "max-wp", Config.MaxWP, "Maximum WPs in mission")
+	} else if strings.HasPrefix(app, "fl2sitl") {
+		Config.Intvl = 100
+		Config.Idx = 1
+		flag.StringVar(&Config.SitlEEprom, "eeprom", "", "EEprom name")
+		flag.StringVar(&Config.SitlListen, "listen", ":49000", "Listening port")
+		flag.StringVar(&Config.SitlPort, "txport", "127.0.0.1:5761", "host:port for serial TX")
+		flag.IntVar(&Config.Verbose, "verbose", 0, "Verbosity")
 	} else {
 		flag.BoolVar(&Config.Kml, "kml", Config.Kml, "Generate KML (vice default KMZ)")
 		flag.BoolVar(&Config.Rssi, "rssi", Config.Rssi, "Set RSSI view as default")
@@ -196,9 +175,12 @@ func ParseCLI(gv func() string) ([]string, string) {
 		flag.BoolVar(&Config.Summary, "summary", Config.Summary, "Just show summary")
 		flag.StringVar(&Config.Attribs, "attributes", Config.Attribs, "Attributes to plot (effic,speed,altitude)")
 	}
+	flag.StringVar(&Config.Rebase, "rebase", "", "rebase all positions on lat,lon[,alt]")
 	flag.IntVar(&Config.Intvl, "interval", Config.Intvl, "Sampling Interval (ms)")
 	flag.BoolVar(&showversion, "version", false, "Just show version")
-	flag.StringVar(&cfgfile, "config", "", "alternate file")
+	if app != "fl2sitl" {
+		flag.StringVar(&cfgfile, "config", "", "alternate file")
+	}
 
 	flag.Parse()
 

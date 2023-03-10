@@ -20,6 +20,9 @@ const (
 	FM_AH
 	FM_EMERG
 	FM_FS
+	// For SITL
+	FM_UNK = 0xd0d0
+	FM_ARM = 0xf00d
 )
 
 const (
@@ -90,6 +93,12 @@ type LogItem struct {
 	Ele      int16
 	Rud      int16
 	Thr      int16
+	Gyro_x   int16
+	Gyro_y   int16
+	Gyro_z   int16
+	Acc_x    int16
+	Acc_y    int16
+	Acc_z    int16
 }
 
 type LogRec struct {
@@ -223,6 +232,7 @@ type FlightMeta struct {
 	Motors   uint8
 	Servos   uint8
 	Sensors  uint16
+	Acc1G    uint16
 }
 
 func (b *FlightMeta) LogName() string {

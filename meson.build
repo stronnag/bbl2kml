@@ -1,4 +1,4 @@
-project('flightlog2kml', version : '1.0.7')
+project('flightlog2kml', version : '1.0.7-rc4')
 meson.add_install_script('meson/post_install.py')
 version = get_option('version')
 commit = get_option('commit')
@@ -38,6 +38,7 @@ flightlog2kml_path = join_paths(meson.current_source_dir(), 'cmd', 'flightlog2km
 fl2mqtt_path = join_paths(meson.current_source_dir(), 'cmd', 'fl2mqtt')
 log2mission_path = join_paths(meson.current_source_dir(), 'cmd', 'log2mission')
 mission2kml_path = join_paths(meson.current_source_dir(), 'cmd', 'mission2kml')
+fl2sitl_path = join_paths(meson.current_source_dir(), 'cmd', 'fl2sitl')
 
 r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'api','types'), check: true)
 common_files = r.stdout().strip().split()
@@ -64,14 +65,20 @@ r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'p
 bltr_files = r.stdout().strip().split()
 r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'log2mission'), check: true)
 l2m_files = r.stdout().strip().split()
+
 r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'aplog'), check: true)
 aplog_files = r.stdout().strip().split()
+
+r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'sitlgen'), check: true)
+sitl_files = r.stdout().strip().split()
 
 fl2kml_deps = [common_files, bbl_files, otx_files, inav_files, kml_files, bltr_files, aplog_files]
 
 fl2mqtt_deps = [common_files, bbl_files, otx_files, inav_files, blt_files, bltr_files, ltm_files, aplog_files ]
 log2mission_deps = [common_files, bbl_files, otx_files, inav_files, blt_files, bltr_files, ltm_files, aplog_files ]
 mission2kml_deps = [common_files]
+
+fl2sitl_deps = [common_files, bbl_files, sitl_files]
 
 r = run_command('meson/find_files.sh', flightlog2kml_path, check: true)
 flightlog2kml_files = r.stdout().strip().split()
@@ -84,6 +91,9 @@ log2mission_files =  r.stdout().strip().split()
 
 r = run_command('meson/find_files.sh', mission2kml_path, check: true)
 mission2kml_files =  r.stdout().strip().split()
+
+r = run_command('meson/find_files.sh', fl2sitl_path, check: true)
+fl2sitl_files =  r.stdout().strip().split()
 
 flightlog2kml_build_path = join_paths(meson.current_source_dir(), 'cmd' , 'flightlog2kml')
 flightlog2kml = custom_target(
@@ -104,6 +114,18 @@ fl2mqtt = custom_target(
     input: [fl2mqtt_files, fl2mqtt_deps ],
     env : env,
     command: [ golang, 'build', trimpath, '-o', '@OUTPUT@', '-ldflags', ldflags, fl2mqtt_files ],
+    build_by_default: true,
+    install: true,
+    install_dir: 'bin',
+)
+
+fl2mqtt_build_path = join_paths(meson.current_source_dir(), 'cmd' , 'fl2sitl')
+fl2sitl = custom_target(
+    'fl2sitl',
+    output: 'fl2sitl'+exe,
+    input: [fl2sitl_files, fl2sitl_deps ],
+    env : env,
+    command: [ golang, 'build', trimpath, '-o', '@OUTPUT@', '-ldflags', ldflags, fl2sitl_files ],
     build_by_default: true,
     install: true,
     install_dir: 'bin',

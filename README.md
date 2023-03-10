@@ -48,4 +48,15 @@ Disarm   : Switch
 
 ## Graphical User Interface
 
-There is a [graphical user interface for `flightlog2kml`](https://github.com/stronnag/fl2xui). Binaries are provided for Linux (`.deb`).
+There is a [graphical user interface for `flightlog2kml`](https://github.com/stronnag/fl2xui). Binaries are provided for Linux (`.deb`). There may also be a Windows installer.
+
+## Other tools
+
+The project includes the following:
+
+* `flightlog2kml` : Generate KML/Z from log files
+* `fl2mqtt` : Generate Bullet GCCS MQTT messages
+* `fl2ltm` :  Generate (INAV) LTM (Lightweight Telemetry) messages
+* `fl2sitl` : Replay BBL via the INAV SITL
+* `log2mission` : Generate an INAV mission file from a flight log
+* `mission2kml` : General KML/Z from an INAV mission file
