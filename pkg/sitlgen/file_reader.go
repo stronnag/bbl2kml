@@ -38,7 +38,7 @@ func file_reader(rch chan interface{}, sdch chan SimData, cmdch chan byte, acc1g
 	var sd SimData
 	done := false
 	if options.Config.Verbose > 1 {
-		log.Printf("Logreader with Acc1G = %f\n", acc1g)
+		log.Printf("Logreader with Acc1G = %.1f\n", acc1g)
 	}
 	for !done {
 		select {
