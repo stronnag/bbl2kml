@@ -57,6 +57,14 @@ const (
 	RX_DISARM
 )
 
+const (
+	SEND_NONE = iota
+	SEND_MSP
+	SEND_RSSI
+	SEND_CHANS
+	SEND_TIMEOUT
+)
+
 const SETTING_STR string = "nav_extra_arming_safety"
 const MAX_MODE_ACTIVATION_CONDITION_COUNT int = 40
 
@@ -78,6 +86,7 @@ type MSPSerial struct {
 	bypass  bool
 	c0      chan SChan
 	mranges []ModeRange
+	ok      bool
 }
 
 type ModeRange struct {
@@ -251,13 +260,18 @@ func (m *MSPSerial) Read_msp(c0 chan SChan) {
 				}
 			}
 		} else {
+			m.ok = false
 			if err != nil {
-				log.Printf("Serial Read %v\n", err)
+				if options.Config.Verbose > 1 {
+					log.Printf("Serial Read %v\n", err)
+				}
 			} else {
 				log.Println("serial EOF")
 			}
-			c0 <- SChan{}
+
+			c0 <- SChan{ok: false}
 			m.conn.Close()
+			return
 		}
 	}
 }
@@ -271,14 +285,16 @@ func NewMSPSerial(remote string) (*MSPSerial, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &MSPSerial{conn: conn}, nil
+	return &MSPSerial{conn: conn, ok: true}, nil
 }
 
 func (m *MSPSerial) Send_msp(cmd uint16, payload []byte) {
-	buf := encode_msp2(cmd, payload)
-	_, err := m.conn.Write(buf)
-	if err != nil {
-		log.Println(err)
+	if m.ok {
+		buf := encode_msp2(cmd, payload)
+		_, err := m.conn.Write(buf)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 }
 
@@ -353,9 +369,9 @@ func (m *MSPSerial) init(nchan chan MSPChans, schan chan byte, rssich chan byte)
 				} else {
 					log.Println("MAP error")
 				}
-				txinfo := []byte{0x02, 0x6c, 0x07, 0xdc, 0x05, 0x4c, 0x04, 0x00, 0x75, 0x03, 0x43, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02}
-				m.Send_msp(msp_SET_RX_CONFIG, txinfo)
-			case msp_SET_RX_CONFIG:
+				//				txinfo := []byte{0x02, 0x6c, 0x07, 0xdc, 0x05, 0x4c, 0x04, 0x00, 0x75, 0x03, 0x43, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02}
+				//				m.Send_msp(msp_SET_RX_CONFIG, txinfo)
+				//			case msp_SET_RX_CONFIG:
 				m.Send_msp(msp_NAME, nil)
 			case msp_NAME:
 				if v.len > 0 {
@@ -435,6 +451,7 @@ func (m *MSPSerial) run(nchan chan MSPChans, schan chan byte, rssich chan byte) 
 	ichan := MSPChans{}
 	xstatus := uint64(0)
 	rssi := byte(0)
+	lrssi := byte(0)
 	ichan[0] = 1500
 	ichan[1] = 1500
 	if m.bypass {
@@ -446,81 +463,112 @@ func (m *MSPSerial) run(nchan chan MSPChans, schan chan byte, rssich chan byte) 
 	for j := 4; j < 16; j++ {
 		ichan[j] = 1001
 	}
-	tdata := m.serialise_rx(ichan)
-	m.Send_msp(msp_SET_RAW_RC, tdata)
-	<-m.c0
 
 	rvstat := byte(0)
-
+	mcnt := byte(0)
+	var sv SChan
+	tdata := m.serialise_rx(ichan)
+	m.Send_msp(msp_SET_RAW_RC, tdata)
+	log.Printf("RC init done\n")
 	for {
+		event := SEND_NONE
 		select {
-		case r := <-rssich:
-			rssi = r
-		case <-time.After(100 * time.Millisecond):
-			tdata := m.serialise_rx(ichan)
-			m.Send_msp(msp_SET_RAW_RC, tdata)
-			sv := <-m.c0
-			if sv.ok && sv.cmd == msp_SET_RAW_RC {
-				status, armflags := m.get_status()
-				// Unarmed, able to arm
-				if (status&1) == 0 && armflags < 0x200 {
-					if rvstat != 1 {
-						rvstat = 1
-						if options.Config.Verbose > 1 {
-							log.Printf("Set status %d (%x)\n", rvstat, armflags)
-						}
-						schan <- 1
-					}
-				}
-				if (xstatus & 1) != (status & 1) {
-					if options.Config.Verbose > 0 {
-						log.Printf("status changed %x -> %x (%x)\n", xstatus, status, armflags)
-					}
-					xstatus = status
-					if (status & 1) == 0 {
-						if rvstat != 2 {
-							rvstat = 2
-							if options.Config.Verbose > 1 {
-								log.Printf("Set status %d (%x)\n", rvstat, armflags)
-							}
-							schan <- 2
-						}
-					} else {
-						if rvstat != 3 {
-							rvstat = 3
-							if options.Config.Verbose > 1 {
-								log.Printf("Set status %d (%x)\n", rvstat, armflags)
-							}
-							schan <- 3
-						}
-					}
-				}
-				m.Rssi(rssi)
-				<-m.c0
-			} else {
-				log.Println("RC data send failed")
-				schan <- 0xff
-			}
-
+		case v := <-m.c0:
+			//			sv_cmd = v.cmd
+			//sv_ok = v.ok
+			sv = v
+			mcnt += 1
+			event = SEND_MSP
+		case v := <-rssich:
+			event = SEND_RSSI
+			rssi = v
+		case <-time.After(50 * time.Millisecond):
+			event = SEND_TIMEOUT
 		case v := <-nchan:
+			event = SEND_CHANS
 			for j, u := range v {
 				if u != 0xffff {
 					ichan[j] = u
 				}
 			}
 		}
+		switch event {
+		case SEND_TIMEOUT:
+			tdata := m.serialise_rx(ichan)
+			m.Send_msp(msp_SET_RAW_RC, tdata)
+		case SEND_MSP:
+			if sv.ok {
+				send_chans := true
+				if sv.cmd == msp_SET_RAW_RC && mcnt%5 == 0 {
+					send_chans = false
+					m.Send_msp(msp2_INAV_STATUS, nil)
+				} else if sv.cmd == msp2_INAV_STATUS {
+					status := binary.LittleEndian.Uint64(sv.data[13:21])
+					armflags := binary.LittleEndian.Uint32(sv.data[9:13])
+					if options.Config.Verbose > 2 {
+						log.Printf("Status, Armflags  %x %x\n", status, armflags)
+					}
+					// Unarmed, able to arm
+					if (status&1) == 0 && armflags < 0x200 {
+						if rvstat != 1 {
+							rvstat = 1
+							if options.Config.Verbose > 1 {
+								log.Printf("Set status %d (%x)\n", rvstat, armflags)
+							}
+							schan <- 1
+						}
+					}
+					if (xstatus & 1) != (status & 1) {
+						if options.Config.Verbose > 0 {
+							log.Printf("status changed %x -> %x (%x)\n", xstatus, status, armflags)
+						}
+						xstatus = status
+						if (status & 1) == 0 {
+							if rvstat != 2 {
+								rvstat = 2
+								if options.Config.Verbose > 1 {
+									log.Printf("Set status %d (%x)\n", rvstat, armflags)
+								}
+								schan <- 2
+							}
+						} else {
+							if rvstat != 3 {
+								rvstat = 3
+								if options.Config.Verbose > 1 {
+									log.Printf("Set status %d (%x)\n", rvstat, armflags)
+								}
+								schan <- 3
+							}
+						}
+					}
+				}
+
+				if send_chans {
+					tdata := m.serialise_rx(ichan)
+					m.Send_msp(msp_SET_RAW_RC, tdata)
+				}
+			} else {
+				if options.Config.Verbose > 1 {
+					log.Println("RC data send failed")
+				}
+				schan <- 0xff
+			}
+
+		case SEND_RSSI:
+			if lrssi != rssi {
+				m.Rssi(rssi)
+				lrssi = rssi
+			}
+		case SEND_CHANS:
+			tdata := m.serialise_rx(ichan)
+			m.Send_msp(msp_SET_RAW_RC, tdata)
+		}
 	}
 }
 
-func (m *MSPSerial) get_status() (uint64, uint32) {
-	status := uint64(0)
-	armf := uint32(0)
-
-	m.Send_msp(msp2_INAV_STATUS, nil)
-	v := <-m.c0
-	if v.ok {
-		status = binary.LittleEndian.Uint64(v.data[13:21])
-		armf = binary.LittleEndian.Uint32(v.data[9:13])
+func (m *MSPSerial) Close() {
+	if m.ok {
+		m.ok = false
+		m.conn.Close()
 	}
-	return status, armf
 }

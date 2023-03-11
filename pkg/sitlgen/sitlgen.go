@@ -4,15 +4,18 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/eiannone/keyboard"
+	"github.com/mattn/go-tty"
+	"path/filepath"
+
 	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	options "github.com/stronnag/bbl2kml/pkg/options"
 	"log"
 	"math"
 	"net"
 	"os"
-	"os/exec"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -264,18 +267,6 @@ func to_hg(alt float32) float32 {
 	return float32(0.0295299837 * p)
 }
 
-func proc_start(args ...string) (p *os.Process, err error) {
-	if args[0], err = exec.LookPath(args[0]); err == nil {
-		var procAttr os.ProcAttr
-		procAttr.Files = []*os.File{nil, os.Stdout, os.Stderr}
-		p, err := os.StartProcess(args[0], args, &procAttr)
-		if err == nil {
-			return p, nil
-		}
-	}
-	return nil, err
-}
-
 func (x *SitlGen) arm_action(rxchan chan MSPChans, action bool) {
 	if x.swchan != -1 {
 		var act string
@@ -317,9 +308,11 @@ func log_mode_change(mranges []ModeRange, imodes []uint16, fname string) {
 }
 
 func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
+	var txhost string
+
 	log.SetPrefix("[fl2sitm] ")
-	log.SetFlags(log.Ltime)
-	args := read_cfg(options.Config.SitlEEprom)
+	log.SetFlags(log.Ltime | log.Lmicroseconds)
+	conf := read_cfg()
 
 	uaddr, err := net.ResolveUDPAddr("udp", options.Config.SitlListen)
 	if err != nil {
@@ -332,15 +325,50 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 	}
 	defer conn.Close()
 
-	if proc, err := proc_start(args...); err == nil {
-		defer func() {
-			if options.Config.Verbose > 10 {
-				log.Printf("DBG kill proc +%v\n", proc)
-			}
-			proc.Kill()
-			proc.Wait()
-		}()
+	if options.Config.Verbose > 0 {
+		log.Printf("Conf = %+v\n", conf)
 	}
+
+	if conf.sitl != "" {
+		args := []string{}
+		args = append(args, conf.sitl)
+		args = append(args, "--sim=xp")
+		if conf.ip != "" {
+			args = append(args, fmt.Sprintf("--simip=%s", conf.ip))
+		}
+		if conf.port != "" {
+			args = append(args, fmt.Sprintf("--simport=%s", conf.port))
+		}
+
+		if conf.path != "" {
+			ep := os.ExpandEnv(conf.path)
+			var eeprom string
+			if len(options.Config.SitlEEprom) == 0 {
+				if conf.eeprom != "" {
+					eeprom = conf.eeprom
+				} else {
+					eeprom = "eeprom.bin"
+				}
+			} else {
+				eeprom = options.Config.SitlEEprom
+			}
+			ep = filepath.Join(ep, eeprom)
+			args = append(args, fmt.Sprintf("--path=%s", ep))
+		}
+
+		if proc, err := proc_start(args...); err == nil {
+			defer func() {
+				if options.Config.Verbose > 10 {
+					log.Printf("DBG kill proc +%v\n", proc)
+				}
+				proc.Kill()
+				proc.Wait()
+			}()
+		}
+	}
+
+	cc := make(chan os.Signal, 1)
+	signal.Notify(cc, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	var sim SimData
 
@@ -373,27 +401,33 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 	armed := false
 	lastfm := uint16(types.FM_UNK)
 	var mranges []ModeRange
-
-	keysEvents, err := keyboard.GetKeys(10)
+	tty, err := tty.Open()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	defer func() {
-		err := keyboard.Close()
-		if options.Config.Verbose > 10 {
-			log.Printf("DBG reset k/bd +%v\n", err)
+	defer tty.Close()
+
+	evchan := make(chan rune)
+	go func() {
+		for {
+			r, err := tty.ReadRune()
+			if err != nil {
+				log.Panic(err)
+			}
+			evchan <- r
 		}
 	}()
-
 	for done := false; done == false; {
 		cnt += 1
-		if options.Config.Verbose > 4 {
+		if options.Config.Verbose > 9 {
 			log.Printf("Tick %d\n", cnt)
 		}
 		select {
 		case addr := <-addrchan:
+			txhost, _, _ = net.SplitHostPort(addr.String())
+			//			txhost = strings.Split(addr.String(), ":")[0]
 			if options.Config.Verbose > 1 {
-				log.Printf("Got connection %+v\n", addr)
+				log.Printf("Got connection %s\n", addr.String())
 			}
 			go x.sender(conn, addr, simchan)
 			serial_ok = 1
@@ -409,7 +443,8 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 		case <-time.After(100 * time.Millisecond):
 			switch serial_ok {
 			case 1:
-				m, err = NewMSPSerial(options.Config.SitlPort)
+				uart2 := fmt.Sprintf("%s:%d", txhost, options.Config.SitlPort)
+				m, err = NewMSPSerial(uart2)
 				if err == nil {
 					log.Printf("******** Opened RX **************\n")
 					serial_ok = 2
@@ -490,29 +525,24 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 				bbcmd <- 1 // awake reader
 			case 0xff:
 				done = true
+				armed = false // we can't disarm if the FC is dead
 				break
 			default:
 			}
 
-		case ev := <-keysEvents:
-			if ev.Err != nil {
-				panic(ev.Err)
-			}
-			if ev.Key == 0 {
-				switch ev.Rune {
-				case 'A', 'a':
-					x.arm_action(rxchan, true)
-				case 'U':
-					x.arm_action(rxchan, false)
-				case 'Q', 'q':
-					log.Println("Quit")
-					done = true
-				}
-			} else if ev.Key == keyboard.KeyCtrlC {
-				log.Println("Interrupt")
+		case ev := <-evchan:
+			switch ev {
+			case 'A', 'a':
+				x.arm_action(rxchan, true)
+			case 'U':
+				x.arm_action(rxchan, false)
+			case 'Q', 'q':
+				log.Println("Quit")
 				done = true
 			}
-
+		case <-cc:
+			log.Println("Interrupt")
+			done = true
 		}
 	}
 
@@ -530,6 +560,9 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 		}
 		log.Println("Cleanup ...")
 		time.Sleep(2500 * time.Millisecond)
-		log.Println("Done")
+	} else {
+		m.Close()
+		time.Sleep(500 * time.Millisecond)
 	}
+	log.Println("Done")
 }

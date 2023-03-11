@@ -50,7 +50,7 @@ type Configuration struct {
 	RedIsLow        bool    `json:"low-is-red"`
 	SitlEEprom      string  `json:"-"`
 	SitlListen      string  `json:"-"`
-	SitlPort        string  `json:"-"`
+	SitlPort        int     `json:"-"`
 	Verbose         int     `json:"-"`
 }
 
@@ -160,7 +160,7 @@ func ParseCLI(gv func() string) ([]string, string) {
 		Config.Idx = 1
 		flag.StringVar(&Config.SitlEEprom, "eeprom", "", "EEprom name")
 		flag.StringVar(&Config.SitlListen, "listen", ":49000", "Listening port")
-		flag.StringVar(&Config.SitlPort, "txport", "127.0.0.1:5761", "host:port for serial TX")
+		flag.IntVar(&Config.SitlPort, "txport", 5761, "host:port for serial TX")
 		flag.IntVar(&Config.Verbose, "verbose", 0, "Verbosity")
 	} else {
 		flag.BoolVar(&Config.Kml, "kml", Config.Kml, "Generate KML (vice default KMZ)")

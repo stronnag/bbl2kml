@@ -2,7 +2,6 @@ package sitlgen
 
 import (
 	"bufio"
-	"fmt"
 	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	"log"
 	"os"
@@ -10,14 +9,21 @@ import (
 	"strings"
 )
 
-func read_cfg(eeprom string) []string {
+type SimMeta struct {
+	sitl   string
+	ip     string
+	port   string
+	path   string
+	eeprom string
+}
+
+func read_cfg() SimMeta {
+	sitl := SimMeta{}
 	cdir := types.GetConfigDir()
 	fn := filepath.Join(cdir, "fl2sitl.conf")
-	var args []string
 	r, err := os.Open(fn)
 	if err == nil {
 		defer r.Close()
-		h := make(map[string]string)
 		scanner := bufio.NewScanner(r)
 		for scanner.Scan() {
 			l := scanner.Text()
@@ -27,36 +33,23 @@ func read_cfg(eeprom string) []string {
 				if len(parts) == 2 {
 					key := strings.TrimSpace(parts[0])
 					val := strings.TrimSpace(parts[1])
-					h[key] = val
-				}
-			}
-		}
-
-		if v, ok := h["sitl"]; ok {
-			args = append(args, v)
-			args = append(args, "--sim=xp")
-			if v, ok = h["simip"]; ok {
-				args = append(args, fmt.Sprintf("--simip=%s", v))
-			}
-			if v, ok = h["simport"]; ok {
-				args = append(args, fmt.Sprintf("--simport=%s", v))
-			}
-
-			if v, ok = h["eeprom-path"]; ok {
-				ep := os.ExpandEnv(v)
-				if len(eeprom) == 0 {
-					if v, ok = h["default-eeprom"]; ok {
-						eeprom = v
-					} else {
-						eeprom = "eeprom.bin"
+					switch key {
+					case "sitl":
+						sitl.sitl = val
+					case "simip":
+						sitl.ip = val
+					case "simport":
+						sitl.port = val
+					case "eeprom-path":
+						sitl.path = val
+					case "default-eeprom":
+						sitl.eeprom = val
 					}
 				}
-				ep = filepath.Join(ep, eeprom)
-				args = append(args, fmt.Sprintf("--path=%s", ep))
 			}
 		}
 	} else {
 		log.Fatal("%s : %v\n", fn, err)
 	}
-	return args
+	return sitl
 }

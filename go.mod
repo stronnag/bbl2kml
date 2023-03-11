@@ -7,8 +7,8 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/deet/simpleline v0.0.0-20140919022041-9d297ff784a2
 	github.com/eclipse/paho.mqtt.golang v1.4.2
-	github.com/eiannone/keyboard v0.0.0-20220611211555-0d226195f203
 	github.com/gorilla/websocket v1.5.0 // indirect
+	github.com/mattn/go-tty v0.0.4
 	github.com/mazznoer/colorgrad v0.9.1
 	github.com/mazznoer/csscolorparser v0.1.3 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
