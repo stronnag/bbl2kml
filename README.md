@@ -57,6 +57,6 @@ The project includes the following:
 * `flightlog2kml` : Generate KML/Z from log files
 * `fl2mqtt` : Generate Bullet GCCS MQTT messages
 * `fl2ltm` :  Generate (INAV) LTM (Lightweight Telemetry) messages
-* `fl2sitl` : Replay BBL via the INAV SITL
+* `fl2sitl` : Replay BBL via the INAV SITL ([documentation](https://github.com/stronnag/bbl2kml/wiki/fl2sitl))
 * `log2mission` : Generate an INAV mission file from a flight log
 * `mission2kml` : General KML/Z from an INAV mission file
