@@ -23,8 +23,7 @@ func getVersion() string {
 
 func main() {
 	files, app := options.ParseCLI(getVersion)
-	if len(files) == 0 || (len(options.Config.Mqttopts) == 0 && len(options.Config.Outdir) == 0 &&
-		options.Config.Dump == false && options.Config.Metas == false) {
+	if len(files) == 0 {
 		options.Usage()
 		os.Exit(1)
 	}
