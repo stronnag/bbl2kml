@@ -1,4 +1,4 @@
-project('flightlog2kml', version : '1.0.7-rc4')
+project('flightlog2kml', version : '1.0.7-rc5')
 meson.add_install_script('meson/post_install.py')
 version = get_option('version')
 commit = get_option('commit')
@@ -25,16 +25,6 @@ res = run_command(python3, '-c', 'import os; print(os.environ["EXE"])', check: f
 if res.returncode() == 0
   exe = res.stdout().strip()
 endif
-if exe == ''
-  res = run_command(python3, '-c', 'import os; print(os.environ["GOOS"])', check: false)
-  if res.returncode() == 0
-    if res.stdout().strip() == 'windows'
-      exe = '.exe'
-    endif
-  endif
-endif
-
-message('exe is' + exe)
 
 # This is for old distros like Debain 10, in which case the '-v' is harmles
 r = run_command('go', 'env', 'GOVERSION', check: false)
