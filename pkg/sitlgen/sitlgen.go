@@ -168,10 +168,6 @@ func (x *SitlGen) xplreader(conn net.PacketConn, achan chan net.Addr) {
 					if updatemap {
 						x.drefmap[item] = id
 					}
-				} else {
-					//zb := bytes.Index(buf[9:], []byte("\000"))
-					//text := string(buf[9 : zb+9])
-					//                                              fval := float32frombytes(buf[5:9])
 				}
 			}
 		} else {
@@ -286,7 +282,7 @@ func (x *SitlGen) arm_action(rxchan chan MSPChans, action bool) {
 			log.Printf("%sArming on chan %d at %d\n", act, x.swchan+1, x.mchans[x.swchan])
 		}
 	} else {
-		log.Printf("No Arming switch, doomed\n")
+		log.Printf("No Arming switch (yet)\n")
 	}
 }
 
@@ -317,12 +313,12 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 	if conf.mintime == 0 {
 		conf.mintime = 100
 	}
-	uaddr, err := net.ResolveUDPAddr("udp", options.Config.SitlListen)
+	uaddr, err := net.ResolveUDPAddr("udp4", options.Config.SitlListen)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	conn, err := net.ListenUDP("udp", uaddr)
+	conn, err := net.ListenUDP("udp4", uaddr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -428,7 +424,6 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 		select {
 		case addr := <-addrchan:
 			txhost, _, _ = net.SplitHostPort(addr.String())
-			//			txhost = strings.Split(addr.String(), ":")[0]
 			if options.Config.Verbose > 1 {
 				log.Printf("Got connection %s\n", addr.String())
 			}
