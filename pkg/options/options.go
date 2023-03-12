@@ -51,6 +51,7 @@ type Configuration struct {
 	SitlEEprom      string  `json:"-"`
 	SitlListen      string  `json:"-"`
 	SitlPort        int     `json:"-"`
+	SitlNoStart     bool    `json:"-"`
 	Verbose         int     `json:"-"`
 }
 
@@ -161,6 +162,7 @@ func ParseCLI(gv func() string) ([]string, string) {
 		flag.StringVar(&Config.SitlEEprom, "eeprom", "", "EEprom name")
 		flag.StringVar(&Config.SitlListen, "listen", ":49000", "Listening port")
 		flag.IntVar(&Config.SitlPort, "txport", 5761, "host:port for serial TX")
+		flag.BoolVar(&Config.SitlNoStart, "nostart", false, "Don't start the SITL")
 		flag.IntVar(&Config.Verbose, "verbose", 0, "Verbosity")
 	} else {
 		flag.BoolVar(&Config.Kml, "kml", Config.Kml, "Generate KML (vice default KMZ)")

@@ -6,15 +6,17 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
 type SimMeta struct {
-	sitl   string
-	ip     string
-	port   string
-	path   string
-	eeprom string
+	sitl    string
+	ip      string
+	port    string
+	path    string
+	eeprom  string
+	mintime int
 }
 
 func read_cfg() SimMeta {
@@ -44,6 +46,8 @@ func read_cfg() SimMeta {
 						sitl.path = val
 					case "default-eeprom":
 						sitl.eeprom = val
+					case "min-time":
+						sitl.mintime, _ = strconv.Atoi(val)
 					}
 				}
 			}

@@ -314,6 +314,9 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 	log.SetFlags(log.Ltime | log.Lmicroseconds)
 	conf := read_cfg()
 
+	if conf.mintime == 0 {
+		conf.mintime = 100
+	}
 	uaddr, err := net.ResolveUDPAddr("udp", options.Config.SitlListen)
 	if err != nil {
 		log.Fatal(err)
@@ -329,7 +332,7 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 		log.Printf("Conf = %+v\n", conf)
 	}
 
-	if conf.sitl != "" {
+	if options.Config.SitlNoStart == false && conf.sitl != "" {
 		args := []string{}
 		args = append(args, conf.sitl)
 		args = append(args, "--sim=xp")
@@ -367,11 +370,7 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 		}
 	}
 
-	cc := make(chan os.Signal, 1)
-	signal.Notify(cc, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-
 	var sim SimData
-
 	// sim data to SITL
 	simchan := make(chan SimData, 1)
 	// socket addr, socket is open
@@ -417,6 +416,10 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 			evchan <- r
 		}
 	}()
+
+	cc := make(chan os.Signal, 1)
+	signal.Notify(cc, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
 	for done := false; done == false; {
 		cnt += 1
 		if options.Config.Verbose > 9 {
@@ -455,7 +458,7 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 				if options.Config.Verbose > 1 {
 					log.Printf("Serial init\n")
 				}
-				go m.init(rxchan, rxstat, rssich)
+				go m.init(rxchan, rxstat, rssich, conf.mintime)
 				serial_ok = 3
 				rssich <- sim.Rssi
 			case 3:
@@ -469,7 +472,7 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 		case sd := <-bbchan:
 			simchan <- sd
 			rssich <- sd.Rssi
-			if options.Config.Verbose > 1 {
+			if options.Config.Verbose > 4 {
 				log.Printf("SIM: %+v\n", sd)
 			}
 			if sd.Fmode == types.FM_UNK {
@@ -561,8 +564,10 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 		log.Println("Cleanup ...")
 		time.Sleep(2500 * time.Millisecond)
 	} else {
-		m.Close()
-		time.Sleep(500 * time.Millisecond)
+		if m != nil && m.ok {
+			m.Close()
+			time.Sleep(500 * time.Millisecond)
+		}
 	}
 	log.Println("Done")
 }

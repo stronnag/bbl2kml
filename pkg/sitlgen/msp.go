@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -298,7 +299,7 @@ func (m *MSPSerial) Send_msp(cmd uint16, payload []byte) {
 	}
 }
 
-func (m *MSPSerial) init(nchan chan MSPChans, schan chan byte, rssich chan byte) {
+func (m *MSPSerial) init(nchan chan MSPChans, schan chan byte, rssich chan byte, mintime int) {
 	var fw, api, vers, board, gitrev string
 	var v6 bool
 
@@ -399,7 +400,7 @@ func (m *MSPSerial) init(nchan chan MSPChans, schan chan byte, rssich chan byte)
 			}
 		}
 	}
-	m.run(nchan, schan, rssich)
+	m.run(nchan, schan, rssich, int64(mintime))
 }
 
 func (m *MSPSerial) get_ranges() []ModeRange {
@@ -447,9 +448,16 @@ func (m *MSPSerial) Rssi(r byte) {
 	m.Send_msp(msp_SET_TX_INFO, ra)
 }
 
-func (m *MSPSerial) run(nchan chan MSPChans, schan chan byte, rssich chan byte) {
+func (m *MSPSerial) send_tx(ichan MSPChans) time.Time {
+	tdata := m.serialise_rx(ichan)
+	m.Send_msp(msp_SET_RAW_RC, tdata)
+	return time.Now()
+}
+
+func (m *MSPSerial) run(nchan chan MSPChans, schan chan byte, rssich chan byte, mintime int64) {
 	ichan := MSPChans{}
 	xstatus := uint64(0)
+	xarmflags := uint32(0)
 	rssi := byte(0)
 	lrssi := byte(0)
 	ichan[0] = 1500
@@ -467,22 +475,28 @@ func (m *MSPSerial) run(nchan chan MSPChans, schan chan byte, rssich chan byte) 
 	rvstat := byte(0)
 	mcnt := byte(0)
 	var sv SChan
-	tdata := m.serialise_rx(ichan)
-	m.Send_msp(msp_SET_RAW_RC, tdata)
+
+	ntx := 1
+	stime := m.send_tx(ichan)
 	log.Printf("RC init done\n")
+
+	nstat := 0
+	nrssi := 0
+
+	start := time.Now()
+	last := start
+
 	for {
 		event := SEND_NONE
 		select {
 		case v := <-m.c0:
-			//			sv_cmd = v.cmd
-			//sv_ok = v.ok
 			sv = v
 			mcnt += 1
 			event = SEND_MSP
 		case v := <-rssich:
 			event = SEND_RSSI
 			rssi = v
-		case <-time.After(50 * time.Millisecond):
+		case <-time.After(20 * time.Millisecond):
 			event = SEND_TIMEOUT
 		case v := <-nchan:
 			event = SEND_CHANS
@@ -493,23 +507,21 @@ func (m *MSPSerial) run(nchan chan MSPChans, schan chan byte, rssich chan byte) 
 			}
 		}
 		switch event {
-		case SEND_TIMEOUT:
-			tdata := m.serialise_rx(ichan)
-			m.Send_msp(msp_SET_RAW_RC, tdata)
 		case SEND_MSP:
 			if sv.ok {
-				send_chans := true
 				if sv.cmd == msp_SET_RAW_RC && mcnt%5 == 0 {
-					send_chans = false
 					m.Send_msp(msp2_INAV_STATUS, nil)
+					nstat += 1
 				} else if sv.cmd == msp2_INAV_STATUS {
 					status := binary.LittleEndian.Uint64(sv.data[13:21])
 					armflags := binary.LittleEndian.Uint32(sv.data[9:13])
 					if options.Config.Verbose > 2 {
-						log.Printf("Status, Armflags  %x %x\n", status, armflags)
+						if !(xstatus == status && armflags == xarmflags) {
+							log.Printf("Status: %x Armflags: (%s)\n", status, arm_status(armflags))
+						}
 					}
 					// Unarmed, able to arm
-					if (status&1) == 0 && armflags < 0x200 {
+					if (status&1) == 0 && armflags < 0x80 {
 						if rvstat != 1 {
 							rvstat = 1
 							if options.Config.Verbose > 1 {
@@ -522,7 +534,6 @@ func (m *MSPSerial) run(nchan chan MSPChans, schan chan byte, rssich chan byte) 
 						if options.Config.Verbose > 0 {
 							log.Printf("status changed %x -> %x (%x)\n", xstatus, status, armflags)
 						}
-						xstatus = status
 						if (status & 1) == 0 {
 							if rvstat != 2 {
 								rvstat = 2
@@ -541,11 +552,8 @@ func (m *MSPSerial) run(nchan chan MSPChans, schan chan byte, rssich chan byte) 
 							}
 						}
 					}
-				}
-
-				if send_chans {
-					tdata := m.serialise_rx(ichan)
-					m.Send_msp(msp_SET_RAW_RC, tdata)
+					xstatus = status
+					xarmflags = armflags
 				}
 			} else {
 				if options.Config.Verbose > 1 {
@@ -558,10 +566,22 @@ func (m *MSPSerial) run(nchan chan MSPChans, schan chan byte, rssich chan byte) 
 			if lrssi != rssi {
 				m.Rssi(rssi)
 				lrssi = rssi
+				nrssi += 1
 			}
-		case SEND_CHANS:
-			tdata := m.serialise_rx(ichan)
-			m.Send_msp(msp_SET_RAW_RC, tdata)
+
+		default:
+			if time.Since(stime) > time.Duration(mintime)*time.Millisecond {
+				stime = m.send_tx(ichan)
+				ntx += 1
+			}
+		}
+
+		if options.Config.Verbose > 2 {
+			now := time.Since(last)
+			if now > time.Duration(10*time.Second) {
+				log.Printf("Stats %v: Tx: %d RSSI %d Stats %d\n", time.Since(start), ntx, nrssi, nstat)
+				last = time.Now()
+			}
 		}
 	}
 }
@@ -570,5 +590,38 @@ func (m *MSPSerial) Close() {
 	if m.ok {
 		m.ok = false
 		m.conn.Close()
+	}
+}
+
+func arm_status(status uint32) string {
+	armfails := [...]string{
+		"",          /*      1 */
+		"",          /*      2 */
+		"Armed",     /*      4 */
+		"",          /*      8 */
+		"",          /*     10 */
+		"",          /*     20 */
+		"",          /*     40 */
+		"F/S",       /*     80 */
+		"Level",     /*    100 */
+		"Calibrate", /*    200 */
+		"Overload",  /*    400 */
+		"NavUnsafe", "MagCal", "AccCal", "ArmSwitch", "H/WFail",
+		"BoxF/S", "BoxKill", "RCLink", "Throttle", "CLI",
+		"CMS", "OSD", "Roll/Pitch", "Autotrim", "OOM",
+		"Settings", "PWM Out", "PreArm", "DSHOTBeep", "Land", "Other",
+	}
+
+	if status < 0x80 {
+		return "Ready to arm"
+	} else {
+		var sarry []string
+		for i := 0; i < len(armfails); i++ {
+			if ((status & (1 << i)) != 0) && armfails[i] != "" {
+				sarry = append(sarry, armfails[i])
+			}
+		}
+		sarry = append(sarry, fmt.Sprintf("(0x%x)", status))
+		return strings.Join(sarry, " ")
 	}
 }
