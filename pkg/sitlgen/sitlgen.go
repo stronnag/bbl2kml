@@ -14,6 +14,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -313,12 +314,12 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 	if conf.mintime == 0 {
 		conf.mintime = 100
 	}
-	uaddr, err := net.ResolveUDPAddr("udp4", options.Config.SitlListen)
+	uaddr, err := net.ResolveUDPAddr("udp", options.Config.SitlListen)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	conn, err := net.ListenUDP("udp4", uaddr)
+	conn, err := net.ListenUDP("udp", uaddr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -441,7 +442,7 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 		case <-time.After(100 * time.Millisecond):
 			switch serial_ok {
 			case 1:
-				uart2 := fmt.Sprintf("%s:%d", txhost, options.Config.SitlPort)
+				uart2 := net.JoinHostPort(txhost, strconv.Itoa(options.Config.SitlPort))
 				m, err = NewMSPSerial(uart2)
 				if err == nil {
 					log.Printf("******** Opened RX **************\n")

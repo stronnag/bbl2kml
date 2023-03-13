@@ -279,9 +279,9 @@ func (m *MSPSerial) Read_msp(c0 chan SChan) {
 
 func NewMSPSerial(remote string) (*MSPSerial, error) {
 	var conn net.Conn
-	addr, err := net.ResolveTCPAddr("tcp4", remote)
+	addr, err := net.ResolveTCPAddr("tcp", remote)
 	if err == nil {
-		conn, err = net.DialTCP("tcp4", nil, addr)
+		conn, err = net.DialTCP("tcp", nil, addr)
 	}
 	if err != nil {
 		return nil, err
