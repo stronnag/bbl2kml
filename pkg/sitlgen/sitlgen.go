@@ -44,6 +44,7 @@ type SimData struct {
 	RC_t   uint16
 	Fmode  uint16
 	Rssi   byte
+	Status uint8
 }
 
 type SitlGen struct {
@@ -386,6 +387,8 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 
 	var m *MSPSerial = nil
 
+	fs := false
+
 	go x.xplreader(conn, addrchan)
 
 	for j, _ := range x.mchans {
@@ -429,7 +432,9 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 				log.Printf("Got connection %s\n", addr.String())
 			}
 			go x.sender(conn, addr, simchan)
-			serial_ok = 1
+			if os.Getenv("FL2SITL_NOTX") == "" {
+				serial_ok = 1
+			}
 			if options.Config.Verbose > 1 {
 				log.Printf("Start BBL reader\n")
 			}
@@ -475,24 +480,43 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 				done = true
 				break
 			}
-			if sd.Fmode != lastfm {
-				imodes, fname := fm_to_mode(sd.Fmode)
-				if options.Config.Verbose > 1 {
-					log_mode_change(mranges, imodes, fname)
-				}
-				x.change_mode(mranges, lastfm, sd.Fmode)
-				if options.Config.Verbose > 1 {
-					x.dump_chans("Mode")
-				}
-				rxchan <- x.mchans
-				lastfm = sd.Fmode
-			}
 
 			if armed {
-				x.mchans[0] = sd.RC_a
-				x.mchans[1] = sd.RC_e
-				x.mchans[2] = sd.RC_r
-				x.mchans[3] = sd.RC_t
+				if sd.Status&types.Is_FAIL == types.Is_FAIL {
+					if fs == false {
+						if options.Config.Verbose > 0 {
+							log.Printf("Set Failsafe\n")
+						}
+						fs = true
+					}
+					if conf.failmode != 0 {
+						x.mchans[3] = conf.failmode
+					}
+				}
+				if fs && sd.Status&types.Is_FAIL == 0 {
+					fs = false
+					if options.Config.Verbose > 0 {
+						log.Printf("Clear Failsafe\n")
+					}
+				}
+				if !fs {
+					x.mchans[0] = sd.RC_a
+					x.mchans[1] = sd.RC_e
+					x.mchans[2] = sd.RC_r
+					x.mchans[3] = sd.RC_t
+
+					if sd.Fmode != lastfm {
+						imodes, fname := fm_to_mode(sd.Fmode)
+						if options.Config.Verbose > 1 {
+							log_mode_change(mranges, imodes, fname)
+						}
+						x.change_mode(mranges, lastfm, sd.Fmode)
+						if options.Config.Verbose > 1 {
+							x.dump_chans("Mode")
+						}
+						lastfm = sd.Fmode
+					}
+				}
 				rxchan <- x.mchans
 			} else {
 				x.arm_action(rxchan, true)

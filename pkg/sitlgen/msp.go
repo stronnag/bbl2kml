@@ -3,12 +3,13 @@ package sitlgen
 import (
 	"encoding/binary"
 	"fmt"
-	options "github.com/stronnag/bbl2kml/pkg/options"
 	"log"
 	"net"
 	"sort"
 	"strings"
 	"time"
+
+	options "github.com/stronnag/bbl2kml/pkg/options"
 )
 
 const (
@@ -27,6 +28,7 @@ const (
 	msp_MODE_RANGES   = 34
 	msp_SET_TX_INFO   = 186
 	msp_SET_RX_CONFIG = 45
+	msp_BOXNAMES      = 116
 
 	msp_COMMON_SETTING = 0x1003
 	msp2_INAV_STATUS   = 0x2000
@@ -135,7 +137,7 @@ func encode_msp2(cmd uint16, payload []byte) []byte {
 }
 
 func (m *MSPSerial) Read_msp(c0 chan SChan) {
-	inp := make([]byte, 128)
+	inp := make([]byte, 512)
 	var sc SChan
 	var count = uint16(0)
 	var crc = byte(0)
@@ -383,6 +385,11 @@ func (m *MSPSerial) init(nchan chan MSPChans, schan chan byte, rssich chan byte,
 				if v.len > 0 {
 					m.deserialise_modes(v.data)
 				}
+				m.Send_msp(msp_BOXNAMES, nil)
+			case msp_BOXNAMES:
+				if v.len > 0 {
+					log.Printf("%s\n", v.data)
+				}
 				done = true
 			case msp_SET_TX_INFO:
 				// RSSI set
@@ -456,7 +463,7 @@ func (m *MSPSerial) send_tx(ichan MSPChans) time.Time {
 
 func (m *MSPSerial) run(nchan chan MSPChans, schan chan byte, rssich chan byte, mintime int64) {
 	ichan := MSPChans{}
-	xstatus := uint64(0)
+	xboxflags := uint64(0)
 	xarmflags := uint32(0)
 	rssi := byte(0)
 	lrssi := byte(0)
@@ -513,15 +520,16 @@ func (m *MSPSerial) run(nchan chan MSPChans, schan chan byte, rssich chan byte, 
 					m.Send_msp(msp2_INAV_STATUS, nil)
 					nstat += 1
 				} else if sv.cmd == msp2_INAV_STATUS {
-					status := binary.LittleEndian.Uint64(sv.data[13:21])
+					//					status := binary.LittleEndian.Uint16(sv.data[4:6])
 					armflags := binary.LittleEndian.Uint32(sv.data[9:13])
+					boxflags := binary.LittleEndian.Uint64(sv.data[13:21])
 					if options.Config.Verbose > 2 {
-						if !(xstatus == status && armflags == xarmflags) {
-							log.Printf("Status: %x Armflags: (%s)\n", status, arm_status(armflags))
+						if xboxflags != boxflags || armflags != xarmflags {
+							log.Printf("Boxflags: %x Armflags: %s (%x)\n", boxflags, arm_status(armflags), armflags)
 						}
 					}
 					// Unarmed, able to arm
-					if (status&1) == 0 && armflags < 0x80 {
+					if (boxflags&1 == 0) && armflags < 0x80 {
 						if rvstat != 1 {
 							rvstat = 1
 							if options.Config.Verbose > 1 {
@@ -530,15 +538,15 @@ func (m *MSPSerial) run(nchan chan MSPChans, schan chan byte, rssich chan byte, 
 							schan <- 1
 						}
 					}
-					if (xstatus & 1) != (status & 1) {
+					if (xboxflags & 1) != (boxflags & 1) {
 						if options.Config.Verbose > 0 {
-							log.Printf("status changed %x -> %x (%x)\n", xstatus, status, armflags)
+							log.Printf("boxflags changed %x -> %x (%x)\n", xboxflags, boxflags, armflags)
 						}
-						if (status & 1) == 0 {
+						if (boxflags & 1) == 0 {
 							if rvstat != 2 {
 								rvstat = 2
 								if options.Config.Verbose > 1 {
-									log.Printf("Set status %d (%x)\n", rvstat, armflags)
+									log.Printf("Set boxflags %d (%x)\n", rvstat, armflags)
 								}
 								schan <- 2
 							}
@@ -546,13 +554,13 @@ func (m *MSPSerial) run(nchan chan MSPChans, schan chan byte, rssich chan byte, 
 							if rvstat != 3 {
 								rvstat = 3
 								if options.Config.Verbose > 1 {
-									log.Printf("Set status %d (%x)\n", rvstat, armflags)
+									log.Printf("Set boxflags %d (%x)\n", rvstat, armflags)
 								}
 								schan <- 3
 							}
 						}
 					}
-					xstatus = status
+					xboxflags = boxflags
 					xarmflags = armflags
 				}
 			} else {
@@ -571,8 +579,12 @@ func (m *MSPSerial) run(nchan chan MSPChans, schan chan byte, rssich chan byte, 
 
 		default:
 			if time.Since(stime) > time.Duration(mintime)*time.Millisecond {
-				stime = m.send_tx(ichan)
-				ntx += 1
+				if ichan[3] == 0xd0d0 { // Failsafe, ignore
+					stime = time.Now()
+				} else {
+					stime = m.send_tx(ichan)
+					ntx += 1
+				}
 			}
 		}
 
@@ -595,33 +607,42 @@ func (m *MSPSerial) Close() {
 
 func arm_status(status uint32) string {
 	armfails := [...]string{
-		"",          /*      1 */
-		"",          /*      2 */
-		"Armed",     /*      4 */
-		"",          /*      8 */
-		"",          /*     10 */
-		"",          /*     20 */
-		"",          /*     40 */
-		"F/S",       /*     80 */
-		"Level",     /*    100 */
-		"Calibrate", /*    200 */
-		"Overload",  /*    400 */
+		"",           /*      1 */
+		"",           /*      2 */
+		"Armed",      /*      4 */
+		"Ever armed", /*      8 */
+		"HITL",       /*     10 */
+		"SITL",       /*     20 */
+		"",           /*     40 */
+		"F/S",        /*     80 */
+		"Level",      /*    100 */
+		"Calibrate",  /*    200 */
+		"Overload",   /*    400 */
 		"NavUnsafe", "MagCal", "AccCal", "ArmSwitch", "H/WFail",
 		"BoxF/S", "BoxKill", "RCLink", "Throttle", "CLI",
 		"CMS", "OSD", "Roll/Pitch", "Autotrim", "OOM",
 		"Settings", "PWM Out", "PreArm", "DSHOTBeep", "Land", "Other",
 	}
 
+	var sarry []string
 	if status < 0x80 {
-		return "Ready to arm"
+		if status&(1<<5) != 0 {
+			sarry = append(sarry, armfails[5])
+		}
+		if status&(1<<2) != 0 {
+			sarry = append(sarry, armfails[2])
+		}
+		if len(sarry) == 0 {
+			sarry = append(sarry, "Ready to arm")
+		}
 	} else {
-		var sarry []string
+
 		for i := 0; i < len(armfails); i++ {
 			if ((status & (1 << i)) != 0) && armfails[i] != "" {
 				sarry = append(sarry, armfails[i])
 			}
 		}
 		sarry = append(sarry, fmt.Sprintf("(0x%x)", status))
-		return strings.Join(sarry, " ")
 	}
+	return strings.Join(sarry, " ")
 }

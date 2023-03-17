@@ -30,6 +30,7 @@ func from_bbl(b types.LogItem, acc1g float32) SimData {
 	sd.RC_t = uint16(b.Thr)
 	sd.Fmode = uint16(b.Fmode)
 	sd.Rssi = b.Rssi
+	sd.Status = b.Status
 	return sd
 }
 
@@ -51,7 +52,7 @@ func file_reader(rch chan interface{}, sdch chan SimData, cmdch chan byte, acc1g
 				sdch <- sd
 				if lt != 0 {
 					tdiff := time.Duration(b.Stamp-lt) * time.Microsecond
-					if options.Config.Verbose > 1 {
+					if options.Config.Verbose > 5 {
 						log.Printf("Reader sleeps %v\n", tdiff)
 					}
 					time.Sleep(tdiff)

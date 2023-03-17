@@ -11,12 +11,13 @@ import (
 )
 
 type SimMeta struct {
-	sitl    string
-	ip      string
-	port    string
-	path    string
-	eeprom  string
-	mintime int
+	sitl     string
+	ip       string
+	port     string
+	path     string
+	eeprom   string
+	mintime  int
+	failmode uint16
 }
 
 func read_cfg() SimMeta {
@@ -48,6 +49,15 @@ func read_cfg() SimMeta {
 						sitl.eeprom = val
 					case "min-time":
 						sitl.mintime, _ = strconv.Atoi(val)
+					case "failmode":
+						if val[0] == 'i' {
+							sitl.failmode = 0
+						} else if val[0] == 'n' {
+							sitl.failmode = 0xd0d0
+						} else {
+							tmp, _ := strconv.Atoi(val)
+							sitl.failmode = uint16(tmp)
+						}
 					}
 				}
 			}
