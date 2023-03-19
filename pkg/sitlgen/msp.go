@@ -596,6 +596,7 @@ func (m *MSPSerial) run(nchan chan RCInfo, schan chan byte, mintime int64) {
 					si.parse_status(schan, v.data)
 					if inflight == 0 {
 						if rssi != lrssi {
+							lrssi = rssi
 							inflight |= 4
 							m.Rssi(rssi)
 						}
