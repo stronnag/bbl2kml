@@ -538,6 +538,7 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 			case 2: // disarm
 				x.arm_action(false)
 				armed = false
+				done = true
 			case 3: // armed
 				log.Println("Armed")
 				armedat = time.Now()
