@@ -134,13 +134,16 @@ func ParseCLI(gv func() string) ([]string, string) {
 	flag.IntVar(&Config.Idx, "index", 0, "Log index")
 	if !strings.HasPrefix(app, "fl2sitl") {
 		flag.IntVar(&Config.SplitTime, "split-time", Config.SplitTime, "[OTX] Time(s) determining log split, 0 disables")
-		if !strings.HasPrefix(app, "log2mission") {
+	}
+	if !strings.HasPrefix(app, "log2mission") {
+		if !strings.HasPrefix(app, "fl2sitl") {
 			flag.IntVar(&Config.HomeAlt, "home-alt", Config.HomeAlt, "[OTX] home altitude")
 			flag.BoolVar(&Config.Dump, "dump", false, "Dump log headers and exit")
-			flag.StringVar(&Config.Mission, "mission", "", "Optional mission file name")
-			flag.IntVar(&Config.MissionIndex, "mission-index", 0, "Optional mission file index")
 		}
+		flag.StringVar(&Config.Mission, "mission", "", "Optional mission file name")
+		flag.IntVar(&Config.MissionIndex, "mission-index", 0, "Optional mission file index")
 	}
+
 	if strings.HasPrefix(app, "fl2mqtt") {
 		flag.StringVar(&Config.Mqttopts, "broker", "", "Mqtt URI (mqtt://[user[:pass]@]broker[:port]/topic[?cafile=file]")
 		flag.IntVar(&Config.Bulletvers, "blt-vers", Config.Bulletvers, "[MQTT] BulletGCSS version")

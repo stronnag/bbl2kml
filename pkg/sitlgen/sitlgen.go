@@ -293,8 +293,6 @@ func log_mode_change(mranges []ModeRange, imodes []uint16, fname string, chg str
 	sb.WriteString("Mode change ")
 	sb.WriteString(chg)
 	sb.WriteByte(' ')
-	//	fmt.Fprintf(&sb, "%+v", imodes)
-	// sb.WriteString(" ")
 	for _, r := range mranges {
 		for _, k := range imodes {
 			if uint16(r.boxid) == k {

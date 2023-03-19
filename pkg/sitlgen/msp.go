@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	mission "github.com/stronnag/bbl2kml/pkg/mission"
 	options "github.com/stronnag/bbl2kml/pkg/options"
 )
 
@@ -29,6 +30,7 @@ const (
 	msp_SET_TX_INFO   = 186
 	msp_SET_RX_CONFIG = 45
 	msp_BOXNAMES      = 116
+	msp_SET_WP        = 209
 
 	msp_COMMON_SETTING = 0x1003
 	msp2_INAV_STATUS   = 0x2000
@@ -51,6 +53,17 @@ const (
 	state_X_LEN2
 	state_X_DATA
 	state_X_CHECKSUM
+)
+
+const (
+	wp_WAYPOINT = 1 + iota
+	wp_POSHOLD_UNLIM
+	wp_POSHOLD_TIME
+	wp_RTH
+	wp_SET_POI
+	wp_JUMP
+	wp_SET_HEAD
+	wp_LAND
 )
 
 const (
@@ -300,6 +313,60 @@ func (m *MSPSerial) Send_msp(cmd uint16, payload []byte) {
 		}
 	}
 }
+func encode_action(a string) byte {
+	var b byte
+	switch a {
+	case "WAYPOINT":
+		b = wp_WAYPOINT
+	case "POSHOLD_UNLIM":
+		b = wp_POSHOLD_UNLIM
+	case "POSHOLD_TIME":
+		b = wp_POSHOLD_TIME
+	case "RTH":
+		b = wp_RTH
+	case "SET_POI":
+		b = wp_SET_POI
+	case "JUMP":
+		b = wp_JUMP
+	case "SET_HEAD":
+		b = wp_SET_HEAD
+	case "LAND":
+		b = wp_LAND
+	default:
+		b = wp_WAYPOINT
+	}
+	return b
+}
+
+func serialise_wp(mi mission.MissionItem, last bool) []byte {
+	buf := make([]byte, 21)
+	buf[0] = byte(mi.No)
+	buf[1] = encode_action(mi.Action)
+	v := int32(mi.Lat * 1e7)
+	binary.LittleEndian.PutUint32(buf[2:6], uint32(v))
+	v = int32(mi.Lon * 1e7)
+	binary.LittleEndian.PutUint32(buf[6:10], uint32(v))
+	binary.LittleEndian.PutUint32(buf[10:14], uint32(100*mi.Alt))
+	binary.LittleEndian.PutUint16(buf[14:16], uint16(mi.P1))
+	binary.LittleEndian.PutUint16(buf[16:18], uint16(mi.P2))
+	binary.LittleEndian.PutUint16(buf[18:20], uint16(mi.P3))
+	buf[20] = mi.Flag
+	return buf
+}
+
+func (m *MSPSerial) upload_mission(ms *mission.Mission) {
+	mlen := len(ms.MissionItems) - 1
+	for j, mi := range ms.MissionItems {
+		mi.No = j + 1
+		b := serialise_wp(mi, (j == mlen))
+		m.Send_msp(msp_SET_WP, b)
+		v := <-m.c0
+		if !v.ok {
+			break
+		}
+	}
+	Sitl_logger(2, "Uploaded mission")
+}
 
 func (m *MSPSerial) init(nchan chan RCInfo, schan chan byte, mintime int) {
 	var fw, api, vers, board, gitrev string
@@ -398,6 +465,14 @@ func (m *MSPSerial) init(nchan chan RCInfo, schan chan byte, mintime int) {
 			}
 		}
 	}
+
+	if options.Config.Mission != "" {
+		_, mm, _ := mission.Read_Mission_File_Index(options.Config.Mission, options.Config.MissionIndex)
+		if mm != nil {
+			m.upload_mission(mm)
+		}
+	}
+
 	if options.Config.Verbose > 0 {
 		log.Println("Serial init completed, with modes")
 		if options.Config.Verbose > 1 {
