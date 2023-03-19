@@ -49,13 +49,19 @@ type SimData struct {
 
 type SitlGen struct {
 	drefmap map[string]uint32
-	mchans  MSPChans
+	rc      RCInfo
 	swchan  int16
 	swval   uint16
 }
 
+type RCInfo struct {
+	chans MSPChans
+	rssi  byte
+	fs    byte
+}
+
 func NewSITL() *SitlGen {
-	return &SitlGen{drefmap: make(map[string]uint32), mchans: MSPChans{}, swchan: -1, swval: 0}
+	return &SitlGen{drefmap: make(map[string]uint32), rc: RCInfo{}, swchan: -1, swval: 0}
 }
 
 func setvalue(r ModeRange) uint16 {
@@ -77,16 +83,14 @@ func clrvalue(mr []ModeRange, r ModeRange) uint16 {
 	return uint16(smin-1)*25 + 900 + 10
 }
 
-func (x *SitlGen) change_mode(mranges []ModeRange, _from, _to uint16) {
+func (x *SitlGen) change_mode(mranges []ModeRange, _from, _to uint16) string {
 	from, fstr := fm_to_mode(_from)
 	to, tstr := fm_to_mode(_to)
-	if options.Config.Verbose > 1 {
-		fmt.Printf("change <%s> => <%s>\n", fstr, tstr)
-	}
+	str := fmt.Sprintf("<%s> => <%s>", fstr, tstr)
 	for _, v := range from {
 		for _, m := range mranges {
 			if uint16(m.boxid) == v {
-				x.mchans[MODE_OFFSET+m.chanidx] = clrvalue(mranges, m)
+				x.rc.chans[MODE_OFFSET+m.chanidx] = clrvalue(mranges, m)
 			}
 		}
 	}
@@ -94,14 +98,11 @@ func (x *SitlGen) change_mode(mranges []ModeRange, _from, _to uint16) {
 	for _, v := range to {
 		for _, m := range mranges {
 			if uint16(m.boxid) == v {
-				x.mchans[MODE_OFFSET+m.chanidx] = setvalue(m)
+				x.rc.chans[MODE_OFFSET+m.chanidx] = setvalue(m)
 			}
 		}
 	}
-}
-
-func (x *SitlGen) dump_chans(s string) {
-	log.Printf("%-10.10s %+v\n", s, x.mchans)
+	return str
 }
 
 func float32frombytes(bytes []byte) float32 {
@@ -265,44 +266,43 @@ func to_hg(alt float32) float32 {
 	return float32(0.0295299837 * p)
 }
 
-func (x *SitlGen) arm_action(rxchan chan MSPChans, action bool) {
+func (x *SitlGen) arm_action(action bool) {
 	if x.swchan != -1 {
 		var act string
 		if action {
 			act = ""
-			x.mchans[2] = 1997
-			x.mchans[3] = 999
-			x.mchans[x.swchan] = x.swval
+			x.rc.chans[2] = 1997
+			x.rc.chans[3] = 999
+			x.rc.chans[x.swchan] = x.swval
 		} else {
 			act = "Dis"
-			x.mchans[x.swchan] = 1002
-			x.mchans[2] = 1500
-			x.mchans[3] = 998
+			x.rc.chans[x.swchan] = 1002
+			x.rc.chans[2] = 1500
+			x.rc.chans[3] = 998
 		}
-		rxchan <- x.mchans
 		if options.Config.Verbose > 0 {
-			log.Printf("%sArming on chan %d at %d\n", act, x.swchan+1, x.mchans[x.swchan])
+			log.Printf("%sArming on chan %d at %d\n", act, x.swchan+1, x.rc.chans[x.swchan])
 		}
 	} else {
 		log.Printf("No Arming switch (yet)\n")
 	}
 }
 
-func log_mode_change(mranges []ModeRange, imodes []uint16, fname string) {
+func log_mode_change(mranges []ModeRange, imodes []uint16, fname string, chg string) {
 	var sb strings.Builder
-	sb.WriteString("New mode <")
-	sb.WriteString(fname)
-	sb.WriteString("> ")
-	sb.WriteString(fmt.Sprintf("%+v", imodes))
-	sb.WriteString("\n")
+	sb.WriteString("Mode change ")
+	sb.WriteString(chg)
+	sb.WriteByte(' ')
+	//	fmt.Fprintf(&sb, "%+v", imodes)
+	// sb.WriteString(" ")
 	for _, r := range mranges {
 		for _, k := range imodes {
 			if uint16(r.boxid) == k {
-				sb.WriteString(fmt.Sprintf(" %+v\n", r))
+				fmt.Fprintf(&sb, " %+v", r)
 			}
 		}
 	}
-	log.Printf(sb.String())
+	log.Println(sb.String())
 }
 
 func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
@@ -375,24 +375,21 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 	addrchan := make(chan net.Addr, 1)
 
 	// RX data to simulator TX
-	rxchan := make(chan MSPChans, 1)
+	rxchan := make(chan RCInfo, 1)
 	// RX status channel
 	rxstat := make(chan byte, 1)
-	rssich := make(chan byte, 1)
 
 	// BBL data
 	bbchan := make(chan SimData, 1)
 	// BBL Command channel
 	bbcmd := make(chan byte, 1)
 
+	var armedat time.Time
 	var m *MSPSerial = nil
-
-	fs := false
-
 	go x.xplreader(conn, addrchan)
 
-	for j, _ := range x.mchans {
-		x.mchans[j] = 0xffff
+	for j, _ := range x.rc.chans {
+		x.rc.chans[j] = 0xffff
 	}
 
 	cnt := 0
@@ -459,20 +456,17 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 				if options.Config.Verbose > 1 {
 					log.Printf("Serial init\n")
 				}
-				go m.init(rxchan, rxstat, rssich, conf.mintime)
+				go m.init(rxchan, rxstat, conf.mintime)
 				serial_ok = 3
-				rssich <- sim.Rssi
 			case 3:
 				if options.Config.Verbose > 1 {
 					log.Printf("Serial running %d\n", cnt)
 				}
-				rssich <- sim.Rssi
 				serial_ok = 4
 			default:
 			}
 		case sd := <-bbchan:
 			simchan <- sd
-			rssich <- sd.Rssi
 			if options.Config.Verbose > 4 {
 				log.Printf("SIM: %+v\n", sd)
 			}
@@ -483,44 +477,48 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 
 			if armed {
 				if sd.Status&types.Is_FAIL == types.Is_FAIL {
-					if fs == false {
+					if x.rc.fs == 0 {
 						if options.Config.Verbose > 0 {
-							log.Printf("Set Failsafe\n")
+							et := time.Since(armedat)
+							log.Printf("Set Failsafe %.1f               <<<<<<<<<<<\n", et.Seconds())
 						}
-						fs = true
-					}
-					if conf.failmode != 0 {
-						x.mchans[3] = conf.failmode
+						x.rc.fs = 1
+						if conf.failmode != 0 {
+							x.rc.chans[3] = conf.failmode
+						}
+						x.rc.rssi = 0
 					}
 				}
-				if fs && sd.Status&types.Is_FAIL == 0 {
-					fs = false
+				if x.rc.fs == 1 && sd.Status&types.Is_FAIL == 0 {
+					x.rc.fs = 2
 					if options.Config.Verbose > 0 {
-						log.Printf("Clear Failsafe\n")
+						et := time.Since(armedat)
+						log.Printf("Clear Failsafe %.1f             >>>>>>>>>>>>\n", et.Seconds())
 					}
 				}
-				if !fs {
-					x.mchans[0] = sd.RC_a
-					x.mchans[1] = sd.RC_e
-					x.mchans[2] = sd.RC_r
-					x.mchans[3] = sd.RC_t
 
-					if sd.Fmode != lastfm {
+				if x.rc.fs != 1 {
+					x.rc.chans[0] = sd.RC_a
+					x.rc.chans[1] = sd.RC_e
+					x.rc.chans[2] = sd.RC_r
+					x.rc.chans[3] = sd.RC_t
+					x.rc.rssi = sd.Rssi
+					if x.rc.fs == 2 || sd.Fmode != lastfm {
 						imodes, fname := fm_to_mode(sd.Fmode)
+						str := x.change_mode(mranges, lastfm, sd.Fmode)
 						if options.Config.Verbose > 1 {
-							log_mode_change(mranges, imodes, fname)
+							log_mode_change(mranges, imodes, fname, str)
 						}
-						x.change_mode(mranges, lastfm, sd.Fmode)
-						if options.Config.Verbose > 1 {
-							x.dump_chans("Mode")
+						if x.rc.fs == 2 {
+							x.rc.fs = 0
 						}
 						lastfm = sd.Fmode
 					}
 				}
-				rxchan <- x.mchans
 			} else {
-				x.arm_action(rxchan, true)
+				x.arm_action(true)
 			}
+			rxchan <- x.rc
 
 		case rv := <-rxstat:
 			if options.Config.Verbose > 1 {
@@ -540,10 +538,11 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 					log.Printf("** Ready to arm (Press 'A' to arm) **")
 				}
 			case 2: // disarm
-				x.arm_action(rxchan, false)
+				x.arm_action(false)
 				armed = false
 			case 3: // armed
 				log.Println("Armed")
+				armedat = time.Now()
 				armed = true
 				bbcmd <- 1 // awake reader
 			case 0xff:
@@ -556,9 +555,11 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 		case ev := <-evchan:
 			switch ev {
 			case 'A', 'a':
-				x.arm_action(rxchan, true)
+				x.arm_action(true)
+				rxchan <- x.rc
 			case 'U':
-				x.arm_action(rxchan, false)
+				x.arm_action(false)
+				rxchan <- x.rc
 			case 'Q', 'q':
 				log.Println("Quit")
 				done = true
@@ -571,7 +572,7 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 
 	if armed {
 		log.Println("Disarming ...")
-		x.arm_action(rxchan, false)
+		x.arm_action(false)
 		armed = false
 		for done := false; !done; {
 			select {

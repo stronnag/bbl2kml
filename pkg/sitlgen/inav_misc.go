@@ -32,7 +32,7 @@ var fmodes []FModeMap = []FModeMap{
 	{types.FM_LAUNCH, []uint16{PERM_LAUNCH}, "Launch"},
 	{types.FM_RTH, []uint16{PERM_RTH}, "RTH"},
 	{types.FM_WP, []uint16{PERM_WP}, "WP"},
-	{types.FM_CRUISE3D, []uint16{PERM_CRUISE, PERM_ALTHOLD}, "Cruise3D"},
+	{types.FM_CRUISE3D, []uint16{PERM_CRUISE}, "Cruise3D"},
 	{types.FM_CRUISE2D, []uint16{PERM_CRUISE}, "Cruise2D"},
 	{types.FM_PH, []uint16{PERM_POSHOLD}, "PosHold"},
 	{types.FM_AH, []uint16{PERM_ALTHOLD}, "AltHold"},

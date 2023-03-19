@@ -99,7 +99,7 @@ type ModeRange struct {
 	end     byte
 }
 
-type MSPChans [16]uint16
+type MSPChans [18]uint16
 
 func crc8_dvb_s2(crc byte, a byte) byte {
 	crc ^= a
@@ -301,7 +301,7 @@ func (m *MSPSerial) Send_msp(cmd uint16, payload []byte) {
 	}
 }
 
-func (m *MSPSerial) init(nchan chan MSPChans, schan chan byte, rssich chan byte, mintime int) {
+func (m *MSPSerial) init(nchan chan RCInfo, schan chan byte, mintime int) {
 	var fw, api, vers, board, gitrev string
 	var v6 bool
 
@@ -407,7 +407,7 @@ func (m *MSPSerial) init(nchan chan MSPChans, schan chan byte, rssich chan byte,
 			}
 		}
 	}
-	m.run(nchan, schan, rssich, int64(mintime))
+	m.run(nchan, schan, int64(mintime))
 }
 
 func (m *MSPSerial) get_ranges() []ModeRange {
@@ -461,12 +461,20 @@ func (m *MSPSerial) send_tx(ichan MSPChans) time.Time {
 	return time.Now()
 }
 
-func (m *MSPSerial) run(nchan chan MSPChans, schan chan byte, rssich chan byte, mintime int64) {
+type StatusInfo struct {
+	boxflags uint64
+	armflags uint32
+	rvstat   byte
+}
+
+func (m *MSPSerial) run(nchan chan RCInfo, schan chan byte, mintime int64) {
 	ichan := MSPChans{}
-	xboxflags := uint64(0)
-	xarmflags := uint32(0)
+	si := StatusInfo{}
+
 	rssi := byte(0)
 	lrssi := byte(0)
+	xfs := byte(0)
+
 	ichan[0] = 1500
 	ichan[1] = 1500
 	if m.bypass {
@@ -475,15 +483,16 @@ func (m *MSPSerial) run(nchan chan MSPChans, schan chan byte, rssich chan byte, 
 		ichan[2] = 1500
 	}
 	ichan[3] = 999
-	for j := 4; j < 16; j++ {
+	for j := 4; j < len(ichan); j++ {
 		ichan[j] = 1001
 	}
 
-	rvstat := byte(0)
 	mcnt := byte(0)
-	var sv SChan
 
 	ntx := 1
+	inflight := byte(0)
+
+	inflight |= 1
 	stime := m.send_tx(ichan)
 	log.Printf("RC init done\n")
 
@@ -494,74 +503,31 @@ func (m *MSPSerial) run(nchan chan MSPChans, schan chan byte, rssich chan byte, 
 	last := start
 
 	for {
-		event := SEND_NONE
 		select {
 		case v := <-m.c0:
-			sv = v
-			mcnt += 1
-			event = SEND_MSP
-		case v := <-rssich:
-			event = SEND_RSSI
-			rssi = v
-		case <-time.After(20 * time.Millisecond):
-			event = SEND_TIMEOUT
-		case v := <-nchan:
-			event = SEND_CHANS
-			for j, u := range v {
-				if u != 0xffff {
-					ichan[j] = u
-				}
-			}
-		}
-		switch event {
-		case SEND_MSP:
-			if sv.ok {
-				if sv.cmd == msp_SET_RAW_RC && mcnt%5 == 0 {
-					m.Send_msp(msp2_INAV_STATUS, nil)
+			if v.ok {
+				mcnt += 1
+				switch v.cmd {
+				case msp_SET_RAW_RC:
+					ntx += 1
+					inflight &= ^byte(1)
+					if inflight == 0 {
+						inflight |= 2
+						m.Send_msp(msp2_INAV_STATUS, nil)
+					}
+				case msp2_INAV_STATUS:
 					nstat += 1
-				} else if sv.cmd == msp2_INAV_STATUS {
-					//					status := binary.LittleEndian.Uint16(sv.data[4:6])
-					armflags := binary.LittleEndian.Uint32(sv.data[9:13])
-					boxflags := binary.LittleEndian.Uint64(sv.data[13:21])
-					if options.Config.Verbose > 2 {
-						if xboxflags != boxflags || armflags != xarmflags {
-							log.Printf("Boxflags: %x Armflags: %s (%x)\n", boxflags, arm_status(armflags), armflags)
+					inflight &= ^byte(2)
+					si.parse_status(schan, v.data)
+					if inflight == 0 {
+						if rssi != lrssi {
+							inflight |= 4
+							m.Rssi(rssi)
 						}
 					}
-					// Unarmed, able to arm
-					if (boxflags&1 == 0) && armflags < 0x80 {
-						if rvstat != 1 {
-							rvstat = 1
-							if options.Config.Verbose > 1 {
-								log.Printf("Set status %d (%x)\n", rvstat, armflags)
-							}
-							schan <- 1
-						}
-					}
-					if (xboxflags & 1) != (boxflags & 1) {
-						if options.Config.Verbose > 0 {
-							log.Printf("boxflags changed %x -> %x (%x)\n", xboxflags, boxflags, armflags)
-						}
-						if (boxflags & 1) == 0 {
-							if rvstat != 2 {
-								rvstat = 2
-								if options.Config.Verbose > 1 {
-									log.Printf("Set boxflags %d (%x)\n", rvstat, armflags)
-								}
-								schan <- 2
-							}
-						} else {
-							if rvstat != 3 {
-								rvstat = 3
-								if options.Config.Verbose > 1 {
-									log.Printf("Set boxflags %d (%x)\n", rvstat, armflags)
-								}
-								schan <- 3
-							}
-						}
-					}
-					xboxflags = boxflags
-					xarmflags = armflags
+				case msp_SET_TX_INFO:
+					nrssi += 1
+					inflight &= ^byte(4)
 				}
 			} else {
 				if options.Config.Verbose > 1 {
@@ -569,21 +535,36 @@ func (m *MSPSerial) run(nchan chan MSPChans, schan chan byte, rssich chan byte, 
 				}
 				schan <- 0xff
 			}
+		case <-time.After(25 * time.Millisecond):
 
-		case SEND_RSSI:
-			if lrssi != rssi {
-				m.Rssi(rssi)
-				lrssi = rssi
-				nrssi += 1
+		case v := <-nchan:
+			cchan := false
+			for j, u := range v.chans {
+				if u != 0xffff && u != ichan[j] {
+					ichan[j] = u
+					if j > 3 || j == 3 && u < 900 {
+						cchan = true
+					}
+				}
 			}
+			if cchan {
+				Sitl_logger(3, "%s\n", dump_channels(ichan))
+			}
+			xfs = v.fs
+			rssi = v.rssi
+		}
 
-		default:
-			if time.Since(stime) > time.Duration(mintime)*time.Millisecond {
-				if ichan[3] == 0xd0d0 { // Failsafe, ignore
-					stime = time.Now()
-				} else {
+		if time.Since(stime) > time.Duration(mintime)*time.Millisecond {
+			if ichan[3] == 0xd0d0 { // Failsafe, ignore
+				stime = time.Now()
+				if inflight == 0 {
+					inflight |= 2
+					m.Send_msp(msp2_INAV_STATUS, nil)
+				}
+			} else {
+				if inflight == 0 {
+					inflight |= 1
 					stime = m.send_tx(ichan)
-					ntx += 1
 				}
 			}
 		}
@@ -591,11 +572,88 @@ func (m *MSPSerial) run(nchan chan MSPChans, schan chan byte, rssich chan byte, 
 		if options.Config.Verbose > 2 {
 			now := time.Since(last)
 			if now > time.Duration(10*time.Second) {
-				log.Printf("Stats %v: Tx: %d RSSI %d Stats %d\n", time.Since(start), ntx, nrssi, nstat)
+				d := time.Since(start)
+				secs := int(d.Seconds())
+				log.Printf("Stats %ds: Tx: %d RSSI %d Stats %d (%d)\n", secs, ntx, nrssi, nstat, xfs)
 				last = time.Now()
 			}
 		}
 	}
+}
+
+func (s *StatusInfo) parse_status(schan chan byte, data []byte) {
+	armflags := binary.LittleEndian.Uint32(data[9:13])
+	boxflags := binary.LittleEndian.Uint64(data[13:21])
+
+	if options.Config.Verbose > 2 {
+		if !((s.boxflags == boxflags) && (armflags == s.armflags)) {
+			log.Printf("Boxflags: %x Armflags: %s (%x)\n", boxflags, arm_status(armflags), armflags)
+		}
+	}
+	// Unarmed, able to arm
+	if (boxflags&1 == 0) && armflags < 0x80 {
+		if s.rvstat != 1 {
+			s.rvstat = 1
+			if options.Config.Verbose > 1 {
+				log.Printf("Set status %d (%x)\n", s.rvstat, armflags)
+			}
+			schan <- 1
+		}
+	}
+	if (s.boxflags & 1) != (boxflags & 1) {
+		if options.Config.Verbose > 0 {
+			log.Printf("boxflags changed %x -> %x (%x)\n", s.boxflags, boxflags, armflags)
+		}
+		if (boxflags & 1) == 0 {
+			if s.rvstat != 2 {
+				s.rvstat = 2
+				if options.Config.Verbose > 1 {
+					log.Printf("Set boxflags %d (%x)\n", s.rvstat, armflags)
+				}
+				schan <- 2
+			}
+		} else {
+			if s.rvstat != 3 {
+				s.rvstat = 3
+				if options.Config.Verbose > 1 {
+					log.Printf("Set boxflags %d (%x)\n", s.rvstat, armflags)
+				}
+				schan <- 3
+			}
+		}
+	}
+	s.boxflags = boxflags
+	s.armflags = armflags
+}
+
+func dump_channels(chans MSPChans) string {
+	var sb strings.Builder
+	sb.WriteByte('[')
+	for j, v := range chans {
+		switch j {
+		case 0:
+			sb.WriteString("A:")
+		case 1:
+			sb.WriteString("E:")
+		case 2:
+			sb.WriteString("R:")
+		case 3:
+			sb.WriteString("T:")
+		default:
+			fmt.Fprintf(&sb, "%d:", j+1)
+		}
+		if v == 0xd0d0 {
+			sb.WriteString("F/S ")
+		} else {
+			fmt.Fprintf(&sb, "%d", v)
+		}
+		if j != len(chans)-1 {
+			sb.WriteString(", ")
+		} else {
+			sb.WriteByte(']')
+		}
+	}
+	return sb.String()
 }
 
 func (m *MSPSerial) Close() {
@@ -612,7 +670,7 @@ func arm_status(status uint32) string {
 		"Armed",      /*      4 */
 		"Ever armed", /*      8 */
 		"HITL",       /*     10 */
-		"SITL",       /*     20 */
+		"",           /*     20 */ // SITL
 		"",           /*     40 */
 		"F/S",        /*     80 */
 		"Level",      /*    100 */
