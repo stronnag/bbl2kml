@@ -663,7 +663,7 @@ func (s *StatusInfo) parse_status(schan chan byte, data []byte) {
 
 	if options.Config.Verbose > 2 {
 		if !((s.boxflags == boxflags) && (armflags == s.armflags)) {
-			log.Printf("Boxflags: %x Armflags: %s (%x)\n", boxflags, arm_status(armflags), armflags)
+			log.Printf("Boxflags: %x Armflags: %s\n", boxflags, arm_status(armflags))
 		}
 	}
 	// Unarmed, able to arm
@@ -745,7 +745,7 @@ func arm_status(status uint32) string {
 		"",           /*      2 */
 		"Armed",      /*      4 */
 		"Ever armed", /*      8 */
-		"HITL",       /*     10 */
+		"",           /*     10 */ // HITL
 		"",           /*     20 */ // SITL
 		"",           /*     40 */
 		"F/S",        /*     80 */
@@ -760,9 +760,6 @@ func arm_status(status uint32) string {
 
 	var sarry []string
 	if status < 0x80 {
-		if status&(1<<5) != 0 {
-			sarry = append(sarry, armfails[5])
-		}
 		if status&(1<<2) != 0 {
 			sarry = append(sarry, armfails[2])
 		}
@@ -770,13 +767,12 @@ func arm_status(status uint32) string {
 			sarry = append(sarry, "Ready to arm")
 		}
 	} else {
-
 		for i := 0; i < len(armfails); i++ {
 			if ((status & (1 << i)) != 0) && armfails[i] != "" {
 				sarry = append(sarry, armfails[i])
 			}
 		}
-		sarry = append(sarry, fmt.Sprintf("(0x%x)", status))
 	}
+	sarry = append(sarry, fmt.Sprintf("(0x%x)", status))
 	return strings.Join(sarry, " ")
 }
