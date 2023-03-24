@@ -455,11 +455,11 @@ func (m *MSPSerial) init(nchan chan RCInfo, schan chan byte, mintime int) {
 				m.Send_msp(msp_BOXNAMES, nil)
 			case msp_BOXNAMES:
 				if v.len > 0 {
-					log.Printf("%s\n", v.data)
+					Sitl_logger(2, "%s\n", v.data)
 				}
 				done = true
 			case msp_SET_TX_INFO:
-				// RSSI set
+				// RSSI set (UNUSED for now)
 			default:
 				log.Printf("MSP Unsolicited %d, length %d\n", v.cmd, v.len)
 			}

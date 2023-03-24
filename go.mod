@@ -8,7 +8,7 @@ require (
 	github.com/deet/simpleline v0.0.0-20140919022041-9d297ff784a2
 	github.com/eclipse/paho.mqtt.golang v1.4.2
 	github.com/gorilla/websocket v1.5.0 // indirect
-	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/mattn/go-tty v0.0.4
 	github.com/mazznoer/colorgrad v0.9.1
 	github.com/mazznoer/csscolorparser v0.1.3 // indirect
