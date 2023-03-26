@@ -331,12 +331,12 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 	if options.Config.SitlNoStart == false && conf.sitl != "" {
 		args := []string{}
 		args = append(args, conf.sitl)
-		args = append(args, "--sim=xp")
+		args = append(args, "--sim", "xp")
 		if conf.ip != "" {
-			args = append(args, fmt.Sprintf("--simip=%s", conf.ip))
+			args = append(args, "--simip", conf.ip)
 		}
 		if conf.port != "" {
-			args = append(args, fmt.Sprintf("--simport=%s", conf.port))
+			args = append(args, "--simport", conf.port)
 		}
 
 		if conf.path != "" {
@@ -352,7 +352,8 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 				eeprom = options.Config.SitlEEprom
 			}
 			ep = filepath.Join(ep, eeprom)
-			args = append(args, fmt.Sprintf("--path=%s", ep))
+			args = append(args, "--path", ep)
+			Sitl_logger(2, "spawn: %s\n", strings.Join(args, " "))
 		}
 
 		if proc, err := proc_start(args...); err == nil {
