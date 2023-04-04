@@ -534,7 +534,13 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 							break
 						}
 					}
-					log.Printf("** Ready to arm (Press 'A' to arm) **")
+					if !options.Config.SitlAutoArm {
+						log.Printf("** Ready to arm (Press 'A' to arm) **")
+					} else {
+						log.Printf("Ready to arm --- Arming ...")
+						x.arm_action(true)
+						rxchan <- x.rc
+					}
 				}
 			case 2: // disarm
 				x.arm_action(false)
