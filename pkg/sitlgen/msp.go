@@ -633,7 +633,7 @@ func (m *MSPSerial) run(nchan chan RCInfo, schan chan byte, mintime int64) {
 				}
 				schan <- 0xff
 			}
-		case <-time.After(5 * time.Millisecond):
+		case <-time.After(1 * time.Millisecond):
 
 		case v := <-nchan:
 			cchan := false
