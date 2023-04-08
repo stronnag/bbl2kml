@@ -308,7 +308,7 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 
 	log.SetPrefix("[fl2sitm] ")
 	log.SetFlags(log.Ltime | log.Lmicroseconds)
-	conf := read_cfg()
+	conf := read_cfg(options.Config.SitlConfig)
 
 	if conf.mintime == 0 {
 		conf.mintime = 100

@@ -20,10 +20,15 @@ type SimMeta struct {
 	failmode uint16
 }
 
-func read_cfg() SimMeta {
+func read_cfg(cfgfile string) SimMeta {
 	sitl := SimMeta{}
-	cdir := types.GetConfigDir()
-	fn := filepath.Join(cdir, "fl2sitl.conf")
+	var fn string
+	if cfgfile == "" {
+		cdir := types.GetConfigDir()
+		fn = filepath.Join(cdir, "fl2sitl.conf")
+	} else {
+		fn = cfgfile
+	}
 	r, err := os.Open(fn)
 	if err == nil {
 		defer r.Close()
