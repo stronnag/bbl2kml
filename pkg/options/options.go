@@ -54,6 +54,7 @@ type Configuration struct {
 	SitlNoStart     bool    `json:"-"`
 	SitlAutoArm     bool    `json:"-"`
 	Verbose         int     `json:"-"`
+	SitlConfig      string  `json:"-"`
 }
 
 var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120, Epsilon: 0.015, StartOff: 30, EndOff: -30, Engunit: "mah", MaxWP: 120}
@@ -163,6 +164,7 @@ func ParseCLI(gv func() string) ([]string, string) {
 	} else if strings.HasPrefix(app, "fl2sitl") {
 		Config.Intvl = 100
 		Config.Idx = 1
+		flag.StringVar(&Config.SitlConfig, "config", "", "SITL specific config file")
 		flag.StringVar(&Config.SitlEEprom, "eeprom", "", "EEprom name")
 		flag.StringVar(&Config.SitlListen, "listen", ":49000", "Listening port")
 		flag.IntVar(&Config.SitlPort, "txport", 5761, "host:port for serial TX")
