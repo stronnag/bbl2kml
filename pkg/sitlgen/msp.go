@@ -3,14 +3,14 @@ package sitlgen
 import (
 	"encoding/binary"
 	"fmt"
+	mission "github.com/stronnag/bbl2kml/pkg/mission"
+	options "github.com/stronnag/bbl2kml/pkg/options"
 	"log"
 	"net"
+	"os"
 	"sort"
 	"strings"
 	"time"
-
-	mission "github.com/stronnag/bbl2kml/pkg/mission"
-	options "github.com/stronnag/bbl2kml/pkg/options"
 )
 
 const (
@@ -416,7 +416,7 @@ func (m *MSPSerial) init(nchan chan RCInfo, schan chan byte, mintime int) {
 					if v6 {
 						bystr++
 					}
-					if bystr == 2 {
+					if bystr != 0 {
 						m.bypass = true
 					}
 					if options.Config.Verbose > 0 {
@@ -567,8 +567,30 @@ func (m *MSPSerial) run(nchan chan RCInfo, schan chan byte, mintime int64) {
 	ntx := 1
 	inflight := byte(0)
 
-	inflight |= 1
-	stime := m.send_tx(ichan)
+	var stime time.Time
+
+	var jchan *JetiChan
+	//	jrchan := make(chan bool, 5)
+
+	jetiaddr := os.Getenv("JETI_ADDR")
+	if jetiaddr != "" {
+		var jerr error
+		jchan, jerr = NewJetiChan(jetiaddr)
+		log.Printf("Jerror %+v\n", jerr)
+		if jerr == nil {
+			go jchan.jeti_reader( /*jrchan*/ )
+			stime = jchan.send_tx(jchan.generate_payload(ichan, 16))
+			mcnt += 1
+			ntx += 1
+			inflight |= 2
+			m.Send_msp(msp2_INAV_STATUS, nil)
+		}
+
+	} else {
+		inflight |= 1
+		stime = m.send_tx(ichan)
+	}
+
 	log.Printf("RC init done\n")
 
 	nstat := 0
@@ -611,7 +633,7 @@ func (m *MSPSerial) run(nchan chan RCInfo, schan chan byte, mintime int64) {
 				}
 				schan <- 0xff
 			}
-		case <-time.After(25 * time.Millisecond):
+		case <-time.After(5 * time.Millisecond):
 
 		case v := <-nchan:
 			cchan := false
@@ -638,9 +660,17 @@ func (m *MSPSerial) run(nchan chan RCInfo, schan chan byte, mintime int64) {
 					m.Send_msp(msp2_INAV_STATUS, nil)
 				}
 			} else {
-				if inflight == 0 {
-					inflight |= 1
-					stime = m.send_tx(ichan)
+				if jetiaddr != "" {
+					stime = jchan.send_tx(jchan.generate_payload(ichan, 16))
+					mcnt += 1
+					ntx += 1
+					inflight |= 2
+					m.Send_msp(msp2_INAV_STATUS, nil)
+				} else {
+					if inflight == 0 {
+						inflight |= 1
+						stime = m.send_tx(ichan)
+					}
 				}
 			}
 		}
