@@ -164,7 +164,7 @@ func ParseCLI(gv func() string) ([]string, string) {
 	} else if strings.HasPrefix(app, "fl2sitl") {
 		Config.Intvl = 100
 		Config.Idx = 1
-		flag.StringVar(&Config.SitlConfig, "config", "", "SITL specific config file")
+		flag.StringVar(&Config.SitlConfig, "sitl-config", "", "SITL specific config file")
 		flag.StringVar(&Config.SitlEEprom, "eeprom", "", "EEprom name")
 		flag.StringVar(&Config.SitlListen, "listen", ":49000", "Listening port")
 		flag.IntVar(&Config.SitlPort, "txport", 5761, "host:port for serial TX")
