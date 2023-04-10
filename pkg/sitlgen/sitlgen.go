@@ -359,6 +359,9 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 				proc.Kill()
 				proc.Wait()
 			}()
+		} else {
+			log.Printf("Exec: %+v\n", err)
+			return
 		}
 	}
 
