@@ -14,7 +14,6 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -58,6 +57,10 @@ type RCInfo struct {
 	chans MSPChans
 	rssi  byte
 	fs    byte
+	a     byte
+	e     byte
+	r     byte
+	t     byte
 }
 
 func NewSITL() *SitlGen {
@@ -159,9 +162,7 @@ func (x *SitlGen) xplreader(conn net.PacketConn, achan chan net.Addr) {
 					id := binary.LittleEndian.Uint32(buf[9:13])
 					zb := bytes.Index(buf[13:], []byte("\000"))
 					text := string(buf[13 : zb+13])
-					if options.Config.Verbose > 2 {
-						log.Printf("Read UDP %d %s %d %d %s\n", n, ref, freq, id, text)
-					}
+					Sitl_logger(2, "Read UDP %d %s %d %d %s\n", n, ref, freq, id, text)
 					parts := strings.Split(text, "/")
 					item := parts[len(parts)-1]
 					if item == "has_joystick" {
@@ -271,18 +272,16 @@ func (x *SitlGen) arm_action(action bool) {
 		var act string
 		if action {
 			act = ""
-			x.rc.chans[2] = 1997
-			x.rc.chans[3] = 999
+			x.rc.chans[x.rc.r] = 1997
+			x.rc.chans[x.rc.t] = 999
 			x.rc.chans[x.swchan] = x.swval
 		} else {
 			act = "Dis"
 			x.rc.chans[x.swchan] = 1002
-			x.rc.chans[2] = 1500
-			x.rc.chans[3] = 998
+			x.rc.chans[x.rc.r] = 1500
+			x.rc.chans[x.rc.t] = 998
 		}
-		if options.Config.Verbose > 0 {
-			log.Printf("%sArming on chan %d at %d\n", act, x.swchan+1, x.rc.chans[x.swchan])
-		}
+		Sitl_logger(0, "%sArming on chan %d at %d\n", act, x.swchan+1, x.rc.chans[x.swchan])
 	} else {
 		log.Printf("No Arming switch (yet)\n")
 	}
@@ -324,9 +323,7 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 	}
 	defer conn.Close()
 
-	if options.Config.Verbose > 0 {
-		log.Printf("Conf = %+v\n", conf)
-	}
+	Sitl_logger(0, "Conf = %+v\n", conf)
 
 	if options.Config.SitlNoStart == false && conf.sitl != "" {
 		args := []string{}
@@ -358,9 +355,7 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 
 		if proc, err := proc_start(args...); err == nil {
 			defer func() {
-				if options.Config.Verbose > 10 {
-					log.Printf("DBG kill proc +%v\n", proc)
-				}
+				Sitl_logger(10, "DBG kill proc +%v\n", proc)
 				proc.Kill()
 				proc.Wait()
 			}()
@@ -418,22 +413,16 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 
 	for done := false; done == false; {
 		cnt += 1
-		if options.Config.Verbose > 9 {
-			log.Printf("Tick %d\n", cnt)
-		}
+		Sitl_logger(9, "Tick %d\n", cnt)
 		select {
 		case addr := <-addrchan:
 			txhost, _, _ = net.SplitHostPort(addr.String())
-			if options.Config.Verbose > 1 {
-				log.Printf("Got connection %s\n", addr.String())
-			}
+			Sitl_logger(1, "Got connection %s\n", addr.String())
 			go x.sender(conn, addr, simchan)
 			if os.Getenv("FL2SITL_NOTX") == "" {
 				serial_ok = 1
 			}
-			if options.Config.Verbose > 1 {
-				log.Printf("Start BBL reader\n")
-			}
+			Sitl_logger(1, "Start BBL reader\n")
 			go file_reader(rdrchan, bbchan, bbcmd, float32(meta.Acc1G))
 			sim = <-bbchan
 			sim.Acc_x = 0.0
@@ -443,8 +432,7 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 		case <-time.After(100 * time.Millisecond):
 			switch serial_ok {
 			case 1:
-				uart2 := net.JoinHostPort(txhost, strconv.Itoa(options.Config.SitlPort))
-				m, err = NewMSPSerial(uart2)
+				m, err = NewMSPSerial(txhost, options.Config.SitlPort)
 				if err == nil {
 					log.Printf("******** Opened RX **************\n")
 					serial_ok = 2
@@ -455,7 +443,7 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 				if options.Config.Verbose > 1 {
 					log.Printf("Serial init\n")
 				}
-				go m.init(rxchan, rxstat, conf.mintime)
+				go m.init(rxchan, rxstat, conf)
 				serial_ok = 3
 			case 3:
 				if options.Config.Verbose > 1 {
@@ -466,9 +454,7 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 			}
 		case sd := <-bbchan:
 			simchan <- sd
-			if options.Config.Verbose > 4 {
-				log.Printf("SIM: %+v\n", sd)
-			}
+			Sitl_logger(4, "SIM: %+v\n", sd)
 			if sd.Fmode == types.FM_UNK {
 				done = true
 				break
@@ -483,7 +469,7 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 						}
 						x.rc.fs = 1
 						if conf.failmode != 0 {
-							x.rc.chans[3] = conf.failmode
+							x.rc.chans[x.rc.t] = conf.failmode
 						}
 						x.rc.rssi = 0
 					}
@@ -497,10 +483,10 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 				}
 
 				if x.rc.fs != 1 {
-					x.rc.chans[0] = sd.RC_a
-					x.rc.chans[1] = sd.RC_e
-					x.rc.chans[2] = sd.RC_r
-					x.rc.chans[3] = sd.RC_t
+					x.rc.chans[x.rc.a] = sd.RC_a
+					x.rc.chans[x.rc.e] = sd.RC_e
+					x.rc.chans[x.rc.r] = sd.RC_r
+					x.rc.chans[x.rc.t] = sd.RC_t
 					x.rc.rssi = sd.Rssi
 					if x.rc.fs == 2 || sd.Fmode != lastfm {
 						imodes, fname := fm_to_mode(sd.Fmode)
@@ -520,10 +506,19 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 			rxchan <- x.rc
 
 		case rv := <-rxstat:
-			if options.Config.Verbose > 1 {
-				log.Printf("Status from rx %d\n", rv)
-			}
+			Sitl_logger(1, "Status from rx %d\n", rv)
 			switch rv {
+			case 0:
+				x.rc.a = m.a
+				x.rc.e = m.e
+				x.rc.r = m.r
+				x.rc.t = m.t
+				var cmap [4]byte
+				cmap[x.rc.a] = 'A'
+				cmap[x.rc.e] = 'E'
+				cmap[x.rc.r] = 'R'
+				cmap[x.rc.t] = 'T'
+				Sitl_logger(2, "RC MAP %s\n", cmap)
 			case 1: /* ready to arm */
 				if x.swchan == -1 {
 					mranges = m.get_ranges()

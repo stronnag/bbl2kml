@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"log"
 	"net"
-	"os"
 	"time"
 )
 
@@ -12,7 +11,7 @@ type JetiChan struct {
 	conn net.Conn
 }
 
-func NewJetiChan(remote string) (*JetiChan, error) {
+func NewJetiTX(remote string) (*JetiChan, error) {
 	var conn net.Conn
 	addr, err := net.ResolveTCPAddr("tcp", remote)
 	if err == nil {
@@ -41,7 +40,7 @@ func (j *JetiChan) compute_crcz(p []byte) uint16 {
 	return crc16
 }
 
-func (j *JetiChan) generate_payload(chans MSPChans, nchan uint16) []byte {
+func (j *JetiChan) generate_payload(chans MSPChans, nchan int) []byte {
 	psize := byte(2*nchan + 8)
 	p := make([]byte, psize)
 	p[0] = 0x3e
@@ -51,7 +50,7 @@ func (j *JetiChan) generate_payload(chans MSPChans, nchan uint16) []byte {
 	p[4] = 0x31
 	p[5] = byte(2 * nchan)
 	n := 6
-	for j := 0; uint16(j) < nchan; j++ {
+	for j := 0; j < nchan; j++ {
 		cv := chans[j] * 8
 		binary.LittleEndian.PutUint16(p[n:n+2], cv)
 		n += 2
@@ -61,7 +60,8 @@ func (j *JetiChan) generate_payload(chans MSPChans, nchan uint16) []byte {
 	return p
 }
 
-func (j *JetiChan) send_tx(payload []byte) time.Time {
+func (j *JetiChan) Send_TX(chans MSPChans, nchan int) time.Time {
+	payload := j.generate_payload(chans, nchan)
 	l := len(payload)
 	crc := j.compute_crcz(payload[0 : l-2])
 	payload[l-2] = byte(crc & 0xff)
@@ -74,40 +74,9 @@ func (j *JetiChan) send_tx(payload []byte) time.Time {
 			_, err = j.conn.Write(jp1)
 		}
 	}
-	//log.Printf("tcp : %d %+v\n", nb, err)
 	return time.Now()
 }
 
-func (j *JetiChan) jeti_reader( /*c0 chan bool*/ ) {
-	inp := make([]byte, 256)
-	w, err := os.Create("/tmp/jeti-telem.log")
-	var start time.Time
-
-	if err == nil {
-		defer w.Close()
-		w.Write([]byte("v2\n"))
-	} else {
-		return
-	}
-
-	for {
-		nb, err := j.conn.Read(inp)
-		if err == nil {
-			if start.IsZero() {
-				start = time.Now()
-			}
-			diff := float64(time.Now().Sub(start)) / 1000000000.0
-			var header = struct {
-				offset float64
-				size   uint16
-				dirn   byte
-			}{offset: diff, size: uint16(nb), dirn: 'i'}
-			binary.Write(w, binary.LittleEndian, header)
-			w.Write(inp[0:nb])
-		} else {
-			j.conn.Close()
-			//c0 <- false
-			return
-		}
-	}
+func (j *JetiChan) Telem_reader() {
+	GenericTelemReader("jeti", j.conn)
 }

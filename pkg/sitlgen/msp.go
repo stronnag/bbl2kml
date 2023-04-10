@@ -2,15 +2,34 @@ package sitlgen
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	mission "github.com/stronnag/bbl2kml/pkg/mission"
 	options "github.com/stronnag/bbl2kml/pkg/options"
 	"log"
 	"net"
-	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
+)
+
+const (
+	SERIALRX_SPEKTRUM1024 = iota
+	SERIALRX_SPEKTRUM2048
+	SERIALRX_SBUS
+	SERIALRX_SUMD
+	SERIALRX_IBUS
+	SERIALRX_JETIEXBUS
+	SERIALRX_CRSF
+	SERIALRX_FPORT
+	SERIALRX_SBUS_FAST
+	SERIALRX_FPORT2
+	SERIALRX_SRXL2
+	SERIALRX_GHST
+	SERIALRX_MAVLINK
+	SERIALRX_MSP  = 254
+	SERIALRX_NONE = 255
 )
 
 const (
@@ -31,9 +50,11 @@ const (
 	msp_SET_RX_CONFIG = 45
 	msp_BOXNAMES      = 116
 	msp_SET_WP        = 209
+	msp_RX_CONFIG     = 44
 
-	msp_COMMON_SETTING = 0x1003
-	msp2_INAV_STATUS   = 0x2000
+	msp_COMMON_SETTING        = 0x1003
+	msp2_COMMON_SERIAL_CONFIG = 0x1009
+	msp2_INAV_STATUS          = 0x2000
 )
 
 const (
@@ -102,6 +123,10 @@ type MSPSerial struct {
 	bypass  bool
 	c0      chan SChan
 	mranges []ModeRange
+	serconf []SerialConf
+	rxtype  uint8
+	rxidx   int8
+	host    string
 	ok      bool
 }
 
@@ -110,6 +135,11 @@ type ModeRange struct {
 	chanidx byte
 	start   byte
 	end     byte
+}
+
+type SerialConf struct {
+	id   uint8
+	mask uint32
 }
 
 type MSPChans [18]uint16
@@ -269,7 +299,6 @@ func (m *MSPSerial) Read_msp(c0 chan SChan) {
 					if crc != ccrc {
 						log.Printf("CRC error on %d\n", sc.cmd)
 					} else {
-						//						log.Fprintf(os.Stderr, "Cmd %v Len %v\n", sc.cmd, sc.len)
 						c0 <- sc
 					}
 					n = state_INIT
@@ -292,7 +321,8 @@ func (m *MSPSerial) Read_msp(c0 chan SChan) {
 	}
 }
 
-func NewMSPSerial(remote string) (*MSPSerial, error) {
+func NewMSPSerial(txhost string, port int) (*MSPSerial, error) {
+	remote := net.JoinHostPort(txhost, strconv.Itoa(options.Config.SitlPort))
 	var conn net.Conn
 	addr, err := net.ResolveTCPAddr("tcp", remote)
 	if err == nil {
@@ -301,7 +331,7 @@ func NewMSPSerial(remote string) (*MSPSerial, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &MSPSerial{conn: conn, ok: true}, nil
+	return &MSPSerial{conn: conn, ok: true, rxidx: -1, host: txhost, rxtype: SERIALRX_MSP}, nil
 }
 
 func (m *MSPSerial) Send_msp(cmd uint16, payload []byte) {
@@ -368,7 +398,7 @@ func (m *MSPSerial) upload_mission(ms *mission.Mission) {
 	Sitl_logger(2, "Uploaded mission")
 }
 
-func (m *MSPSerial) init(nchan chan RCInfo, schan chan byte, mintime int) {
+func (m *MSPSerial) init(nchan chan RCInfo, schan chan byte, conf SimMeta) {
 	var fw, api, vers, board, gitrev string
 	var v6 bool
 
@@ -427,15 +457,11 @@ func (m *MSPSerial) init(nchan chan RCInfo, schan chan byte, mintime int) {
 
 			case msp_RX_MAP:
 				if v.len == 4 {
-					m.a = uint8(v.data[0]) * 2
-					m.e = uint8(v.data[1]) * 2
-					m.r = uint8(v.data[2]) * 2
-					m.t = uint8(v.data[3]) * 2
-					var cmap [4]byte
-					cmap[v.data[0]] = 'A'
-					cmap[v.data[1]] = 'E'
-					cmap[v.data[2]] = 'R'
-					cmap[v.data[3]] = 'T'
+					m.a = v.data[0]
+					m.e = v.data[1]
+					m.r = v.data[2]
+					m.t = v.data[3]
+					schan <- 0
 				} else {
 					log.Println("MAP error")
 				}
@@ -457,6 +483,20 @@ func (m *MSPSerial) init(nchan chan RCInfo, schan chan byte, mintime int) {
 				if v.len > 0 {
 					Sitl_logger(2, "%s\n", v.data)
 				}
+				m.Send_msp(msp2_COMMON_SERIAL_CONFIG, nil)
+			case msp2_COMMON_SERIAL_CONFIG:
+				sres := int8(-1)
+				if v.len > 0 {
+					sres = m.deserialise_serialconf(v.data)
+				}
+				if sres != -1 {
+					m.rxidx = sres
+					m.Send_msp(msp_RX_CONFIG, nil)
+				} else {
+					done = true
+				}
+			case msp_RX_CONFIG:
+				m.rxtype = v.data[0]
 				done = true
 			case msp_SET_TX_INFO:
 				// RSSI set (UNUSED for now)
@@ -482,11 +522,28 @@ func (m *MSPSerial) init(nchan chan RCInfo, schan chan byte, mintime int) {
 			}
 		}
 	}
-	m.run(nchan, schan, int64(mintime))
+	m.run(nchan, schan, conf)
 }
 
 func (m *MSPSerial) get_ranges() []ModeRange {
 	return m.mranges
+}
+
+func (m *MSPSerial) deserialise_serialconf(buf []byte) int8 {
+	ret := int8(-1)
+	i := 0
+	for j := 0; j < len(buf); j += 9 {
+		id := buf[j+0]
+		mask := binary.LittleEndian.Uint32(buf[j+1 : j+5])
+		if mask != 0 {
+			if mask&64 == 64 {
+				ret = int8(i)
+			}
+			m.serconf = append(m.serconf, SerialConf{id, mask})
+		}
+		i += 1
+	}
+	return ret
 }
 
 func (m *MSPSerial) deserialise_modes(buf []byte) {
@@ -542,7 +599,7 @@ type StatusInfo struct {
 	rvstat   byte
 }
 
-func (m *MSPSerial) run(nchan chan RCInfo, schan chan byte, mintime int64) {
+func (m *MSPSerial) run(nchan chan RCInfo, schan chan byte, conf SimMeta) {
 	ichan := MSPChans{}
 	si := StatusInfo{}
 
@@ -550,14 +607,14 @@ func (m *MSPSerial) run(nchan chan RCInfo, schan chan byte, mintime int64) {
 	lrssi := byte(0)
 	xfs := byte(0)
 
-	ichan[0] = 1500
-	ichan[1] = 1500
+	ichan[m.a] = 1500
+	ichan[m.e] = 1500
 	if m.bypass {
-		ichan[2] = 1999
+		ichan[m.r] = 1999
 	} else {
-		ichan[2] = 1500
+		ichan[m.r] = 1500
 	}
-	ichan[3] = 999
+	ichan[m.t] = 999
 	for j := 4; j < len(ichan); j++ {
 		ichan[j] = 1001
 	}
@@ -569,27 +626,48 @@ func (m *MSPSerial) run(nchan chan RCInfo, schan chan byte, mintime int64) {
 
 	var stime time.Time
 
-	var jchan *JetiChan
-	//	jrchan := make(chan bool, 5)
+	var txchan TxChan
 
-	jetiaddr := os.Getenv("JETI_ADDR")
-	if jetiaddr != "" {
-		var jerr error
-		jchan, jerr = NewJetiChan(jetiaddr)
-		log.Printf("Jerror %+v\n", jerr)
-		if jerr == nil {
-			go jchan.jeti_reader( /*jrchan*/ )
-			stime = jchan.send_tx(jchan.generate_payload(ichan, 16))
-			mcnt += 1
-			ntx += 1
-			inflight |= 2
-			m.Send_msp(msp2_INAV_STATUS, nil)
-		}
-
+	if m.rxidx == -1 {
+		txchan = NewMspTX(m)
 	} else {
-		inflight |= 1
-		stime = m.send_tx(ichan)
+		var txerr error
+		usart := net.JoinHostPort(m.host, strconv.Itoa(5760+int(m.rxidx)))
+		switch m.rxtype {
+		case SERIALRX_JETIEXBUS:
+			txchan, txerr = NewJetiTX(usart)
+		case SERIALRX_SBUS:
+			txchan, txerr = NewSbusTX(usart)
+		case SERIALRX_CRSF:
+			txchan, txerr = NewCrsfTX(usart)
+		case SERIALRX_IBUS:
+			txchan, txerr = NewIbusTX(usart)
+		default:
+			txerr = errors.New("Unsupported RX type")
+		}
+		if txerr == nil {
+			go txchan.Telem_reader()
+		} else {
+			schan <- 0xff
+			return
+		}
 	}
+
+	txfunc := func() {
+		if m.rxtype != 0 {
+			stime = txchan.Send_TX(ichan, 16)
+			switch m.rxtype {
+			case SERIALRX_MSP:
+				inflight |= 1
+			case SERIALRX_JETIEXBUS, SERIALRX_SBUS, SERIALRX_CRSF, SERIALRX_IBUS:
+				mcnt += 1
+				ntx += 1
+				inflight |= 2
+				m.Send_msp(msp2_INAV_STATUS, nil)
+			}
+		}
+	}
+	txfunc()
 
 	log.Printf("RC init done\n")
 
@@ -640,7 +718,7 @@ func (m *MSPSerial) run(nchan chan RCInfo, schan chan byte, mintime int64) {
 			for j, u := range v.chans {
 				if u != 0xffff && u != ichan[j] {
 					ichan[j] = u
-					if j > 3 || j == 3 && u < 900 {
+					if j > 3 || j == int(m.t) && u < 900 {
 						cchan = true
 					}
 				}
@@ -652,7 +730,7 @@ func (m *MSPSerial) run(nchan chan RCInfo, schan chan byte, mintime int64) {
 			rssi = v.rssi
 		}
 
-		if time.Since(stime) > time.Duration(mintime)*time.Millisecond {
+		if time.Since(stime) > time.Duration(int64(conf.mintime))*time.Millisecond {
 			if ichan[3] == 0xd0d0 { // Failsafe, ignore
 				stime = time.Now()
 				if inflight == 0 {
@@ -660,18 +738,7 @@ func (m *MSPSerial) run(nchan chan RCInfo, schan chan byte, mintime int64) {
 					m.Send_msp(msp2_INAV_STATUS, nil)
 				}
 			} else {
-				if jetiaddr != "" {
-					stime = jchan.send_tx(jchan.generate_payload(ichan, 16))
-					mcnt += 1
-					ntx += 1
-					inflight |= 2
-					m.Send_msp(msp2_INAV_STATUS, nil)
-				} else {
-					if inflight == 0 {
-						inflight |= 1
-						stime = m.send_tx(ichan)
-					}
-				}
+				txfunc()
 			}
 		}
 
