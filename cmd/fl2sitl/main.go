@@ -24,10 +24,14 @@ func getVersion() string {
 func main() {
 	files, app := options.ParseCLI(getVersion)
 	if len(files) == 0 {
-		options.Usage()
-		os.Exit(1)
+		if options.Config.SitlMinimal == false {
+			options.Usage()
+			os.Exit(1)
+		} else {
+			stl := sitlgen.NewSITL()
+			stl.Faker()
+		}
 	}
-
 	geo.Frobnicate_init()
 	var lfr types.FlightLog
 	for _, fn := range files {

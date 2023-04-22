@@ -302,6 +302,54 @@ func log_mode_change(mranges []ModeRange, imodes []uint16, fname string, chg str
 	log.Println(sb.String())
 }
 
+func (x *SitlGen) Faker() {
+	log.SetPrefix("[fl2sitm] ")
+	log.SetFlags(log.Ltime | log.Lmicroseconds)
+	conf := read_cfg(options.Config.SitlConfig)
+
+	uaddr, err := net.ResolveUDPAddr("udp", options.Config.SitlListen)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	conn, err := net.ListenUDP("udp", uaddr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+	Sitl_logger(0, "Conf = %+v\n", conf)
+
+	var sim SimData
+	sim.Acc_z = 1.0
+	// sim data to SITL
+	simchan := make(chan SimData, 1)
+	// socket addr, socket is open
+	addrchan := make(chan net.Addr, 1)
+
+	have_conn := false
+	go x.xplreader(conn, addrchan)
+
+	cc := make(chan os.Signal, 1)
+	signal.Notify(cc, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	for done := false; done == false; {
+		select {
+		case addr := <-addrchan:
+			have_conn = true
+			go x.sender(conn, addr, simchan)
+			simchan <- sim
+		case <-time.After(100 * time.Millisecond):
+			if have_conn {
+				simchan <- sim
+			}
+		case <-cc:
+			log.Println("Interrupt")
+			done = true
+		}
+	}
+}
+
 func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 	var txhost string
 

@@ -55,6 +55,7 @@ type Configuration struct {
 	SitlAutoArm     bool    `json:"-"`
 	Verbose         int     `json:"-"`
 	SitlConfig      string  `json:"-"`
+	SitlMinimal     bool    `json:"-"`
 }
 
 var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120, Epsilon: 0.015, StartOff: 30, EndOff: -30, Engunit: "mah", MaxWP: 120}
@@ -169,6 +170,7 @@ func ParseCLI(gv func() string) ([]string, string) {
 		flag.StringVar(&Config.SitlListen, "listen", ":49000", "Listening port")
 		flag.IntVar(&Config.SitlPort, "txport", 5761, "host:port for serial TX")
 		flag.BoolVar(&Config.SitlNoStart, "nostart", false, "Don't start the SITL")
+		flag.BoolVar(&Config.SitlMinimal, "minimal", false, "Don't read a BBL")
 		flag.BoolVar(&Config.SitlAutoArm, "auto-arm", false, "Arm as soon as ready (vice manaully)")
 		flag.IntVar(&Config.Verbose, "verbose", 0, "Verbosity")
 	} else {
