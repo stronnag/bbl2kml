@@ -1,5 +1,4 @@
-//go:build !linux
-// +build !linux
+//go:build windows || freebsd || arm64 || riscv64 || 386
 
 package main
 
