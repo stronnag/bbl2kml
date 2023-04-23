@@ -16,6 +16,10 @@ import (
 	"time"
 )
 
+const (
+	BUFFERSIZE int = 1024
+)
+
 var (
 	device     string
 	databits   int
@@ -34,7 +38,7 @@ type SChan struct {
 }
 
 func read_serial(s serial.Port, c0 chan SChan) {
-	inp := make([]byte, 1024)
+	inp := make([]byte, buffersize)
 	for {
 		n, err := s.Read(inp)
 		if verbose {
@@ -50,7 +54,7 @@ func read_serial(s serial.Port, c0 chan SChan) {
 }
 
 func read_tcp(conn net.Conn, c0 chan SChan) {
-	inp := make([]byte, 1024)
+	inp := make([]byte, buffersize)
 	for {
 		n, err := conn.Read(inp)
 		if verbose {
@@ -98,6 +102,7 @@ func main() {
 		df.Close()
 	**/
 	vers := false
+	buffersize = BUFFERSIZE
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of %s [options]\n", os.Args[0])
@@ -112,9 +117,9 @@ func main() {
 	flag.IntVar(&databits, "databits", 8, "Databits [5|6|7|8]")
 	flag.StringVar(&stopbits, "stopbits", "One", "Stopbits [None|One|OnePointFive|Two]")
 	flag.StringVar(&parity, "parity", "None", "Parity [Even|Mark|None|Odd|Space]")
-	flag.StringVar(&hostname, "ip", "127.0.0.1", "Host name")
+	flag.StringVar(&hostname, "ip", "localhost", "Host name")
 	flag.IntVar(&port, "tcpport", 5761, "IP port")
-	flag.IntVar(&buffersize, "buffersize", 1024, "Buffersize")
+	flag.IntVar(&buffersize, "buffersize", BUFFERSIZE, "Buffersize")
 
 	flag.Parse()
 	if vers {
