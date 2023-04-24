@@ -1,8 +1,18 @@
-ser2tcp: main.go enumerate_linux.go  enumerate_other.go  go.sum
-	go build -ldflags "-s -w"
 
-go.sum: go.mod
-	go mod tidy
+build:
+	cargo build --release
+
+linux-static:
+	cargo build --target=x86_64-unknown-linux-musl
+
+install:
+	cargo install --path . --root $$HOME/.local/ --force
+
+debug:
+	cargo build
+
+windows:
+	cargo build --target x86_64-pc-windows-gnu --release
 
 clean:
-	rm -f ser2tcp ser2tcp.exe go.sum
+	cargo clean

@@ -1,0 +1,14 @@
+[package]
+name = "ser2tcp"
+version = "0.0.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serial2 = "0.1.7"
+getopts = "0.2"
+
+[profile.release]
+strip = true  # Automatically strip symbols from the binary.
+opt-level = "z"
