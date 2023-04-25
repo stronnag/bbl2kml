@@ -158,6 +158,9 @@ fn do_main() -> Result<(), ()> {
     settings.set_stop_bits(stopbits);
     settings.set_parity(parity);
     port.set_configuration(&settings).unwrap();
+    if cfg!(target_os = "windows") {
+	port.set_read_timeout(Duration::from_millis(1)).unwrap(); // Windows, alas
+    }
 
     let port = Arc::new(port);
 
