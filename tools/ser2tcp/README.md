@@ -11,13 +11,14 @@ This native code replacement offers a number of benefits over the distributed fi
 ## Usage
 
 ```
-$ ser2tcp --help
+$ ser2tcp -h
 Usage: ser2tcp [options]
 Version: 0.0.0
 
 Options:
     -h, --help          print this help menu
-    -v, --version       print version and exit
+    -V, --version       print version and exit
+    -v, --verbose       print I/O read sizes
     -c, --comport       serial device name (mandatory)
     -b, --baudrate <115200>
                         serial baud rate

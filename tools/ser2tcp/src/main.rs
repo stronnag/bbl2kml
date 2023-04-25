@@ -45,7 +45,8 @@ fn do_main() -> Result<(), ()> {
 
     let mut opts = Options::new();
     opts.optflag("h", "help", "print this help menu");
-    opts.optflag("v", "version", "print version and exit");
+    opts.optflag("V", "version", "print version and exit");
+    opts.optflag("v", "verbose", "print I/O read sizes");
     opts.optopt("c", "comport", "serial device name (mandatory)", "");
     opts.optopt("b", "baudrate", "serial baud rate", "<115200>");
     opts.optopt("d", "databits", "serial databits 5|6|7|8", "<8>");
@@ -72,10 +73,12 @@ fn do_main() -> Result<(), ()> {
         print_usage(prog_name, &opts);
         return Ok(());
     }
-    if matches.opt_present("v") {
+    if matches.opt_present("V") {
 	println!("{}", VERSION);
         return Ok(());
     }
+
+    let verbose: bool = matches.opt_present("v");
 
     let hostname: String = match matches.opt_str("i") {
 	Some(o) => o,
@@ -183,38 +186,40 @@ fn do_main() -> Result<(), ()> {
 
     print!("Connect {} to {:?}\n", port_name, stream.peer_addr().unwrap());
 
-    // Spawn a thread to read from stdin and write to the serial port.
     std::thread::spawn({
 	let port = port.clone();
 	move || {
-	    if let Err(()) = read_tcp_loop(port, &mut rstream) {
+	    if let Err(()) = read_tcp_loop(port, &mut rstream, verbose) {
 		std::process::exit(1);
 	    }
 	}
     });
 
-    // Read from serial port and write to stdout in main thread.
-    read_serial_loop(port, &mut stream)?;
+    read_serial_loop(port, &mut stream, verbose)?;
     Ok(())
 }
 
-fn read_tcp_loop(port: Arc<SerialPort>, stream: &mut TcpStream) -> Result<(), ()> {
+fn read_tcp_loop(port: Arc<SerialPort>, stream: &mut TcpStream, verbose: bool) -> Result<(), ()> {
 
     let mut buffer = [0; 512];
     loop {
-	let read = stream
+	let nread = stream
 	    .read(&mut buffer)
 	    .map_err(|e| eprintln!("Error: Failed to read from socket: {}", e))?;
-	if read == 0 {
+	if nread == 0 {
 	    return Ok(());
 	} else {
-	    port.write(&buffer[..read])
+	    port.write(&buffer[..nread])
 		.map_err(|e| eprintln!("Error: Failed to write to serial: {}", e))?;
+	    if verbose {
+		println!("TCP read: {}", nread);
+	    }
 	}
+
     }
 }
 
-fn read_serial_loop(port: Arc<SerialPort>, stream: &mut TcpStream) -> Result<(), ()> {
+fn read_serial_loop(port: Arc<SerialPort>, stream: &mut TcpStream, verbose: bool) -> Result<(), ()> {
     let mut buffer = [0; 512];
     loop {
 	match port.read(&mut buffer) {
@@ -223,6 +228,9 @@ fn read_serial_loop(port: Arc<SerialPort>, stream: &mut TcpStream) -> Result<(),
 		stream
 		    .write_all(&buffer[..n])
 		    .map_err(|e| eprintln!("Error: Failed to write to socket: {}", e))?;
+		if verbose {
+		    println!("SER read: {}", n);
+		}
 	    },
 	    Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => continue,
 	    Err(e) => {
