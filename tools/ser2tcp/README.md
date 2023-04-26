@@ -12,15 +12,15 @@ The code here can be built for numerous OS and hardware, in particular the golan
 
 ## Options
 
-### [./eg_c](eg_c)
+### [eg_c](eg_c)
 
 C language. The smallest, fastest implementation. Fully functional on Linux, but cannot set non-standard baud rates on other OS. On Linux, requires `libudev` build environment (e.g. `libudev-dev` on Debian).
 
-### [./eg_golang](eg_golang)
+### [eg_golang](eg_golang)
 
 Golang. Excutables are c. 2MB and are static (no shared library requirements). Available for any hardware / OS for which there is a Go compiler.
 
-### [./eg_rust](eg_rust)
+### [eg_rust](eg_rust)
 
 Rust (2021 edition required). Excutables are c. 400KB. Available for any hardware / OS for which there is a Rust compiler.
 
