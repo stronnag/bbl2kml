@@ -26,7 +26,7 @@ Rust (2021 edition required). Excutables are c. 400KB. Available for any hardwar
 
 ## So which should I choose?
 
-Your choice (if you care). For the record, the author uses the rust version.
+Your choice (if you care). For the record, the author uses the rust version, other than on Linux, where the C version is used..
 
 ## Usage
 

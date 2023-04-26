@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
 
   char *host = "localhost";
   int port = 5762;
-  bool verbose = false;
+  bool verbose = true;
   char *devnode = NULL;
 
   int c;
@@ -251,7 +251,7 @@ int main(int argc, char **argv) {
     int sts;
     int n, nb;
     rfds = sfds;
-    sts = select (fd+1, &rfds, NULL, NULL, NULL);
+    sts = select (FD_SETSIZE, &rfds, NULL, NULL, NULL);
     switch(sts) {
       case -1:
         done = true;
@@ -269,10 +269,12 @@ int main(int argc, char **argv) {
           }
           int res = recv(sockfd, buf, nb, 0);
           if(verbose) {
-              fprintf(stderr,"read %d from socket\n", res);
+            fprintf(stderr,"read %d from socket\n", res);
           }
           if (res > 0) {
             res = write(fd, buf, res);
+            if (verbose)
+              fprintf(stderr,"write %d to serial\n", res);
           }
           if (res <= 0) {
             done = true;
@@ -289,6 +291,9 @@ int main(int argc, char **argv) {
         }
         if (res > 0) {
           res = send(sockfd, buf, res, 0);
+            if (verbose)
+              fprintf(stderr,"send %d to socket\n", res);
+
           if (res <= 0) {
             done = true;
           }

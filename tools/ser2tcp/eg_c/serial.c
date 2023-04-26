@@ -97,6 +97,7 @@ int open_serial(serial_opts_t *sopts) {
         cfmakeraw(&tio);
         tio.c_cc[VTIME] = 0;
         tio.c_cc[VMIN] = 1;
+
         tio.c_cflag &= ~CSIZE;
         switch (sopts->databits) {
         case 5:
@@ -112,10 +113,7 @@ int open_serial(serial_opts_t *sopts) {
           tio.c_cflag |=  CS8;
           break;
         }
-        tio.c_iflag &= ~IGNBRK;
-        tio.c_iflag |=  BRKINT;
-        tio.c_iflag &= ~ISTRIP;
-        tio.c_iflag &= ~(INLCR | IGNCR | ICRNL);
+
         tio.c_cflag |=  CREAD|CLOCAL;
         if (sopts->stopbits != NULL && strcmp(sopts->stopbits, "Two") == 0) {
           tio.c_cflag |=  CSTOPB;
@@ -133,9 +131,6 @@ int open_serial(serial_opts_t *sopts) {
             tio.c_cflag &= ~PARODD;
           }
         }
-        tio.c_lflag |=  ISIG;
-        tio.c_lflag &= ~ICANON;
-        tio.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
         tcsetattr(fd,TCSANOW,&tio);
         if(set_fd_speed(fd, sopts->baudrate) == -1) {
           close(fd);
