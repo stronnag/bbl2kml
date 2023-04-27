@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
 
   char *host = "localhost";
   int port = 5762;
-  bool verbose = true;
+  bool verbose = false;
   char *devnode = NULL;
 
   int c;
