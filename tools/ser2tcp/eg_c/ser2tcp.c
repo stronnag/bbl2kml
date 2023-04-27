@@ -293,10 +293,9 @@ int main(int argc, char **argv) {
           res = send(sockfd, buf, res, 0);
             if (verbose)
               fprintf(stderr,"send %d to socket\n", res);
-
-          if (res <= 0) {
-            done = true;
-          }
+        }
+        if (res <= 0) {
+          done = true;
         }
       }
     }
