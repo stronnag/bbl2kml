@@ -9,16 +9,22 @@ ifeq ($(XOS),Linux)
  LIBS=-ludev
 endif
 
+ifneq (,$(findstring CYGWIN, $(XOS)))
+ EXT=.exe
+endif
+
+APP=ser2tcp$(EXT)
+
 CFLAGS=$(OPT) -Wall
 
-all:	ser2tcp
+all: $(APP)
 
-ser2tcp: ser2tcp.c serial.c find_best.c
+$(APP): ser2tcp.c serial.c find_best.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-install: ser2tcp
+install: $(APP)
 	install -d $(prefix)/bin
-	install -s -m 755 ser2tcp $(prefix)/bin/
+	install -s -m 755 $(APP) $(prefix)/bin/
 
 clean:
 	rm -f *.o *.exe ser2tcp ~*

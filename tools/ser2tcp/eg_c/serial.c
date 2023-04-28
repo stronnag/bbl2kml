@@ -12,44 +12,49 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <termios.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <errno.h>
-
 #ifdef __linux__
-#include <linux/serial.h>
+#include <asm/termbits.h>
+#else
+#include <termios.h>
+#endif
+
+#ifdef __CYGWIN__
+#include <io.h>
+#include <windows.h>
 #endif
 
 #include "ser2tcp.h"
 
+#if !defined( __linux__) && !defined(__APPLE__) && !defined(__CYGWIN__)
 static int rate_to_constant(int baudrate) {
+#ifdef __FreeBSD__
+  return baudrate;
+#else
 #define B(x) case x: return B##x
     switch(baudrate) {
         B(50);     B(75);     B(110);    B(134);    B(150);
         B(200);    B(300);    B(600);    B(1200);   B(1800);
         B(2400);   B(4800);   B(9600);   B(19200);  B(38400);
         B(57600);  B(115200); B(230400);
-#ifdef __linux__
-        B(460800); B(921600);
-        B(500000); B(576000); B(1000000); B(1152000); B(1500000);
-#endif
-#ifdef __FreeBSD__
-        B(460800); B(500000);  B(921600);
-        B(1000000); B(1500000);
-        B(2000000); B(2500000);
-        B(3000000); B(3500000);
-        B(4000000);
-#endif
-        default: return 0;
+        default:
+          return 0;
     }
 #undef B
+#endif
 }
+#endif
 
 static void flush_serial(int fd) {
+#ifdef __linux__
+  ioctl(fd, TCFLSH, TCIOFLUSH);
+#else
   tcflush(fd, TCIOFLUSH);
+#endif
 }
 
 void close_serial(int fd) {
@@ -58,33 +63,43 @@ void close_serial(int fd) {
 }
 
 static int set_fd_speed(int fd, int rate) {
+  int res = -1;
+#ifdef __linux__
+  // Just user BOTHER for everything (allows non-standard speeds)
+    struct termios2 t;
+    if((res = ioctl(fd, TCGETS2, &t)) != -1) {
+      t.c_cflag &= ~CBAUD;
+      t.c_cflag |= BOTHER;
+      t.c_cflag &= ~(CBAUD << IBSHIFT);
+      t.c_cflag |= BOTHER << IBSHIFT;
+      t.c_ospeed = t.c_ispeed = rate;
+      res = ioctl(fd, TCSETS2, &t);
+    }
+#elif __APPLE__
+#include <IOKit/serial/ioss.h>
+    speed_t speed = rate;
+    res = ioctl(fd, IOSSIOSPEED, &speed);
+#elif __CYGWIN__
+    HANDLE hdl = (HANDLE)get_osfhandle (fd);
+    DCB dcb = {0};
+    if (GetCommState(hdl, &dcb)) {
+      dcb.BaudRate=rate;
+      res = SetCommState(hdl, &dcb) ? 0 : -1;
+    }
+#else
   int speed = rate_to_constant(rate);
   struct termios term;
   if (tcgetattr(fd, &term)) return -1;
   if (speed == 0) {
-#ifdef __linux__
-#include <asm/termios.h>
-#include <asm/ioctls.h>
-    struct termios2 t;
-    int res;
-    if((res = ioctl(fd, TCGETS2, &t)) != -1) {
-      t.c_ospeed = t.c_ispeed = rate;
-      t.c_cflag &= ~CBAUD;
-      t.c_cflag |= (BOTHER|CBAUDEX);
-      res = ioctl(fd, TCSETS2, &t);
-    }
-    return res;
-#else
-    return -1;
-#endif
+    res = -1;
   } else {
-    int res = -1;
     if(cfsetispeed(&term,speed) != -1) {
       cfsetospeed(&term,speed);
       res = tcsetattr(fd,TCSANOW,&term);
     }
-    return res;
   }
+#endif
+  return res;
 }
 
 int open_serial(serial_opts_t *sopts) {
@@ -93,8 +108,18 @@ int open_serial(serial_opts_t *sopts) {
     if(fd != -1) {
         struct termios tio;
         memset (&tio, 0, sizeof(tio));
+#ifdef __linux__
+        ioctl(fd, TCGETS, &tio);
+#else
         tcgetattr(fd, &tio);
-        cfmakeraw(&tio);
+#endif
+        // cfmakeraw ...
+        tio.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
+        tio.c_oflag &= ~OPOST;
+        tio.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+        tio.c_cflag &= ~(CSIZE | PARENB);
+        tio.c_cflag |= CS8;
+
         tio.c_cc[VTIME] = 0;
         tio.c_cc[VMIN] = 1;
 
@@ -131,7 +156,11 @@ int open_serial(serial_opts_t *sopts) {
             tio.c_cflag &= ~PARODD;
           }
         }
+#ifdef __linux__
+        ioctl(fd, TCSETS, &tio);
+#else
         tcsetattr(fd,TCSANOW,&tio);
+#endif
         if(set_fd_speed(fd, sopts->baudrate) == -1) {
           close(fd);
           fd = -1;

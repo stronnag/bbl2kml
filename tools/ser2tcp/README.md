@@ -14,7 +14,7 @@ The code here can be built for numerous OS and hardware, in particular the golan
 
 ### [eg_c](eg_c)
 
-C language. The smallest, fastest implementation. Fully functional on Linux, but cannot set non-standard baud rates on other OS. On Linux, requires `libudev` build environment (e.g. `libudev-dev` on Debian).
+C language. The smallest, fastest implementation. On Linux, requires `libudev` build environment (e.g. `libudev-dev` on Debian).
 
 ### [eg_golang](eg_golang)
 
@@ -26,7 +26,7 @@ Rust (2021 edition required). Excutables are c. 400KB. Available for any hardwar
 
 ## So which should I choose?
 
-Your choice (if you care). For the record, the author uses the rust version, other than on Linux, where the C version is used..
+Your choice (if you care). For the record, the author uses the svelte C version.
 
 ## Usage
 
