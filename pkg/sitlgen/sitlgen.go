@@ -303,17 +303,25 @@ func log_mode_change(mranges []ModeRange, imodes []uint16, fname string, chg str
 	log.Println(sb.String())
 }
 
+func openudp() (conn *net.UDPConn, err error) {
+	if !strings.HasPrefix(options.Config.SitlListen, ":") {
+		options.Config.SitlListen = ":" + options.Config.SitlListen
+	}
+	uaddr, err := net.ResolveUDPAddr("udp", options.Config.SitlListen)
+	if err != nil {
+		return nil, err
+	} else {
+		conn, err = net.ListenUDP("udp", uaddr)
+		return conn, err
+	}
+}
+
 func (x *SitlGen) Faker() {
 	log.SetPrefix("[fl2sitm] ")
 	log.SetFlags(log.Ltime | log.Lmicroseconds)
 	conf := read_cfg(options.Config.SitlConfig)
 
-	uaddr, err := net.ResolveUDPAddr("udp", options.Config.SitlListen)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	conn, err := net.ListenUDP("udp", uaddr)
+	conn, err := openudp()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -369,12 +377,8 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 	if conf.mintime == 0 {
 		conf.mintime = 100
 	}
-	uaddr, err := net.ResolveUDPAddr("udp", options.Config.SitlListen)
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	conn, err := net.ListenUDP("udp", uaddr)
+	conn, err := openudp()
 	if err != nil {
 		log.Fatal(err)
 	}
