@@ -63,7 +63,7 @@ int find_device_from_desc(char* desc, char**pdev) {
   return (found) ? 0 : 1;
 }
 #elif __FreeBSD__
-int find_device_from_desc(char* desc, char**pdev) {
+int find_device_from_desc(char* desc __attribute__((unused)), char**pdev) {
   char usbdev[16];
   for(int i = 0; i < 9; i++) {
     sprintf(usbdev,"/dev/cuaU%d", i);
@@ -77,7 +77,7 @@ int find_device_from_desc(char* desc, char**pdev) {
   return 0;
 }
 #elif __APPLE__
-int find_device_from_desc(char* desc, char**pdev) {
+int find_device_from_desc(char* desc  __attribute__((unused)), char**pdev) {
   char usbdev[32];
   for(int i = 0; i < 9; i++) {
     sprintf(usbdev,"/dev/cu.usbserial-000%d", i);

@@ -106,21 +106,17 @@ static void usage (char *pname) {
   fprintf(stderr,"%s [options]\n", xpname);
   free(xpname);
   fprintf(stderr, "Options:\n"
-          "    -h, --help          print this help menu\n"
-          "    -V, --version       print version and exit\n"
-          "    -v, --verbose       print I/O read sizes\n"
-          "    -c, --comport       serial device name (mandatory)\n"
-          "    -b, --baudrate <115200>\n"
-          "                        serial baud rate\n"
-          "    -d, --databits <8>  serial databits 5|6|7|8\n"
-          "    -s, --stopbits <One>\n"
-          "                        serial stopbits [None|One|Two]\n"
-          "    -p, --parity <None> serial parity [Even|None|Odd]\n"
-          "    -i, --ip <localhost>\n"
-          "                        Host name / Address\n"
-          "    -t, --tcpport <5761>\n"
-          "                        IP port\n"
-          "    -z, --buffersize    Buffersize (ignored)\n");
+          "    -h, --help              print this help menu\n"
+          "    -V, --version           print version and exit\n"
+          "    -v, --verbose           print I/O read sizes\n"
+          "    -c, --comport           serial device name (mandatory)\n"
+          "    -b, --baudrate <115200> serial baud rate\n"
+          "    -d, --databits <8>      serial databits 5|6|7|8\n"
+          "    -s, --stopbits <One>    serial stopbits [None|One|Two]\n"
+          "    -p, --parity <None>     serial parity [Even|None|Odd]\n"
+          "    -i, --ip <localhost>    Host name / Address\n"
+          "    -t, --tcpport <5761>    IP port\n"
+          "    -z, --buffersize        Buffersize (ignored)\n");
   exit(1);
 }
 

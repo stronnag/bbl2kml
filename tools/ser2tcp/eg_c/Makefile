@@ -15,7 +15,7 @@ endif
 
 APP=ser2tcp$(EXT)
 
-CFLAGS=$(OPT) -Wall
+CFLAGS=$(OPT) -Wall -Wextra -pedantic -std=gnu17
 
 all: $(APP)
 
