@@ -4,7 +4,7 @@ Here are some examples of a serial to TCP bridge, compatible with INAV Configura
 
 Motivation.
 
-* The INAV shipped Linux ser2TCP is **23MB**; yes 23MB for a simple bridge between two file descriptions. Which then doesn't work in the shipped version. The Linux compiled code here c. 23KB.
+* The INAV shipped Linux ser2TCP is **23MB**; yes 23MB for a simple bridge between two file descriptors. Which then doesn't work in the shipped version. The Linux compiled code here c. 23KB.
 * There are no binary versions provided for other OS / Architectures such as MacOS/amd64 and Linux/ia32. Nor for architectures like Arm64 or  Riscv64.
 * Curiosity. Solving the same problem in multiple languages.
 
