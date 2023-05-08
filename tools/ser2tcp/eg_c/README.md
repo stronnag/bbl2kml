@@ -6,4 +6,4 @@ Motivation.
 
 * The INAV shipped Linux ser2TCP is **23MB**; yes 23MB for a simple bridge between two file descriptors. Which then doesn't work in the shipped version. The Linux compiled code here c. 23KB.
 
-Binaries by the downloaded from the [fl2sitl wiki](https://github.com/stronnag/bbl2kml/wiki/fl2sitl#images).
+Binaries may be downloaded from the [fl2sitl wiki](https://github.com/stronnag/bbl2kml/wiki/fl2sitl#images).
