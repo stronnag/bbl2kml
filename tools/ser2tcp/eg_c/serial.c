@@ -106,13 +106,15 @@ int open_serial(serial_opts_t *sopts) {
     int fd;
     fd = open(sopts->devname, O_RDWR|O_NOCTTY);
     if(fd != -1) {
-        struct termios tio;
-        memset (&tio, 0, sizeof(tio));
+      int res;
+      struct termios tio;
+      memset (&tio, 0, sizeof(tio));
 #ifdef __linux__
-        ioctl(fd, TCGETS, &tio);
+      res = ioctl(fd, TCGETS, &tio);
 #else
-        tcgetattr(fd, &tio);
+      res = tcgetattr(fd, &tio);
 #endif
+      if (res != -1) {
         // cfmakeraw ...
         tio.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
         tio.c_oflag &= ~OPOST;
@@ -157,14 +159,18 @@ int open_serial(serial_opts_t *sopts) {
           }
         }
 #ifdef __linux__
-        ioctl(fd, TCSETS, &tio);
+        res = ioctl(fd, TCSETS, &tio);
 #else
-        tcsetattr(fd,TCSANOW,&tio);
+        res = tcsetattr(fd,TCSANOW,&tio);
 #endif
-        if(set_fd_speed(fd, sopts->baudrate) == -1) {
-          close(fd);
-          fd = -1;
+        if (res != -1) {
+          res = set_fd_speed(fd, sopts->baudrate);
+          if (res == -1) {
+            close(fd);
+            fd = -1;
+          }
         }
+      }
     }
     return fd;
 }
