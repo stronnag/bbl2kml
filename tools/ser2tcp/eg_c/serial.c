@@ -19,6 +19,9 @@
 #include <errno.h>
 #ifdef __linux__
 #include <asm/termbits.h>
+#ifndef TCGETS2
+#include <asm-generic/ioctls.h>
+#endif
 #else
 #include <termios.h>
 #endif

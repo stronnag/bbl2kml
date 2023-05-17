@@ -2,6 +2,7 @@ package sitlgen
 
 import (
 	"bufio"
+	"fmt"
 	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	"log"
 	"os"
@@ -68,7 +69,24 @@ func read_cfg(cfgfile string) SimMeta {
 			}
 		}
 	} else {
-		log.Fatal("%s : %v\n", fn, err)
+		sitl.sitl = "inav_SITL"
+		sitl.ip = "localhost"
+		r, err := os.Create(fn)
+		if err == nil {
+			defer r.Close()
+			fmt.Fprintln(r, "# SITL-sim settings")
+			fmt.Fprintln(r, "sitl = inav_SITL")
+			fmt.Fprintln(r, "simip = localhost")
+			fmt.Fprintln(r, "# simport = 49000")
+			fmt.Fprintln(r, "# eeprom-path = $HOME/sitl-eeproms")
+			fmt.Fprintln(r, "# default-eeprom = test-eeprom.bin")
+			fmt.Fprintln(r, "# Options are nopulse, ignore or a throttle value (e.g. 800)")
+			fmt.Fprintln(r, "# failmode = 800")
+			fmt.Fprintln(r, "# failmode = nopulse")
+			fmt.Fprintln(r, "# min-time = 50")
+		} else {
+			log.Fatal("%s : %v\n", fn, err)
+		}
 	}
 	return sitl
 }

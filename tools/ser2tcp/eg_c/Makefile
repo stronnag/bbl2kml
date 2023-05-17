@@ -1,12 +1,11 @@
-LDFLAGS=-s
 LIBS=
+LDFLAGS ?= -s
 OPT ?= -O2
 prefix ?= $$HOME/.local
 
 XOS := $(shell uname)
-
 ifeq ($(XOS),Linux)
- LIBS=-ludev
+ LIBS += -ludev
 endif
 
 ifneq (,$(findstring CYGWIN, $(XOS)))
