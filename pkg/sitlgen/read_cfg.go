@@ -85,7 +85,7 @@ func read_cfg(cfgfile string) SimMeta {
 			fmt.Fprintln(r, "# failmode = nopulse")
 			fmt.Fprintln(r, "# min-time = 50")
 		} else {
-			log.Fatal("%s : %v\n", fn, err)
+			log.Fatalf("%s : %v\n", fn, err)
 		}
 	}
 	return sitl

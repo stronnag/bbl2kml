@@ -24,11 +24,15 @@ func getcommondir(p string) string {
 }
 
 func GetConfigDir() string {
-	return getcommondir(".config")
+	dir := getcommondir(".config")
+	os.MkdirAll(dir, 0755)
+	return dir
 }
 
 func GetCacheDir() string {
-	return getcommondir(".cache")
+	dir := getcommondir(".cache")
+	os.MkdirAll(dir, 0755)
+	return dir
 }
 
 func SetBBLFallback(bblname string) string {

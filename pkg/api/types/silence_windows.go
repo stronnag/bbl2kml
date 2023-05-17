@@ -73,6 +73,8 @@ func checkdirs(p string) string {
 			fmt.Fprintf(os.Stderr, "** Migrating %s %s\n", ofp, nfp)
 			copydir(ofp, nfp)
 			os.RemoveAll(ofp)
+		} else {
+			os.MkdirAll(nfp, 0755)
 		}
 	}
 	return nfp
