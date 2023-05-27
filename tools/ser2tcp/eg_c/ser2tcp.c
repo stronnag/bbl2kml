@@ -11,6 +11,7 @@
 #include <netdb.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 
 #include <sys/ioctl.h>
 
@@ -211,14 +212,18 @@ int main(int argc, char **argv) {
   int res = -1;
   for(int j = 0; j < 20; j++) {
     res = connect(sockfd, (struct sockaddr *)&saddr, saddr_len);
-    if (res == 0)
+    if (res == 0) {
       break;
+    }
     usleep(250*1000);
   }
   if (res == -1) {
     fprintf(stderr, "Failed to connect to %s %d\n", host, port);
     return 127;
   }
+
+  int one = 1;
+  setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
 
   if(strncmp(devnode, DEVBASE, sizeof(DEVBASE)-1) == 0) {
     seropts.devname = devnode;
