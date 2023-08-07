@@ -416,7 +416,7 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 
 		if proc, err := proc_start(args...); err == nil {
 			defer func() {
-				Sitl_logger(10, "DBG kill proc +%v\n", proc)
+				Sitl_logger(10, "kill proc +%v\n", proc)
 				proc.Kill()
 				proc.Wait()
 			}()

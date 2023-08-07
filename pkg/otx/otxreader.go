@@ -75,7 +75,7 @@ var hdrs map[string]hdrrec
 
 func read_headers(r []string) {
 	hdrs = make(map[string]hdrrec)
-	rx := regexp.MustCompile(`(\w+)\(([A-Za-z/@%]*)\)`)
+	rx := regexp.MustCompile(`(\w+)\(([A-Za-z/@%°]*)\)`)
 	var k string
 	var u string
 	for i, s := range r {
@@ -172,7 +172,7 @@ func dump_headers() {
 		if v.u == "" {
 			s = k
 		} else {
-			s = fmt.Sprintf("%s(%s)", k, v.u)
+			s = fmt.Sprintf("%s units=(%s)", k, v.u)
 		}
 		n[v.i] = append(n[v.i], s)
 	}
@@ -308,6 +308,9 @@ func get_otx_line(r []string) types.LogItem {
 
 	if s, _, ok := get_rec_value(r, "Hdg"); ok {
 		v, _ := strconv.ParseFloat(s, 64)
+		if v < 0 {
+			v += 360.0
+		}
 		b.Cse = uint32(v)
 		b.Cog = b.Cse
 	}
@@ -466,22 +469,35 @@ func get_otx_line(r []string) types.LogItem {
 			}
 		}
 
-		if s, _, ok := get_rec_value(r, "Yaw"); ok {
+		if s, u, ok := get_rec_value(r, "Yaw"); ok {
 			v1, _ := strconv.ParseFloat(s, 64)
-			cse := to_degrees(v1)
+			cse := 0.0
+			if u == "rad" {
+				cse = to_degrees(v1)
+			} else {
+				cse = v1
+			}
 			if cse < 0 {
 				cse += 360.0
 			}
 			b.Cse = uint32(cse)
 		}
 
-		if s, _, ok := get_rec_value(r, "Ptch"); ok {
+		if s, u, ok := get_rec_value(r, "Ptch"); ok {
 			v1, _ := strconv.ParseFloat(s, 64)
-			b.Pitch = int16(to_degrees(v1))
+			if u == "rad" {
+				b.Pitch = int16(to_degrees(v1))
+			} else {
+				b.Pitch = int16(v1)
+			}
 		}
-		if s, _, ok := get_rec_value(r, "Roll"); ok {
+		if s, u, ok := get_rec_value(r, "Roll"); ok {
 			v1, _ := strconv.ParseFloat(s, 64)
-			b.Roll = int16(to_degrees(v1))
+			if u == "rad" {
+				b.Roll = int16(to_degrees(v1))
+			} else {
+				b.Roll = int16(v1)
+			}
 		}
 	}
 	b.Fmode = md
@@ -614,6 +630,7 @@ func (lg *OTXLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegm
 					st = b.Utc
 					lt = st
 				}
+
 				if homes.Flags == 0 {
 					if b.Fix > 1 && b.Numsat > 5 {
 						homes.HomeLat = b.Lat
@@ -654,6 +671,9 @@ func (lg *OTXLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegm
 						b.Lat, b.Lon, _ = geo.Frobnicate_move(b.Lat, b.Lon, 0)
 					}
 				}
+
+				b.Hlat = homes.HomeLat
+				b.Hlon = homes.HomeLon
 
 				if (rec.Cap & types.CAP_SPEED) == 0 {
 					if (b.Status & (types.Is_CRSF | types.Is_ARDU)) != 0 {
