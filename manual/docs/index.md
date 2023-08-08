@@ -78,7 +78,7 @@ The output file is named from the base name of the source log file, appended wit
     Distance : 48437 m
     Duration : 43:44
     Disarm   : Switch
-    Output   : /tmp/"LOG00044.1.kmz
+    Output   : /tmp/LOG00044.1.kmz
 
 results in the KMZ file `/tmp/LOG00044.1.kmz`
 
