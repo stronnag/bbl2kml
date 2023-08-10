@@ -1,5 +1,6 @@
 
 #define VERSION "0.0.2"
+#define DEVBASE "/dev"
 
 typedef struct {
   int baudrate;

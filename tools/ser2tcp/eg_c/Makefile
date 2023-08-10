@@ -19,6 +19,7 @@ ifneq (,$(findstring CYGWIN, $(XOS)))
 endif
 
 APP=ser2tcp$(EXT)
+STAPP=sertest$(EXT)
 
 CFLAGS=$(OPT) -Wall -Wextra -pedantic -std=gnu17
 
@@ -30,9 +31,12 @@ $(APP): ser2tcp.c serial.c find_best.c
 static: ser2tcp.c serial.c find_best.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(APP) $(STATIC) $^ $(LIBS)
 
+$(STAPP): serial.c find_best.c
+	$(CC) $(CFLAGS) -DSERTEST $(LDFLAGS) -o $@ $(STATIC) $^ $(LIBS)
+
 install: $(APP)
 	install -d $(prefix)/bin
 	install -s -m 755 $(APP) $(prefix)/bin/
 
 clean:
-	rm -f *.o *.exe ser2tcp ~*
+	rm -f *.o *.exe ser2tcp sertest ~*

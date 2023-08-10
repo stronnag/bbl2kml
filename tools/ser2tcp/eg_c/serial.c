@@ -115,8 +115,6 @@ static int set_fd_speed(int fd, int rate, int *aspeed) {
     if((res = ioctl(fd, TCGETS2, &t)) != -1) {
       t.c_cflag &= ~CBAUD;
       t.c_cflag |= BOTHER;
-      t.c_cflag &= ~(CBAUD << IBSHIFT);
-      t.c_cflag |= BOTHER << IBSHIFT;
       t.c_ospeed = t.c_ispeed = rate;
       res = ioctl(fd, TCSETS2, &t);
       if (res != -1) {
@@ -245,3 +243,50 @@ int open_serial(serial_opts_t *sopts) {
     }
     return fd;
 }
+
+
+#ifdef SERTEST
+int main(int argc, char **argv) {
+  serial_opts_t sopts = {0};
+  int brates[] = {57600, 100000, 115200, 200000, 230400, 400000, 420000, 460800, -1};
+  int *rates = brates;
+
+
+
+
+  if (argc > 1) {
+    if(strncmp(argv[1], DEVBASE, sizeof(DEVBASE)-1) == 0) {
+      sopts.devname = argv[1];
+    } else {
+      find_device_from_desc(argv[1], &sopts.devname);
+    }
+
+    if (argc > 2) {
+      rates = calloc(argc, sizeof(int));
+      int *r = rates;
+      for(int j = 2; j < argc; j++) {
+	int k = atoi(argv[j]);
+	*r++ = k;
+      }
+      *r = -1;
+    }
+  }  else {
+    sopts.devname = "/dev/ttyUSB0";
+  }
+
+  for(int i = 0; ; i++) {
+    if (rates[i] == -1) {
+      break;
+    }
+    sopts.baudrate = rates[i];
+    int fd = open_serial(&sopts);
+    if (fd == -1) {
+      fprintf(stderr,"Failed %s : %d\n", sopts.devname, rates[i]);
+      break;
+    }
+    fprintf(stderr,"OK %s : %d\n", sopts.devname, rates[i]);
+    close(fd);
+  }
+  return 0;
+}
+#endif
