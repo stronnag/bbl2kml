@@ -2,10 +2,16 @@ LIBS=
 LDFLAGS ?= -s
 OPT ?= -O2
 prefix ?= $$HOME/.local
+STATIC=
 
 XOS := $(shell uname)
 ifeq ($(XOS),Linux)
  LIBS += -ludev
+endif
+
+SYSTGT := $(shell $(CC) -dumpmachine)
+ifneq (, $(findstring -musl, $(SYSTGT)))
+	STATIC=-static
 endif
 
 ifneq (,$(findstring CYGWIN, $(XOS)))
@@ -20,6 +26,9 @@ all: $(APP)
 
 $(APP): ser2tcp.c serial.c find_best.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+static: ser2tcp.c serial.c find_best.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(APP) $(STATIC) $^ $(LIBS)
 
 install: $(APP)
 	install -d $(prefix)/bin

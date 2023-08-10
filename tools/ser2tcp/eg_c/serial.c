@@ -31,6 +31,10 @@
 #include <windows.h>
 #endif
 
+#ifdef __APPLE__
+#include <IOKit/serial/ioss.h>
+#endif
+
 #include "ser2tcp.h"
 
 #if !defined( __linux__) && !defined(__APPLE__) && !defined(__CYGWIN__)
@@ -59,13 +63,51 @@ static void flush_serial(int fd) {
   tcflush(fd, TCIOFLUSH);
 #endif
 }
-
 void close_serial(int fd) {
   flush_serial(fd);
   close(fd);
 }
 
-static int set_fd_speed(int fd, int rate) {
+#ifdef __CYGWIN__
+static int set_attributes(int fd, serial_opts_t *sopts, int *aspeed) {
+  // heresy, but quite a nice API
+  HANDLE hdl = (HANDLE)get_osfhandle (fd);
+  int res = -1;
+  DCB dcb = {0};
+  dcb.DCBlength = sizeof(DCB);
+  if (GetCommState(hdl, &dcb)) {
+    if (sopts->databits == 0) {
+      dcb.ByteSize = 8;
+    } else {
+      dcb.ByteSize = sopts->databits;
+    }
+    dcb.BaudRate = sopts->baudrate;
+
+    dcb.StopBits = ONESTOPBIT;
+    if (sopts->stopbits != NULL && strcmp(sopts->stopbits, "Two") == 0) {
+      dcb.StopBits = TWOSTOPBITS;
+    }
+    if (sopts->parity == NULL || strcmp(sopts->parity, "None") == 0) {
+      dcb.Parity = NOPARITY;
+    } else {
+      if (strcmp(sopts->parity, "Odd")) {
+	dcb.Parity = ODDPARITY;
+      } else {
+	dcb.Parity = EVENPARITY;
+      }
+    }
+    if (SetCommState(hdl, &dcb)) {
+      memset(&dcb, 0, sizeof(DCB));
+      if (GetCommState(hdl, &dcb)) {
+	*aspeed = dcb.BaudRate;
+	res = 0;
+      }
+    }
+  }
+  return res;
+}
+#else
+static int set_fd_speed(int fd, int rate, int *aspeed) {
   int res = -1;
 #ifdef __linux__
   // Just user BOTHER for everything (allows non-standard speeds)
@@ -77,17 +119,20 @@ static int set_fd_speed(int fd, int rate) {
       t.c_cflag |= BOTHER << IBSHIFT;
       t.c_ospeed = t.c_ispeed = rate;
       res = ioctl(fd, TCSETS2, &t);
+      if (res != -1) {
+	if((res = ioctl(fd, TCGETS2, &t)) != -1) {
+	  *aspeed = t.c_ispeed;
+	}
+      }
     }
 #elif __APPLE__
-#include <IOKit/serial/ioss.h>
     speed_t speed = rate;
     res = ioctl(fd, IOSSIOSPEED, &speed);
-#elif __CYGWIN__
-    HANDLE hdl = (HANDLE)get_osfhandle (fd);
-    DCB dcb = {0};
-    if (GetCommState(hdl, &dcb)) {
-      dcb.BaudRate=rate;
-      res = SetCommState(hdl, &dcb) ? 0 : -1;
+    if (res != -1) {
+      struct termios term;
+      if (tcgetattr(fd, &term) != -1) {
+	*aspeed = cfgetispeed(&term);
+      }
     }
 #else
   int speed = rate_to_constant(rate);
@@ -100,79 +145,102 @@ static int set_fd_speed(int fd, int rate) {
       cfsetospeed(&term,speed);
       res = tcsetattr(fd,TCSANOW,&term);
     }
+    if(res != -1) {
+      memset(&term, 0, sizeof(term));
+      res = (tcgetattr(fd, &term));
+      if (res != -1) {
+	*aspeed = cfgetispeed(&term);
+      }
+    }
   }
 #endif
   return res;
 }
 
+static int set_attributes(int fd, serial_opts_t *sopts, int *aspeed) {
+  struct termios tio;
+  memset (&tio, 0, sizeof(tio));
+  int res = -1;
+#ifdef __linux__
+  res = ioctl(fd, TCGETS, &tio);
+#else
+  res = tcgetattr(fd, &tio);
+#endif
+  if (res != -1) {
+    // cfmakeraw ...
+    tio.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
+    tio.c_oflag &= ~OPOST;
+    tio.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+    tio.c_cflag &= ~(CSIZE | PARENB);
+    tio.c_cflag |= CS8;
+
+    tio.c_cc[VTIME] = 0;
+    tio.c_cc[VMIN] = 1;
+
+    tio.c_cflag &= ~CSIZE;
+    switch (sopts->databits) {
+    case 5:
+      tio.c_cflag |=  CS5;
+      break;
+    case 6:
+      tio.c_cflag |=  CS6;
+      break;
+    case 7:
+      tio.c_cflag |=  CS7;
+      break;
+    default:
+      tio.c_cflag |=  CS8;
+      break;
+    }
+
+    tio.c_cflag |=  CREAD|CLOCAL;
+    if (sopts->stopbits != NULL && strcmp(sopts->stopbits, "Two") == 0) {
+      tio.c_cflag |=  CSTOPB;
+    } else {
+      tio.c_cflag &=  ~CSTOPB;
+    }
+
+    if (sopts->parity == NULL || strcmp(sopts->parity, "None") == 0) {
+      tio.c_cflag &= ~PARENB;
+    } else {
+      tio.c_cflag |= PARENB;
+      if (strcmp(sopts->parity, "Odd")) {
+	tio.c_cflag |= PARODD;
+      } else {
+	tio.c_cflag &= ~PARODD;
+      }
+    }
+#ifdef __linux__
+    res = ioctl(fd, TCSETS, &tio);
+#else
+    res = tcsetattr(fd,TCSANOW,&tio);
+#endif
+  }
+  if (res != -1) {
+    res = set_fd_speed(fd, sopts->baudrate, aspeed);
+  }
+  return res;
+}
+#endif
+
+void report_speed(int rate, int aspeed) {
+    if (rate != aspeed) {
+      fprintf(stderr, "Warning: device speed %d differs from requested %d\n", aspeed, rate);
+    }
+}
+
 int open_serial(serial_opts_t *sopts) {
     int fd;
+    int aspeed = -1;
+    int res = 1;
     fd = open(sopts->devname, O_RDWR|O_NOCTTY);
     if(fd != -1) {
-      int res;
-      struct termios tio;
-      memset (&tio, 0, sizeof(tio));
-#ifdef __linux__
-      res = ioctl(fd, TCGETS, &tio);
-#else
-      res = tcgetattr(fd, &tio);
-#endif
-      if (res != -1) {
-        // cfmakeraw ...
-        tio.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
-        tio.c_oflag &= ~OPOST;
-        tio.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
-        tio.c_cflag &= ~(CSIZE | PARENB);
-        tio.c_cflag |= CS8;
-
-        tio.c_cc[VTIME] = 0;
-        tio.c_cc[VMIN] = 1;
-
-        tio.c_cflag &= ~CSIZE;
-        switch (sopts->databits) {
-        case 5:
-          tio.c_cflag |=  CS5;
-          break;
-        case 6:
-          tio.c_cflag |=  CS6;
-          break;
-        case 7:
-          tio.c_cflag |=  CS7;
-          break;
-        default:
-          tio.c_cflag |=  CS8;
-          break;
-        }
-
-        tio.c_cflag |=  CREAD|CLOCAL;
-        if (sopts->stopbits != NULL && strcmp(sopts->stopbits, "Two") == 0) {
-          tio.c_cflag |=  CSTOPB;
-        } else {
-          tio.c_cflag &=  ~CSTOPB;
-        }
-
-        if (sopts->parity == NULL || strcmp(sopts->parity, "None") == 0) {
-          tio.c_cflag &= ~PARENB;
-        } else {
-          tio.c_cflag |= PARENB;
-          if (strcmp(sopts->parity, "Odd")) {
-            tio.c_cflag |= PARODD;
-          } else {
-            tio.c_cflag &= ~PARODD;
-          }
-        }
-#ifdef __linux__
-        res = ioctl(fd, TCSETS, &tio);
-#else
-        res = tcsetattr(fd,TCSANOW,&tio);
-#endif
-        if (res != -1) {
-          res = set_fd_speed(fd, sopts->baudrate);
-          if (res == -1) {
-            close(fd);
-            fd = -1;
-          }
-        }
+      res = set_attributes(fd, sopts, &aspeed);
+      if (res == -1) {
+	close(fd);
+	fd = -1;
+      } else {
+	report_speed(sopts->baudrate, aspeed);
       }
     }
     return fd;

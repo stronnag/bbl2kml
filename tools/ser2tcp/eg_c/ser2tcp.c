@@ -235,6 +235,7 @@ int main(int argc, char **argv) {
   int fd = open_serial(&seropts);
   if (fd == -1) {
     fprintf(stderr,"Failed to open %s\n", seropts.devname);
+    return 127;
   } else {
     char *pretty = pretty_print_address((struct sockaddr *)&saddr);
     if (pretty != NULL) {
