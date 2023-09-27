@@ -423,7 +423,7 @@ func (m *MSPSerial) init(nchan chan RCInfo, schan chan byte, conf SimMeta) {
 				vers = fmt.Sprintf("%d.%d.%d", v.data[0], v.data[1], v.data[2])
 				m.fcvers = uint32(v.data[0])<<16 | uint32(v.data[1])<<8 | uint32(v.data[2])
 				m.Send_msp(msp_BUILD_INFO, nil)
-				v6 = (v.data[0] == 6)
+				v6 = (v.data[0] >= 6)
 			case msp_BUILD_INFO:
 				gitrev = string(v.data[19:])
 				m.Send_msp(msp_BOARD_INFO, nil)
