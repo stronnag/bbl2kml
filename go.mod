@@ -16,7 +16,7 @@ require (
 	github.com/twpayne/go-kml v1.5.2
 	github.com/twpayne/go-kmz v0.0.0-20160614194227-165281381e72
 	github.com/yookoala/realpath v1.0.0
-	golang.org/x/net v0.14.0 // indirect
-	golang.org/x/sync v0.3.0 // indirect
+	golang.org/x/net v0.16.0 // indirect
+	golang.org/x/sync v0.4.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 )

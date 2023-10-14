@@ -757,7 +757,7 @@ func (lg *BBLOG) Reader(meta types.FlightMeta, ch chan interface{}) (types.LogSe
 						}
 					}
 				} else if b.Bearing > -1 {
-					hlat, hlon := geo.Posit(b.Lat, b.Lon, float64(b.Bearing), b.Vrange/1852.0, true)
+					hlat, hlon := geo.Posit(b.Lat, b.Lon, float64(b.Bearing), b.Vrange/1852.0)
 					homes.SafeLat = hlat
 					homes.SafeLon = hlon
 					homes.Flags |= types.HOME_SAFE

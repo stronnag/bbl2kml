@@ -549,11 +549,15 @@ func (m *MSPSerial) deserialise_serialconf(buf []byte) int8 {
 func (m *MSPSerial) deserialise_modes(buf []byte) {
 	i := 0
 	for j := 0; j < MAX_MODE_ACTIVATION_CONDITION_COUNT; j++ {
-		if buf[i+2] != 0 && buf[i+3] != 0 {
-			m.mranges = append(m.mranges, ModeRange{buf[i], buf[i+1], buf[i+2], buf[i+3]})
+		if buf[i+3] != 0 {
+			invalid := (buf[0] == PERM_ARM && (buf[i+3]-buf[i+2]) > 40)
+			if !invalid {
+				m.mranges = append(m.mranges, ModeRange{buf[i], buf[i+1], buf[i+2], buf[i+3]})
+			}
 		}
 		i += 4
 	}
+
 	sort.Slice(m.mranges, func(i, j int) bool {
 		if m.mranges[i].chanidx != m.mranges[j].chanidx {
 			return m.mranges[i].chanidx < m.mranges[j].chanidx
