@@ -390,7 +390,7 @@ Binaries are provided for common operating systems in the [Release folder](https
 For example (adjust version number, OS, archiver as necessary).
 
     $ wget https://github.com/stronnag/bbl2kml/releases/download/0.12.0/flightlog2kml-0.12.0-linux-x86_64.tar.gz
-    $ tar -xf $ tar -xvf flightlog2kml-0.12.0-linux-x86_64.tar.gz
+    $ tar -xvf flightlog2kml-0.12.0-linux-x86_64.tar.gz
     fl2x/linux-x86_64/
     fl2x/linux-x86_64/bin/
     fl2x/linux-x86_64/bin/flightlog2kml
