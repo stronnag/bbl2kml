@@ -1,10 +1,13 @@
 package sitlgen
 
 import (
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
-	options "github.com/stronnag/bbl2kml/pkg/options"
 	"log"
 	"time"
+)
+
+import (
+	"options"
+	"types"
 )
 
 func from_bbl(b types.LogItem, acc1g float32) SimData {

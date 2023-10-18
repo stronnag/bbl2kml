@@ -3,15 +3,18 @@ package ltmgen
 import (
 	"encoding/binary"
 	"fmt"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
-	geo "github.com/stronnag/bbl2kml/pkg/geo"
-	inav "github.com/stronnag/bbl2kml/pkg/inav"
-	mission "github.com/stronnag/bbl2kml/pkg/mission"
-	options "github.com/stronnag/bbl2kml/pkg/options"
 	"log"
 	"os"
 	"strings"
 	"time"
+)
+
+import (
+	"geo"
+	"inav"
+	"mission"
+	"options"
+	"types"
 )
 
 type ltmbuf struct {

@@ -3,14 +3,17 @@ package log2mission
 import (
 	"fmt"
 	"github.com/deet/simpleline"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
-	mission "github.com/stronnag/bbl2kml/pkg/mission"
-	options "github.com/stronnag/bbl2kml/pkg/options"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+)
+
+import (
+	"mission"
+	"options"
+	"types"
 )
 
 func generate_filename(m types.FlightMeta) string {

@@ -1,8 +1,11 @@
 package sitlgen
 
 import (
-	options "github.com/stronnag/bbl2kml/pkg/options"
 	"log"
+)
+
+import (
+	"options"
 )
 
 func Sitl_logger(val int, ofmt string, params ...interface{}) {

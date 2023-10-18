@@ -2,11 +2,14 @@ package mission
 
 import (
 	"fmt"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
-	geo "github.com/stronnag/bbl2kml/pkg/geo"
 	kml "github.com/twpayne/go-kml"
 	"github.com/twpayne/go-kml/icon"
 	"image/color"
+)
+
+import (
+	"geo"
+	"types"
 )
 
 func (m *Mission) get_fly_points(addAlt int32) ([]kml.Coordinate, bool) {

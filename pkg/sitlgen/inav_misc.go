@@ -1,7 +1,7 @@
 package sitlgen
 
 import (
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
+	"types"
 )
 
 const (

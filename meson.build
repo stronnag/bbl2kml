@@ -40,7 +40,7 @@ log2mission_path = join_paths(meson.current_source_dir(), 'cmd', 'log2mission')
 mission2kml_path = join_paths(meson.current_source_dir(), 'cmd', 'mission2kml')
 fl2sitl_path = join_paths(meson.current_source_dir(), 'cmd', 'fl2sitl')
 
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'api','types'), check: true)
+r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'types'), check: true)
 common_files = r.stdout().strip().split()
 r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'mission'), check: true)
 common_files += r.stdout().strip().split()

@@ -10,12 +10,15 @@ import (
 	//"sort"
 	"bufio"
 	"errors"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
-	mission "github.com/stronnag/bbl2kml/pkg/mission"
-	options "github.com/stronnag/bbl2kml/pkg/options"
 	"strconv"
 	"strings"
 	"time"
+)
+
+import (
+	"mission"
+	"options"
+	"types"
 )
 
 var (

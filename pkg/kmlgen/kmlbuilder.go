@@ -3,10 +3,6 @@ package kmlgen
 import (
 	"fmt"
 	"github.com/bmizerany/perks/quantile"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
-	geo "github.com/stronnag/bbl2kml/pkg/geo"
-	mission "github.com/stronnag/bbl2kml/pkg/mission"
-	options "github.com/stronnag/bbl2kml/pkg/options"
 	kml "github.com/twpayne/go-kml"
 	"github.com/twpayne/go-kml/icon"
 	kmz "github.com/twpayne/go-kmz"
@@ -15,6 +11,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+)
+
+import (
+	"geo"
+	"mission"
+	"options"
+	"types"
 )
 
 const (

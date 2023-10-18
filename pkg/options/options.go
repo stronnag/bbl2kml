@@ -4,11 +4,14 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
+)
+
+import (
+	"types"
 )
 
 type Configuration struct {

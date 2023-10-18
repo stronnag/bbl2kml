@@ -4,15 +4,18 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
-	geo "github.com/stronnag/bbl2kml/pkg/geo"
-	options "github.com/stronnag/bbl2kml/pkg/options"
 	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"time"
+)
+
+import (
+	"geo"
+	"options"
+	"types"
 )
 
 type MavMeta struct {

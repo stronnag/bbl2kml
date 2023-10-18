@@ -1,9 +1,12 @@
 package geo
 
 import (
-	"strings"
 	"strconv"
-	options "github.com/stronnag/bbl2kml/pkg/options"
+	"strings"
+)
+
+import (
+	"options"
 )
 
 var (

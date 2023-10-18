@@ -3,12 +3,15 @@ package sitlgen
 import (
 	"bufio"
 	"fmt"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+)
+
+import (
+	"types"
 )
 
 type SimMeta struct {

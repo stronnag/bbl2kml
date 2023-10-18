@@ -2,19 +2,22 @@ package main
 
 import (
 	"fmt"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
-	ap "github.com/stronnag/bbl2kml/pkg/aplog"
-	bbl "github.com/stronnag/bbl2kml/pkg/bbl"
-	mqttgen "github.com/stronnag/bbl2kml/pkg/bltmqtt"
-	blt "github.com/stronnag/bbl2kml/pkg/bltreader"
-	geo "github.com/stronnag/bbl2kml/pkg/geo"
-	ltmgen "github.com/stronnag/bbl2kml/pkg/ltmgen"
-	options "github.com/stronnag/bbl2kml/pkg/options"
-	otx "github.com/stronnag/bbl2kml/pkg/otx"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+)
+
+import (
+	"aplog"
+	"bbl"
+	"bltlog"
+	"bltmqtt"
+	"geo"
+	"ltmgen"
+	"options"
+	"otx"
+	"types"
 )
 
 var GitCommit = "local"
@@ -44,10 +47,10 @@ func main() {
 			l := bbl.NewBBLReader(fn)
 			lfr = &l
 		case types.IS_BLT:
-			l := blt.NewBLTReader(fn)
+			l := bltlog.NewBLTReader(fn)
 			lfr = &l
 		case types.IS_AP:
-			l := ap.NewAPReader(fn)
+			l := aplog.NewAPReader(fn)
 			lfr = &l
 		default:
 			log.Fatal("Unknown log format")
@@ -79,7 +82,7 @@ func main() {
 						case strings.HasPrefix(app, "fl2mqtt"):
 							ls, res := lfr.Reader(metas[options.Config.Idx-1], nil)
 							if res {
-								mqttgen.MQTTGen(ls, metas[options.Config.Idx-1])
+								bltmqtt.MQTTGen(ls, metas[options.Config.Idx-1])
 							}
 						case strings.HasPrefix(app, "fl2ltm"):
 							ch := make(chan interface{})

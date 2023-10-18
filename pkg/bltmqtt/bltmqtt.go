@@ -1,23 +1,26 @@
 package bltmqtt
 
 import (
-	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"fmt"
 	"crypto/tls"
 	"crypto/x509"
-	"time"
-	"strings"
-	"strconv"
-	"log"
+	"fmt"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"io/ioutil"
+	"log"
 	"math/rand"
-	"os"
 	"net/url"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
-	geo "github.com/stronnag/bbl2kml/pkg/geo"
-	options "github.com/stronnag/bbl2kml/pkg/options"
-	mission "github.com/stronnag/bbl2kml/pkg/mission"
-	inav "github.com/stronnag/bbl2kml/pkg/inav"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+)
+
+import (
+	"geo"
+	"inav"
+	"mission"
+	"options"
+	"types"
 )
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
@@ -48,9 +51,9 @@ func NewTlsConfig(cafile string) (*tls.Config, string) {
 		}
 		certpool.AppendCertsFromPEM(ca)
 		return &tls.Config{
-			RootCAs:            certpool,
-			InsecureSkipVerify: true, ClientAuth: tls.NoClientCert,
-		},
+				RootCAs:            certpool,
+				InsecureSkipVerify: true, ClientAuth: tls.NoClientCert,
+			},
 			"ssl"
 	}
 }

@@ -1,4 +1,4 @@
-package api
+package types
 
 import (
 	b64 "encoding/base64"

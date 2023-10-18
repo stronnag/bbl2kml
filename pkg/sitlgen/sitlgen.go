@@ -7,9 +7,6 @@ import (
 	"github.com/mattn/go-tty"
 	"path/filepath"
 
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
-	geo "github.com/stronnag/bbl2kml/pkg/geo"
-	options "github.com/stronnag/bbl2kml/pkg/options"
 	"log"
 	"math"
 	"net"
@@ -18,6 +15,12 @@ import (
 	"strings"
 	"syscall"
 	"time"
+)
+
+import (
+	"geo"
+	"options"
+	"types"
 )
 
 const MODE_OFFSET = 4

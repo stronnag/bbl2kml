@@ -1,13 +1,14 @@
 package inav
 
 import (
-	//	"fmt"
-	//	"os"
 	"time"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
-	options "github.com/stronnag/bbl2kml/pkg/options"
-	geo "github.com/stronnag/bbl2kml/pkg/geo"
-	mission "github.com/stronnag/bbl2kml/pkg/mission"
+)
+
+import (
+	"geo"
+	"mission"
+	"options"
+	"types"
 )
 
 var phtime time.Time

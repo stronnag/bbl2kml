@@ -3,14 +3,20 @@ package main
 import (
 	"flag"
 	"fmt"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
-	mission "github.com/stronnag/bbl2kml/pkg/mission"
-	kml "github.com/twpayne/go-kml"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+)
+
+import (
+	"mission"
+	"types"
+)
+
+import (
+	kml "github.com/twpayne/go-kml"
 )
 
 var GitCommit = "local"

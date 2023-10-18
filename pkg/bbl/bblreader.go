@@ -5,10 +5,6 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
-	geo "github.com/stronnag/bbl2kml/pkg/geo"
-	inav "github.com/stronnag/bbl2kml/pkg/inav"
-	options "github.com/stronnag/bbl2kml/pkg/options"
 	"io"
 	"log"
 	"os"
@@ -18,6 +14,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
+)
+
+import (
+	"geo"
+	"inav"
+	"options"
+	"types"
 )
 
 var inav_vers int

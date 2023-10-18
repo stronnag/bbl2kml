@@ -7,9 +7,6 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
-	options "github.com/stronnag/bbl2kml/pkg/options"
-	kml "github.com/twpayne/go-kml"
 	"io"
 	"io/ioutil"
 	"log"
@@ -17,6 +14,15 @@ import (
 	"strconv"
 	"strings"
 	"time"
+)
+
+import (
+	"options"
+	"types"
+)
+
+import (
+	kml "github.com/twpayne/go-kml"
 )
 
 type QGCrec struct {
@@ -392,32 +398,37 @@ func (mm *MultiMission) is_valid() bool {
 	return true
 }
 
-/**
-func (m *MissionSegment) Add_rtl(land bool) {
-	k := len(m.MissionItems)
-	p1 := int16(0)
-	if land {
-		p1 = 1
+/*
+*
+
+	func (m *MissionSegment) Add_rtl(land bool) {
+		k := len(m.MissionItems)
+		p1 := int16(0)
+		if land {
+			p1 = 1
+		}
+		if k > 0 {
+			if m.MissionItems[k-1].Flag == 0xa5 {
+				m.MissionItems[k-1].Flag = 0
+			}
+		}
+		item := MissionItem{No: k + 1, Lat: 0.0, Lon: 0.0, Alt: 0, Action: "RTH", P1: p1}
+		m.MissionItems = append(m.MissionItems, item)
 	}
-	if k > 0 {
-		if m.MissionItems[k-1].Flag == 0xa5 {
-			m.MissionItems[k-1].Flag = 0
+
+	func (m *MultiMission) Dump(outfmt string, params ...string) {
+		switch outfmt {
+		case "cli":
+			m.To_cli(params[0])
+		case "json":
+			m.To_json(params[0])
+		default:
+			m.To_xml(params...)
 		}
 	}
-	item := MissionItem{No: k + 1, Lat: 0.0, Lon: 0.0, Alt: 0, Action: "RTH", P1: p1}
-	m.MissionItems = append(m.MissionItems, item)
-}
-func (m *MultiMission) Dump(outfmt string, params ...string) {
-	switch outfmt {
-	case "cli":
-		m.To_cli(params[0])
-	case "json":
-		m.To_json(params[0])
-	default:
-		m.To_xml(params...)
-	}
-}
-**/
+
+*
+*/
 func read_simple(dat []byte) *MultiMission {
 	var mis = []MissionItem{}
 	r := csv.NewReader(strings.NewReader(string(dat)))

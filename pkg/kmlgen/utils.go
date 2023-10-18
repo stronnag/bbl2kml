@@ -2,9 +2,12 @@ package kmlgen
 
 import (
 	"fmt"
-	"path/filepath"
 	"os"
-	options "github.com/stronnag/bbl2kml/pkg/options"
+	"path/filepath"
+)
+
+import (
+	"options"
 )
 
 func GenKmlName(inp string, idx int) string {

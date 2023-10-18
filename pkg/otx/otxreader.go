@@ -4,9 +4,6 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
-	geo "github.com/stronnag/bbl2kml/pkg/geo"
-	options "github.com/stronnag/bbl2kml/pkg/options"
 	"io"
 	"math"
 	"os"
@@ -16,6 +13,12 @@ import (
 	"strconv"
 	"strings"
 	"time"
+)
+
+import (
+	"geo"
+	"options"
+	"types"
 )
 
 const LOGTIMEPARSE = "2006-01-02 15:04:05.000"

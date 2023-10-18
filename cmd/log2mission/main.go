@@ -2,17 +2,20 @@ package main
 
 import (
 	"fmt"
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
-	ap "github.com/stronnag/bbl2kml/pkg/aplog"
-	bbl "github.com/stronnag/bbl2kml/pkg/bbl"
-	blt "github.com/stronnag/bbl2kml/pkg/bltreader"
-	geo "github.com/stronnag/bbl2kml/pkg/geo"
-	ltom "github.com/stronnag/bbl2kml/pkg/log2mission"
-	options "github.com/stronnag/bbl2kml/pkg/options"
-	otx "github.com/stronnag/bbl2kml/pkg/otx"
 	"log"
 	"os"
 	"path/filepath"
+)
+
+import (
+	"aplog"
+	"bbl"
+	"bltlog"
+	"geo"
+	ltom "log2mission"
+	"options"
+	"otx"
+	"types"
 )
 
 var GitCommit = "local"
@@ -41,10 +44,10 @@ func main() {
 			l := bbl.NewBBLReader(fn)
 			lfr = &l
 		case types.IS_BLT:
-			l := blt.NewBLTReader(fn)
+			l := bltlog.NewBLTReader(fn)
 			lfr = &l
 		case types.IS_AP:
-			l := ap.NewAPReader(fn)
+			l := aplog.NewAPReader(fn)
 			lfr = &l
 		default:
 			log.Fatal("Unknown log format")

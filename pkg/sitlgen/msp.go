@@ -4,14 +4,17 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	mission "github.com/stronnag/bbl2kml/pkg/mission"
-	options "github.com/stronnag/bbl2kml/pkg/options"
 	"log"
 	"net"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+)
+
+import (
+	"mission"
+	"options"
 )
 
 const (

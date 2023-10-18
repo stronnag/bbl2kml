@@ -6,12 +6,14 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+)
 
-	types "github.com/stronnag/bbl2kml/pkg/api/types"
-	bbl "github.com/stronnag/bbl2kml/pkg/bbl"
-	geo "github.com/stronnag/bbl2kml/pkg/geo"
-	options "github.com/stronnag/bbl2kml/pkg/options"
-	sitlgen "github.com/stronnag/bbl2kml/pkg/sitlgen"
+import (
+	"bbl"
+	"geo"
+	"options"
+	"sitlgen"
+	"types"
 )
 
 var GitCommit = "local"
