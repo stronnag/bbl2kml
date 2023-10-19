@@ -34,122 +34,100 @@ if res == ''
   trimpath = '-v'
 endif
 
-flightlog2kml_path = join_paths(meson.current_source_dir(), 'cmd', 'flightlog2kml')
-fl2mqtt_path = join_paths(meson.current_source_dir(), 'cmd', 'fl2mqtt')
-log2mission_path = join_paths(meson.current_source_dir(), 'cmd', 'log2mission')
-mission2kml_path = join_paths(meson.current_source_dir(), 'cmd', 'mission2kml')
-fl2sitl_path = join_paths(meson.current_source_dir(), 'cmd', 'fl2sitl')
+subdir('cmd/flightlog2kml')
+subdir('cmd/fl2mqtt')
+subdir('cmd/log2mission')
+subdir('cmd/mission2kml')
+subdir('cmd/fl2sitl')
 
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'types'), check: true)
-common_files = r.stdout().strip().split()
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'mission'), check: true)
-common_files += r.stdout().strip().split()
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'geo'), check: true)
-common_files += r.stdout().strip().split()
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'options'), check: true)
-common_files += r.stdout().strip().split()
+#fl2mqtt_path = join_paths(meson.current_source_dir(), 'cmd', 'fl2mqtt')
+#log2mission_path = join_paths(meson.current_source_dir(), 'cmd', 'log2mission')
+#mission2kml_path = join_paths(meson.current_source_dir(), 'cmd', 'mission2kml')
+#fl2sitl_path = join_paths(meson.current_source_dir(), 'cmd', 'fl2sitl')
 
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'bbl'), check: true)
-bbl_files = r.stdout().strip().split()
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'otx'), check: true)
-otx_files = r.stdout().strip().split()
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'inav'), check: true)
-inav_files = r.stdout().strip().split()
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'kmlgen'), check: true)
-kml_files = r.stdout().strip().split()
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'bltmqtt'), check: true)
-blt_files = r.stdout().strip().split()
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'ltmgen'), check: true)
-ltm_files = r.stdout().strip().split()
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'bltreader'), check: true)
-bltr_files = r.stdout().strip().split()
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'log2mission'), check: true)
-l2m_files = r.stdout().strip().split()
+common_files = []
+subdir('pkg/geo')
+subdir('pkg/types')
+subdir('pkg/mission')
+subdir('pkg/options')
 
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'aplog'), check: true)
-aplog_files = r.stdout().strip().split()
-
-r = run_command('meson/find_files.sh', join_paths(meson.current_source_dir(), 'pkg', 'sitlgen'), check: true)
-sitl_files = r.stdout().strip().split()
+# bbl_files
+subdir('pkg/bbl')
+# otx_files
+subdir('pkg/otx')
+# inav_files
+subdir('pkg/inav')
+# kml_files
+subdir('pkg/kmlgen')
+# blt_files
+subdir('pkg/bltmqtt')
+# ltm_files
+subdir('pkg/ltmgen')
+# bltr_files
+subdir('pkg/bltreader')
+# l2m_files
+subdir('pkg/log2mission')
+# aplog_files
+subdir('pkg/aplog')
+# sitl_files
+subdir('pkg/sitlgen')
 
 fl2kml_deps = [common_files, bbl_files, otx_files, inav_files, kml_files, bltr_files, aplog_files]
-
 fl2mqtt_deps = [common_files, bbl_files, otx_files, inav_files, blt_files, bltr_files, ltm_files, aplog_files ]
 log2mission_deps = [common_files, bbl_files, otx_files, inav_files, blt_files, bltr_files, ltm_files, aplog_files ]
 mission2kml_deps = [common_files]
-
 fl2sitl_deps = [common_files, bbl_files, sitl_files]
 
-r = run_command('meson/find_files.sh', flightlog2kml_path, check: true)
-flightlog2kml_files = r.stdout().strip().split()
-
-r = run_command('meson/find_files.sh', fl2mqtt_path, check: true)
-fl2mqtt_files =  r.stdout().strip().split()
-
-r = run_command('meson/find_files.sh', log2mission_path, check: true)
-log2mission_files =  r.stdout().strip().split()
-
-r = run_command('meson/find_files.sh', mission2kml_path, check: true)
-mission2kml_files =  r.stdout().strip().split()
-
-r = run_command('meson/find_files.sh', fl2sitl_path, check: true)
-fl2sitl_files =  r.stdout().strip().split()
-
-flightlog2kml_build_path = join_paths(meson.current_source_dir(), 'cmd' , 'flightlog2kml')
 flightlog2kml = custom_target(
     'flightlog2kml',
     output: 'flightlog2kml'+exe,
     env : env,
     input: [flightlog2kml_files, fl2kml_deps],
-    command: [ golang, 'build', trimpath, '-o', '@OUTPUT@', '-ldflags' , ldflags, flightlog2kml_files ],
+    command: [ golang, 'build', trimpath, '-o', '@OUTPUT@', '-ldflags' , ldflags, flightlog2kml_path ],
     build_by_default: true,
     install: true,
     install_dir: 'bin',
 )
 
-fl2mqtt_build_path = join_paths(meson.current_source_dir(), 'cmd' , 'fl2mqtt')
 fl2mqtt = custom_target(
     'fl2mqtt',
     output: 'fl2mqtt'+exe,
     input: [fl2mqtt_files, fl2mqtt_deps ],
     env : env,
-    command: [ golang, 'build', trimpath, '-o', '@OUTPUT@', '-ldflags', ldflags, fl2mqtt_files ],
+    command: [ golang, 'build', trimpath, '-o', '@OUTPUT@', '-ldflags', ldflags, fl2mqtt_path],
     build_by_default: true,
     install: true,
     install_dir: 'bin',
 )
 
-fl2mqtt_build_path = join_paths(meson.current_source_dir(), 'cmd' , 'fl2sitl')
 fl2sitl = custom_target(
     'fl2sitl',
     output: 'fl2sitl'+exe,
     input: [fl2sitl_files, fl2sitl_deps ],
     env : env,
-    command: [ golang, 'build', trimpath, '-o', '@OUTPUT@', '-ldflags', ldflags, fl2sitl_files ],
+    command: [ golang, 'build', trimpath, '-o', '@OUTPUT@', '-ldflags', ldflags, fl2sitl_path ],
     build_by_default: true,
     install: true,
     install_dir: 'bin',
 )
 
-log2mission_build_path = join_paths(meson.current_source_dir(), 'cmd' , 'log2mission')
 log2mission = custom_target(
     'log2mission',
     output: 'log2mission'+exe,
     input: [ log2mission_files, log2mission_deps ],
     env : env,
-    command: [ golang, 'build', trimpath, '-o', '@OUTPUT@', '-ldflags', ldflags, log2mission_files ],
+    command: [ golang, 'build', trimpath, '-o', '@OUTPUT@', '-ldflags', ldflags, log2mission_path ],
     build_by_default: true,
     install: true,
     install_dir: 'bin',
 )
 
-mission2kml_build_path = join_paths(meson.current_source_dir(), 'cmd' , 'mission2kml')
 mission2kml = custom_target(
     'mission2kml',
     output: 'mission2kml'+exe,
     input: [ mission2kml_files, mission2kml_deps ],
     env : env,
-    command: [ golang, 'build', trimpath, '-o', '@OUTPUT@', '-ldflags', ldflags, mission2kml_files ],
+    command: [ golang, 'build', trimpath, '-o', '@OUTPUT@', '-ldflags', ldflags, mission2kml_path ],
     build_by_default: true,
     install: true,
     install_dir: 'bin',
