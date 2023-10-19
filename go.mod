@@ -1,6 +1,6 @@
 module bbl2kml
 
-go 1.21.3
+go 1.20
 
 require (
 	github.com/mazznoer/colorgrad v0.9.1
