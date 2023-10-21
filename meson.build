@@ -13,6 +13,10 @@ if commit != ''
   ldflags += ' -X main.GitCommit=' + commit
 endif
 
+if version == ''
+  version = meson.project_version()
+endif
+
 if version != ''
   ldflags += ' -X main.GitTag='+ version
 endif
