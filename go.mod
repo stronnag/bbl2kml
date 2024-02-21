@@ -35,9 +35,9 @@ require (
 	github.com/mattn/go-tty v0.0.5 // indirect
 	github.com/mazznoer/csscolorparser v0.1.3 // indirect
 	github.com/twpayne/go-kmz v0.0.0-20160614194227-165281381e72 // indirect
-	golang.org/x/net v0.20.0 // indirect
+	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
-	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
 )
 
 replace bbl v1.0.0 => ./pkg/bbl
