@@ -116,6 +116,7 @@ Examples:
 func generateKML(mfile string, idx int, dms bool, homep []float64) error {
 	kname := filepath.Base(mfile)
 	d := kml.Folder(kml.Name(kname)).Add(kml.Open(true))
+	inithp := len(homep)
 	_, mm, err := mission.Read_Mission_File(mfile)
 	if err == nil {
 		isviz := true
@@ -123,11 +124,13 @@ func generateKML(mfile string, idx int, dms bool, homep []float64) error {
 			nmx := nm + 1
 			if idx == 0 || nmx == idx {
 				ms := mm.To_mission(nmx)
+
 				if len(homep) == 0 {
 					if ms.Metadata.Homey != 0 && ms.Metadata.Homex != 0 {
 						homep = append(homep, ms.Metadata.Homey, ms.Metadata.Homex)
 					}
 				}
+
 				var hpos types.HomeRec
 				if len(homep) == 2 {
 					hpos.HomeLat = homep[0]
@@ -138,10 +141,12 @@ func generateKML(mfile string, idx int, dms bool, homep []float64) error {
 					hpos.HomeAlt = homep[2]
 					hpos.Flags |= types.HOME_ALT
 				}
+
 				mf := ms.To_kml(hpos, dms, false, nmx, isviz)
 				d.Add(mf)
 				isviz = false
 			}
+			homep = homep[:inithp]
 		}
 		k := kml.KML(d)
 		k.WriteIndent(os.Stdout, "", "  ")
