@@ -180,6 +180,7 @@ func (m *Mission) To_kml(hpos types.HomeRec, dms bool, fake bool, mmidx int, isv
 
 	track := kml.Placemark(
 		kml.Description("inav mission"),
+		kml.Name("misison path"),
 		kml.StyleURL("#styleWPTrack"),
 		kml.LineString(
 			kml.AltitudeMode(altmode),
@@ -195,69 +196,80 @@ func (m *Mission) To_kml(hpos types.HomeRec, dms bool, fake bool, mmidx int, isv
 		Add(kml.Visibility(isvis)).Add(mission_styles()...).Add(track).Add(wps...)
 
 	if landid != -1 && m.FWApproach.No == int8(mmidx+7) && m.FWApproach.Dirn1 != 0 && m.FWApproach.Dirn2 != 0 {
-		lpath1, lpath2, apath1, apath2 := update_laylines(m.MissionItems[landid].Lat, m.MissionItems[landid].Lon, addAlt, m.FWApproach)
-
-		if len(lpath1) > 0 {
-			track := kml.Placemark(
-				kml.Description("land path1"),
-				kml.StyleURL("#styleFWLand"),
-				kml.LineString(
-					kml.AltitudeMode(altmode),
-					kml.Extrude(false),
-					kml.Tessellate(false),
-					kml.Coordinates(lpath1...),
-				),
-			)
-			track.Add(kml.Visibility(isvis))
-			kelem.Add(track)
-		}
-
-		if len(lpath2) > 0 {
-			track := kml.Placemark(
-				kml.Description("land path2"),
-				kml.StyleURL("#styleFWLand"),
-				kml.LineString(
-					kml.AltitudeMode(altmode),
-					kml.Extrude(false),
-					kml.Tessellate(false),
-					kml.Coordinates(lpath2...),
-				),
-			)
-			track.Add(kml.Visibility(isvis))
-			kelem.Add(track)
-		}
-
-		if len(apath1) > 0 {
-			track := kml.Placemark(
-				kml.Description("approach path1"),
-				kml.StyleURL("#styleFWApproach"),
-				kml.LineString(
-					kml.AltitudeMode(altmode),
-					kml.Extrude(false),
-					kml.Tessellate(false),
-					kml.Coordinates(apath1...),
-				),
-			)
-			track.Add(kml.Visibility(isvis))
-			kelem.Add(track)
-		}
-
-		if len(apath2) > 0 {
-			track := kml.Placemark(
-				kml.Description("approach path"),
-				kml.StyleURL("#styleFWApproach"),
-				kml.LineString(
-					kml.AltitudeMode(altmode),
-					kml.Extrude(false),
-					kml.Tessellate(false),
-					kml.Coordinates(apath2...),
-				),
-			)
-			track.Add(kml.Visibility(isvis))
-			kelem.Add(track)
-		}
+		f := AddLaylines(m.MissionItems[landid].Lat, m.MissionItems[landid].Lon, altmode, addAlt, m.FWApproach, isvis)
+		kelem.Add(f)
 	}
 	return kelem
+}
+
+func AddLaylines(lat, lon float64, altmode kml.AltitudeModeEnum, addAlt int32, lnd FWApproach, isvis bool) kml.Element {
+	f := kml.Folder(kml.Name("Approaches")).Add(kml.Open(true))
+	lpath1, lpath2, apath1, apath2 := update_laylines(lat, lon, addAlt, lnd)
+
+	if len(lpath1) > 0 {
+		track := kml.Placemark(
+			kml.Description("land path1"),
+			kml.Name("land1"),
+			kml.StyleURL("#styleFWLand"),
+			kml.LineString(
+				kml.AltitudeMode(altmode),
+				kml.Extrude(false),
+				kml.Tessellate(false),
+				kml.Coordinates(lpath1...),
+			),
+		)
+		track.Add(kml.Visibility(isvis))
+		f.Add(track)
+	}
+
+	if len(lpath2) > 0 {
+		track := kml.Placemark(
+			kml.Description("land path2"),
+			kml.Name("land2"),
+			kml.StyleURL("#styleFWLand"),
+			kml.LineString(
+				kml.AltitudeMode(altmode),
+				kml.Extrude(false),
+				kml.Tessellate(false),
+				kml.Coordinates(lpath2...),
+			),
+		)
+		track.Add(kml.Visibility(isvis))
+		f.Add(track)
+	}
+
+	if len(apath1) > 0 {
+		track := kml.Placemark(
+			kml.Description("approach path1"),
+			kml.Name("approach1"),
+			kml.StyleURL("#styleFWApproach"),
+			kml.LineString(
+				kml.AltitudeMode(altmode),
+				kml.Extrude(false),
+				kml.Tessellate(false),
+				kml.Coordinates(apath1...),
+			),
+		)
+		track.Add(kml.Visibility(isvis))
+		f.Add(track)
+	}
+
+	if len(apath2) > 0 {
+		track := kml.Placemark(
+			kml.Description("approach path"),
+			kml.Name("approach2"),
+			kml.StyleURL("#styleFWApproach"),
+			kml.LineString(
+				kml.AltitudeMode(altmode),
+				kml.Extrude(false),
+				kml.Tessellate(false),
+				kml.Coordinates(apath2...),
+			),
+		)
+		track.Add(kml.Visibility(isvis))
+		f.Add(track)
+	}
+	return f
 }
 
 func update_laylines(lat, lon float64, addAlt int32, lnd FWApproach) ([]kml.Coordinate, []kml.Coordinate, []kml.Coordinate, []kml.Coordinate) {
@@ -430,6 +442,17 @@ func mission_styles() []kml.Element {
 			kml.BalloonStyle(kml.BgColor(color.RGBA{R: 0xde, G: 0xde, B: 0xde, A: 0x40}),
 				kml.Text(`<b><font size="+2">$[name]</font></b><br/><br/>$[description]<br/>`)),
 		),
+
+		kml.SharedStyle(
+			"styleSAFEHOME",
+			kml.IconStyle(
+				kml.Scale(0.8),
+				kml.Icon(
+					kml.Href(icon.PaddleHref("ylw-square")),
+				),
+			),
+		),
+
 		kml.SharedStyle(
 			"styleFakeHome",
 			kml.IconStyle(

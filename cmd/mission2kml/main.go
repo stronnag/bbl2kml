@@ -11,6 +11,7 @@ import (
 )
 
 import (
+	"inav"
 	"mission"
 	"types"
 )
@@ -116,6 +117,8 @@ Examples:
 func generateKML(mfile string, idx int, dms bool, homep []float64) error {
 	kname := filepath.Base(mfile)
 	d := kml.Folder(kml.Name(kname)).Add(kml.Open(true))
+	k := kml.KML(d)
+
 	inithp := len(homep)
 	_, mm, err := mission.Read_Mission_File(mfile)
 	if err == nil {
@@ -148,8 +151,42 @@ func generateKML(mfile string, idx int, dms bool, homep []float64) error {
 			}
 			homep = homep[:inithp]
 		}
-		k := kml.KML(d)
-		k.WriteIndent(os.Stdout, "", "  ")
 	}
+
+	sha, fwa := inav.Read_safehome("/var/tmp/combined.txt")
+	if len(sha) > 0 {
+		var wps []kml.Element
+		//var lfs []kml.Element
+		sf := kml.Folder(kml.Name("Safehomes")).Add(kml.Open(true))
+		for i, sh := range sha {
+			sname := fmt.Sprintf("Safehome %d", i)
+			p := kml.Placemark(
+				kml.Name(sname),
+				kml.StyleURL("#styleSAFEHOME"),
+				kml.Point(
+					kml.AltitudeMode(kml.AltitudeModeRelativeToGround),
+					kml.Coordinates(kml.Coordinate{Lon: sh.Lon, Lat: sh.Lat, Alt: 0.0}),
+				),
+			)
+			p.Add(kml.Visibility(true))
+			wps = append(wps, p)
+			fidx := -1
+			for fi, fw := range fwa {
+				if int(fw.No) == i {
+					fidx = fi
+					break
+				}
+			}
+			if fidx != -1 {
+				lf := mission.AddLaylines(sh.Lat, sh.Lon, kml.AltitudeModeRelativeToGround, 0,
+					fwa[fidx], true)
+				d.Add(lf)
+			}
+		}
+		sf.Add(wps...)
+		fmt.Fprintf(os.Stderr, "FW %+v\n", fwa)
+		d.Add(sf)
+	}
+	k.WriteIndent(os.Stdout, "", "  ")
 	return err
 }

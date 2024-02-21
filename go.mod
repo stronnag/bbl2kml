@@ -14,7 +14,7 @@ require (
 	bltlog v1.0.0
 	bltmqtt v1.0.0
 	geo v1.0.0
-	inav v1.0.0 // indirect
+	inav v1.0.0
 	kmlgen v1.0.0
 	log2mission v1.0.0
 	ltmgen v1.0.0
