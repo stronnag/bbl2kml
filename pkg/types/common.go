@@ -58,21 +58,12 @@ type LogItem struct {
 	Lon      float64
 	Alt      float64
 	GAlt     float64
-	Cse      uint32
-	Cog      uint32
 	Spd      float64
 	Amps     float64
 	Volts    float64
-	Fix      uint8
-	Numsat   uint8
-	Fmode    uint8
-	Rssi     uint8
-	Fmtext   string
-	Utc      time.Time
 	Hlat     float64
 	Hlon     float64
 	Vrange   float64
-	Bearing  int32 // -ve => not defined
 	Tdist    float64
 	Effic    float64
 	Energy   float64
@@ -82,13 +73,15 @@ type LogItem struct {
 	Sval     float64 // scaled speed
 	Aval     float64 // scaled Altitude
 	Bval     float64 // scaled Battery
+	Fmtext   string
+	Utc      time.Time
 	Throttle int
+	Cse      uint32
+	Cog      uint32
+	Bearing  int32 // -ve => not defined
 	Roll     int16
 	Pitch    int16
-	Status   uint8
 	Hdop     uint16
-	HWfail   bool
-	NavMode  byte
 	Ail      int16
 	Ele      int16
 	Rud      int16
@@ -99,6 +92,14 @@ type LogItem struct {
 	Acc_x    int16
 	Acc_y    int16
 	Acc_z    int16
+	Fix      uint8
+	Numsat   uint8
+	Fmode    uint8
+	Rssi     uint8
+	Status   uint8
+	ActiveWP uint8
+	NavMode  byte
+	HWfail   bool
 }
 
 type LogRec struct {

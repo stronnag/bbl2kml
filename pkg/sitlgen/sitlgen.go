@@ -646,7 +646,7 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 			select {
 			case <-rxstat:
 				done = true
-			case <-time.After(5000 * time.Millisecond):
+			case <-time.After(5 * time.Second):
 				done = true
 			}
 		}

@@ -455,6 +455,11 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 		b.Stamp = uint64(i64)
 	}
 
+	if s, ok = get_rec_value(r, "activeWpNumber"); ok {
+		i64, _ := strconv.ParseInt(s, 10, 64)
+		b.ActiveWP = uint8(i64)
+	}
+
 	md := uint8(0)
 	s0, sok := get_rec_value(r, "flightModeFlags (flags)")
 	if s, ok = get_rec_value(r, "navState"); ok {
