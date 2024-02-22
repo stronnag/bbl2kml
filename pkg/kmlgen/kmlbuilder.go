@@ -508,6 +508,10 @@ func GenerateMissionOnly(outfn string) {
 				isviz = false
 			}
 		}
+		if len(options.Config.Cli) > 0 {
+			sf := Generate_safekml(options.Config.Cli)
+			d.Add(sf)
+		}
 		write_kml(outfn, d)
 	}
 }
@@ -547,22 +551,11 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 				}
 			}
 		}
-		/**
-				_, ms, err := mission.Read_Mission_File_Index(options.Config.Mission, options.Config.MissionIndex)
-				if err == nil {
-					if geo.Getfrobnication() {
-						for k, mi := range ms.MissionItems {
-							if mi.Is_GeoPoint() {
-								ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, _ = geo.Frobnicate_move(ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, 0)
-							}
-						}
-					}
-					mf := ms.To_kml(hpos, options.Config.Dms, false)
-					d.Add(mf)
-				} else {
-					fmt.Fprintf(os.Stderr, "* Failed to read mission file %s\n", options.Config.Mission)
-				}
-		**/
+	}
+
+	if len(options.Config.Cli) > 0 {
+		sf := Generate_safekml(options.Config.Cli)
+		d.Add(sf)
 	}
 
 	e := kml.ExtendedData(kml.Data(kml.Name("Log"), kml.Value(meta.LogName())))

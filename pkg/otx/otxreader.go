@@ -647,9 +647,10 @@ func (lg *OTXLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegm
 							homes.Flags |= types.HOME_ALT
 						} else {
 							if options.Config.UseTopo {
-								bingelev, err := geo.GetElevation(homes.HomeLat, homes.HomeLon)
+								d := geo.InitDem("")
+								elev, err := d.Get_Elevation(homes.HomeLat, homes.HomeLon)
 								if err == nil {
-									homes.HomeAlt = bingelev
+									homes.HomeAlt = elev
 									homes.Flags |= types.HOME_ALT
 								}
 							}

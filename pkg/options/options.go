@@ -35,6 +35,7 @@ type Configuration struct {
 	Engunit         string  `json:"energy-unit"`
 	LTMdev          string  `json:"-"`
 	Mission         string  `json:"-"`
+	Cli             string  `json:"-"`
 	MissionIndex    int     `json:"-"`
 	MaxWP           int     `json:"max-wp"`
 	Mqttopts        string  `json:"-"`
@@ -147,6 +148,7 @@ func ParseCLI(gv func() string) ([]string, string) {
 			flag.BoolVar(&Config.Dump, "dump", false, "Dump log headers and exit")
 		}
 		flag.StringVar(&Config.Mission, "mission", "", "Optional mission file name")
+		flag.StringVar(&Config.Cli, "cli", "", "Optional CLI file name")
 		flag.IntVar(&Config.MissionIndex, "mission-index", 0, "Optional mission file index")
 	}
 

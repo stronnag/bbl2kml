@@ -5,7 +5,6 @@ import (
 	kml "github.com/twpayne/go-kml"
 	"github.com/twpayne/go-kml/icon"
 	"image/color"
-	"os"
 )
 
 import (
@@ -85,9 +84,10 @@ func (m *Mission) To_kml(hpos types.HomeRec, dms bool, fake bool, mmidx int, isv
 		if (hpos.Flags & types.HOME_ALT) == types.HOME_ALT {
 			addAlt = int32(hpos.HomeAlt)
 		} else {
-			bingelev, err := geo.GetElevation(hpos.HomeLat, hpos.HomeLon)
+			d := geo.InitDem("")
+			elev, err := d.Get_Elevation(hpos.HomeLat, hpos.HomeLon)
 			if err == nil {
-				addAlt = int32(bingelev)
+				addAlt = int32(elev)
 				hpos.Flags |= types.HOME_ALT
 			}
 		}
@@ -99,8 +99,6 @@ func (m *Mission) To_kml(hpos types.HomeRec, dms bool, fake bool, mmidx int, isv
 		}
 		points = append(points, kml.Coordinate{Lon: hpos.HomeLon, Lat: hpos.HomeLat, Alt: float64(addAlt)})
 	}
-
-	fmt.Fprintf(os.Stderr, "Home pos %+v, add %+v, mode %+v\n", hpos, addAlt, altmode)
 
 	var lat, lon float64
 	var alt int32
@@ -199,7 +197,6 @@ func (m *Mission) To_kml(hpos types.HomeRec, dms bool, fake bool, mmidx int, isv
 		Add(kml.Visibility(isvis)).Add(mission_styles()...).Add(track).Add(wps...)
 
 	if landid != -1 && m.FWApproach.No == int8(mmidx+7) && m.FWApproach.Dirn1 != 0 && m.FWApproach.Dirn2 != 0 {
-		fmt.Fprintf(os.Stderr, "Land %+v\n", m.FWApproach)
 		f := kml.Folder(kml.Name("Approaches")).Add(kml.Open(true))
 		for _, ll := range AddLaylines(m.MissionItems[landid].Lat, m.MissionItems[landid].Lon, addAlt, m.FWApproach, isvis) {
 			f.Add(ll)

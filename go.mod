@@ -14,7 +14,6 @@ require (
 	bltlog v1.0.0
 	bltmqtt v1.0.0
 	geo v1.0.0
-	inav v1.0.0
 	kmlgen v1.0.0
 	log2mission v1.0.0
 	ltmgen v1.0.0
@@ -38,6 +37,7 @@ require (
 	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect
+	inav v1.0.0 // indirect
 )
 
 replace bbl v1.0.0 => ./pkg/bbl

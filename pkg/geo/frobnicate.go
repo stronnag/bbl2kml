@@ -41,7 +41,8 @@ func Frobnicate_init() bool {
 			if len(parts) == 3 {
 				jmp_up, _ = strconv.ParseFloat(parts[2], 64)
 			} else {
-				jmp_up, _ = GetElevation(jlat, jlon)
+				d := InitDem("")
+				jmp_up, _ = d.Get_Elevation(jlat, jlon)
 			}
 			frobinit = true
 		}

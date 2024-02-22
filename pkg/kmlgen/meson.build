@@ -1,1 +1,1 @@
-kml_files = files('gradgen.go', 'kmlbuilder.go', 'utils.go')
+kml_files = files('gradgen.go', 'kmlbuilder.go', 'utils.go', 'gensafekml.go')

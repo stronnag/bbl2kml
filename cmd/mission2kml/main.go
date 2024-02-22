@@ -11,7 +11,7 @@ import (
 )
 
 import (
-	"inav"
+	"kmlgen"
 	"mission"
 	"types"
 )
@@ -108,13 +108,13 @@ Examples:
 			}
 		}
 	}
-	err := generateKML(files[0], idx, dms, home)
+	err := generateKML(files[0], idx, dms, home, files[1])
 	if err != nil {
 		log.Fatalf("mission2kmk: %+v\n", err)
 	}
 }
 
-func generateKML(mfile string, idx int, dms bool, homep []float64) error {
+func generateKML(mfile string, idx int, dms bool, homep []float64, clifile string) error {
 	kname := filepath.Base(mfile)
 	d := kml.Folder(kml.Name(kname)).Add(kml.Open(true))
 	k := kml.KML(d)
@@ -153,37 +153,8 @@ func generateKML(mfile string, idx int, dms bool, homep []float64) error {
 		}
 	}
 
-	sha, fwa := inav.Read_safehome("/var/tmp/combined.txt")
-	if len(sha) > 0 {
-		var wps []kml.Element
-		sf := kml.Folder(kml.Name("Safehomes")).Add(kml.Open(true))
-		for i, sh := range sha {
-			sname := fmt.Sprintf("Safehome %d", i)
-			p := kml.Placemark(
-				kml.Name(sname),
-				kml.StyleURL("#styleSAFEHOME"),
-				kml.Point(
-					kml.AltitudeMode(kml.AltitudeModeRelativeToGround),
-					kml.Coordinates(kml.Coordinate{Lon: sh.Lon, Lat: sh.Lat, Alt: 0.0}),
-				),
-			)
-			p.Add(kml.Visibility(true))
-			wps = append(wps, p)
-			fidx := -1
-			for fi, fw := range fwa {
-				if int(fw.No) == i {
-					fidx = fi
-					break
-				}
-			}
-			if fidx != -1 {
-				for _, lf := range mission.AddLaylines(sh.Lat, sh.Lon, 0, fwa[fidx], true) {
-					sf.Add(lf)
-				}
-
-			}
-		}
-		sf.Add(wps...)
+	if clifile != "" {
+		sf := kmlgen.Generate_safekml(clifile)
 		d.Add(sf)
 	}
 	k.WriteIndent(os.Stdout, "", "  ")
