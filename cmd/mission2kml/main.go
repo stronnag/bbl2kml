@@ -156,7 +156,6 @@ func generateKML(mfile string, idx int, dms bool, homep []float64) error {
 	sha, fwa := inav.Read_safehome("/var/tmp/combined.txt")
 	if len(sha) > 0 {
 		var wps []kml.Element
-		//var lfs []kml.Element
 		sf := kml.Folder(kml.Name("Safehomes")).Add(kml.Open(true))
 		for i, sh := range sha {
 			sname := fmt.Sprintf("Safehome %d", i)
@@ -178,13 +177,13 @@ func generateKML(mfile string, idx int, dms bool, homep []float64) error {
 				}
 			}
 			if fidx != -1 {
-				lf := mission.AddLaylines(sh.Lat, sh.Lon, kml.AltitudeModeRelativeToGround, 0,
-					fwa[fidx], true)
-				d.Add(lf)
+				for _, lf := range mission.AddLaylines(sh.Lat, sh.Lon, 0, fwa[fidx], true) {
+					sf.Add(lf)
+				}
+
 			}
 		}
 		sf.Add(wps...)
-		fmt.Fprintf(os.Stderr, "FW %+v\n", fwa)
 		d.Add(sf)
 	}
 	k.WriteIndent(os.Stdout, "", "  ")

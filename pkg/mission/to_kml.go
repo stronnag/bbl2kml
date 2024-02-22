@@ -5,6 +5,7 @@ import (
 	kml "github.com/twpayne/go-kml"
 	"github.com/twpayne/go-kml/icon"
 	"image/color"
+	"os"
 )
 
 import (
@@ -98,6 +99,8 @@ func (m *Mission) To_kml(hpos types.HomeRec, dms bool, fake bool, mmidx int, isv
 		}
 		points = append(points, kml.Coordinate{Lon: hpos.HomeLon, Lat: hpos.HomeLat, Alt: float64(addAlt)})
 	}
+
+	fmt.Fprintf(os.Stderr, "Home pos %+v, add %+v, mode %+v\n", hpos, addAlt, altmode)
 
 	var lat, lon float64
 	var alt int32
@@ -196,15 +199,28 @@ func (m *Mission) To_kml(hpos types.HomeRec, dms bool, fake bool, mmidx int, isv
 		Add(kml.Visibility(isvis)).Add(mission_styles()...).Add(track).Add(wps...)
 
 	if landid != -1 && m.FWApproach.No == int8(mmidx+7) && m.FWApproach.Dirn1 != 0 && m.FWApproach.Dirn2 != 0 {
-		f := AddLaylines(m.MissionItems[landid].Lat, m.MissionItems[landid].Lon, altmode, addAlt, m.FWApproach, isvis)
+		fmt.Fprintf(os.Stderr, "Land %+v\n", m.FWApproach)
+		f := kml.Folder(kml.Name("Approaches")).Add(kml.Open(true))
+		for _, ll := range AddLaylines(m.MissionItems[landid].Lat, m.MissionItems[landid].Lon, addAlt, m.FWApproach, isvis) {
+			f.Add(ll)
+		}
 		kelem.Add(f)
 	}
 	return kelem
 }
 
-func AddLaylines(lat, lon float64, altmode kml.AltitudeModeEnum, addAlt int32, lnd FWApproach, isvis bool) kml.Element {
-	f := kml.Folder(kml.Name("Approaches")).Add(kml.Open(true))
+func AddLaylines(lat, lon float64, addAlt int32, lnd FWApproach, isvis bool) []kml.Element {
+	ll := []kml.Element{}
+	var altmode kml.AltitudeModeEnum
+
 	lpath1, lpath2, apath1, apath2 := update_laylines(lat, lon, addAlt, lnd)
+
+	altmode = kml.AltitudeModeAbsolute
+	if !lnd.Aref {
+		if addAlt == 0 {
+			altmode = kml.AltitudeModeRelativeToGround
+		}
+	}
 
 	if len(lpath1) > 0 {
 		track := kml.Placemark(
@@ -219,7 +235,7 @@ func AddLaylines(lat, lon float64, altmode kml.AltitudeModeEnum, addAlt int32, l
 			),
 		)
 		track.Add(kml.Visibility(isvis))
-		f.Add(track)
+		ll = append(ll, track)
 	}
 
 	if len(lpath2) > 0 {
@@ -235,7 +251,7 @@ func AddLaylines(lat, lon float64, altmode kml.AltitudeModeEnum, addAlt int32, l
 			),
 		)
 		track.Add(kml.Visibility(isvis))
-		f.Add(track)
+		ll = append(ll, track)
 	}
 
 	if len(apath1) > 0 {
@@ -251,7 +267,7 @@ func AddLaylines(lat, lon float64, altmode kml.AltitudeModeEnum, addAlt int32, l
 			),
 		)
 		track.Add(kml.Visibility(isvis))
-		f.Add(track)
+		ll = append(ll, track)
 	}
 
 	if len(apath2) > 0 {
@@ -267,9 +283,9 @@ func AddLaylines(lat, lon float64, altmode kml.AltitudeModeEnum, addAlt int32, l
 			),
 		)
 		track.Add(kml.Visibility(isvis))
-		f.Add(track)
+		ll = append(ll, track)
 	}
-	return f
+	return ll
 }
 
 func update_laylines(lat, lon float64, addAlt int32, lnd FWApproach) ([]kml.Coordinate, []kml.Coordinate, []kml.Coordinate, []kml.Coordinate) {
