@@ -480,8 +480,8 @@ func mission_styles() []kml.Element {
 		kml.SharedStyle(
 			"styleWPTrack",
 			kml.LineStyle(
-				kml.Width(2.0),
-				kml.Color(color.RGBA{R: 0, G: 0xff, B: 0xff, A: 0x66}),
+				kml.Width(4.0),
+				kml.Color(color.RGBA{R: 0xff, G: 0, B: 0, A: 0x66}),
 			),
 			kml.PolyStyle(
 				kml.Color(color.RGBA{R: 0xc0, G: 0xc0, B: 0xc0, A: 0x66}),
@@ -490,7 +490,7 @@ func mission_styles() []kml.Element {
 		kml.SharedStyle(
 			"styleFWLand",
 			kml.LineStyle(
-				kml.Width(2.0),
+				kml.Width(4.0),
 				kml.Color(color.RGBA{R: 0xfc, G: 0xac, B: 0x64, A: 0xa0}),
 			),
 			kml.PolyStyle(
@@ -500,7 +500,7 @@ func mission_styles() []kml.Element {
 		kml.SharedStyle(
 			"styleFWApproach",
 			kml.LineStyle(
-				kml.Width(2.0),
+				kml.Width(4.0),
 				kml.Color(color.RGBA{R: 0x63, G: 0xa0, B: 0xfc, A: 0xa0}),
 			),
 			kml.PolyStyle(

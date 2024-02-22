@@ -65,7 +65,7 @@ Examples:
     --home "48,9975 2,5789"
     -home 54.353974,-4.5236,24
 `
-		fmt.Fprintf(os.Stderr, "Usage of %s [options] mission_file\n", filepath.Base(os.Args[0]))
+		fmt.Fprintf(os.Stderr, "Usage of %s [options] mission_file [cli_file]\n", filepath.Base(os.Args[0]))
 		flag.PrintDefaults()
 		fmt.Fprintln(os.Stderr)
 		fmt.Fprintln(os.Stderr, extra)
