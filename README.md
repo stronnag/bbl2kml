@@ -2,7 +2,7 @@
 
 ## Overview
 
-A suite of tools to generate beautiful annotated, animated KML/KMZ files (and other data) from **inav** blackbox logs, OpenTX log files (inav S.Port telemetry, some support for OpenTX logs from Ardupilot), BulletGCSS and Aurduplot `.bin` logs.
+A suite of tools to generate beautiful annotated, animated KML/KMZ files (and other data) from **inav** blackbox logs, OpenTX log files (inav S.Port telemetry, some support for OpenTX logs from Ardupilot), BulletGCSS and Aurduplot `.bin` logs. Also supports MW XML mission files and geospatial elements from CLI diffs (`safehome`, `fwapproach` and future `geozone`).
 
 
 #### INAV Fight Mode layer
@@ -59,4 +59,4 @@ The project includes the following:
 * `fl2ltm` :  Generate (INAV) LTM (Lightweight Telemetry) messages
 * `fl2sitl` : Replay BBL via the INAV SITL ([documentation](https://github.com/stronnag/bbl2kml/wiki/fl2sitl)). : `fl2sitl` can also provide a minimal simulator (no BBL needed) to enable the full use of the INAV SITL in the INAV configurator.
 * `log2mission` : Generate an INAV mission file from a flight log
-* `mission2kml` : General KML/Z from an INAV mission file (and optional CLI `diff` containing Safehome / FW Land data)
+* `mission2kml` : General KML/Z from an INAV mission file (and optional CLI `diff` containing Safehome / FW Land data / (geozones))
