@@ -83,7 +83,7 @@ subdir('pkg/styles')
 fl2kml_deps = [common_files, bbl_files, otx_files, inav_files, cli_files, style_files, kml_files, bltr_files, aplog_files]
 fl2mqtt_deps = [common_files, bbl_files, otx_files, inav_files, blt_files, bltr_files, ltm_files, aplog_files ]
 log2mission_deps = [common_files, bbl_files, otx_files, inav_files, blt_files, bltr_files, ltm_files, aplog_files ]
-mission2kml_deps = [common_files, cli_files, style_files ]
+mission2kml_deps = [common_files, cli_files, style_files, kml_files ]
 fl2sitl_deps = [common_files, bbl_files, sitl_files]
 
 flightlog2kml = custom_target(

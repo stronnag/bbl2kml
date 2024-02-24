@@ -7,18 +7,47 @@ import (
 
 import (
 	"cli"
+	"geo"
 	"styles"
 )
+
+func add_sh_circle(sh cli.SafeHome, i int) kml.Element {
+	var points []kml.Coordinate
+
+	for j := 0; j < 360; j += 5 {
+		lat, lon := geo.Posit(sh.Lat, sh.Lon, float64(j), 200.0/1852.0)
+		points = append(points, kml.Coordinate{Lon: lon, Lat: lat, Alt: 0})
+	}
+	points = append(points, points[0])
+	track := kml.Placemark(
+		//		kml.Name(fmt.Sprintf("Circle %d", g.Zid)),
+		//		kml.Description(fmt.Sprintf("Circle Zone %d", g.Zid)),
+		kml.StyleURL("#styleSAFEHOME"))
+
+	track.Add(
+		kml.Polygon(
+			kml.AltitudeMode(kml.AltitudeModeRelativeToGround),
+			kml.Extrude(true),
+			kml.Tessellate(false),
+			kml.OuterBoundaryIs(
+				kml.LinearRing(
+					kml.Coordinates(points...),
+				),
+			),
+		),
+	)
+	return track
+}
 
 func Generate_cli_kml(fn string) kml.Element {
 	sf := kml.Folder(kml.Name("Safehomes")).Add(kml.Open(true))
 	sha, fwa, gzone := cli.Read_clifile(fn)
 	if len(sha) > 0 {
 		sf.Add(styles.Get_safe_styles()...)
-
-		var wps []kml.Element
 		for i, sh := range sha {
-			sname := fmt.Sprintf("Safehome %d", i)
+			name := fmt.Sprintf("Safehome Fld %d", i)
+			shf := kml.Folder(kml.Name(name)).Add(kml.Description(name)).Add(kml.Visibility(true)).Add(add_sh_circle(sh, i))
+			sname := fmt.Sprintf("Home %d", i)
 			p := kml.Placemark(
 				kml.Name(sname),
 				kml.StyleURL("#styleSAFEHOME"),
@@ -28,7 +57,7 @@ func Generate_cli_kml(fn string) kml.Element {
 				),
 			)
 			p.Add(kml.Visibility(true))
-			wps = append(wps, p)
+			shf.Add(p)
 			if len(fwa) > 0 {
 				sf.Add(styles.Get_approach_styles()...)
 				fidx := -1
@@ -40,12 +69,12 @@ func Generate_cli_kml(fn string) kml.Element {
 				}
 				if fidx != -1 {
 					for _, lf := range cli.AddLaylines(sh.Lat, sh.Lon, 0, fwa[fidx], true) {
-						sf.Add(lf)
+						shf.Add(lf)
 					}
 				}
 			}
+			sf.Add(shf)
 		}
-		sf.Add(wps...)
 	}
 	if len(gzone) > 0 {
 		gf := Gen_geozones(gzone)

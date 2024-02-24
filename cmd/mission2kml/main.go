@@ -136,8 +136,13 @@ Examples:
 }
 
 func generateKML(mfile string, idx int, dms bool, homep []float64, clifile string) error {
-	kname := filepath.Base(mfile)
-	d := kml.Folder(kml.Name(kname)).Add(kml.Open(true))
+	var kname string
+	if mfile != "" {
+		kname = filepath.Base(mfile)
+	} else {
+		kname = filepath.Base(clifile)
+	}
+	d := kml.Folder(kml.Name(kname)).Add(kml.Description(kname)).Add(kml.Open(true))
 	k := kml.KML(d)
 	var err error
 

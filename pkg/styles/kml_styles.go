@@ -16,6 +16,13 @@ func Get_safe_styles() []kml.Element {
 					kml.Href(icon.PaddleHref("ylw-square")),
 				),
 			),
+			kml.LineStyle(
+				kml.Width(4.0),
+				kml.Color(color.RGBA{R: 0xc0, G: 0xc0, B: 0, A: 0xc0}),
+			),
+			kml.PolyStyle(
+				kml.Color(color.RGBA{R: 0xfc, G: 0xfc, B: 0, A: 0}),
+			),
 		),
 	}
 }
