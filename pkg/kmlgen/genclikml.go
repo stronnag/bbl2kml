@@ -45,9 +45,9 @@ func Generate_cli_kml(fn string) kml.Element {
 	if len(sha) > 0 {
 		sf.Add(styles.Get_safe_styles()...)
 		for i, sh := range sha {
-			name := fmt.Sprintf("Safehome Fld %d", i)
+			name := fmt.Sprintf("Safehome %d", i)
 			shf := kml.Folder(kml.Name(name)).Add(kml.Description(name)).Add(kml.Visibility(true)).Add(add_sh_circle(sh, i))
-			sname := fmt.Sprintf("Home %d", i)
+			sname := fmt.Sprintf("Point %d", i)
 			p := kml.Placemark(
 				kml.Name(sname),
 				kml.StyleURL("#styleSAFEHOME"),
