@@ -1,4 +1,4 @@
-project('flightlog2kml', version : '1.0.15')
+project('flightlog2kml', version : '1.0.16')
 meson.add_install_script('meson/post_install.py')
 version = get_option('version')
 commit = get_option('commit')
@@ -75,11 +75,15 @@ subdir('pkg/log2mission')
 subdir('pkg/aplog')
 # sitl_files
 subdir('pkg/sitlgen')
+# inav_files
+subdir('pkg/cli')
+# inav_files
+subdir('pkg/styles')
 
-fl2kml_deps = [common_files, bbl_files, otx_files, inav_files, kml_files, bltr_files, aplog_files]
+fl2kml_deps = [common_files, bbl_files, otx_files, inav_files, cli_files, style_files, kml_files, bltr_files, aplog_files]
 fl2mqtt_deps = [common_files, bbl_files, otx_files, inav_files, blt_files, bltr_files, ltm_files, aplog_files ]
 log2mission_deps = [common_files, bbl_files, otx_files, inav_files, blt_files, bltr_files, ltm_files, aplog_files ]
-mission2kml_deps = [common_files, inav_files]
+mission2kml_deps = [common_files, cli_files, style_files ]
 fl2sitl_deps = [common_files, bbl_files, sitl_files]
 
 flightlog2kml = custom_target(

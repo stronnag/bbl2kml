@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -65,7 +67,7 @@ Examples:
     --home "48,9975 2,5789"
     -home 54.353974,-4.5236,24
 `
-		fmt.Fprintf(os.Stderr, "Usage of %s [options] mission_file [cli_file]\n", filepath.Base(os.Args[0]))
+		fmt.Fprintf(os.Stderr, "Usage of %s [options] files...\n", filepath.Base(os.Args[0]))
 		flag.PrintDefaults()
 		fmt.Fprintln(os.Stderr)
 		fmt.Fprintln(os.Stderr, extra)
@@ -108,7 +110,26 @@ Examples:
 			}
 		}
 	}
-	err := generateKML(files[0], idx, dms, home, files[1])
+
+	var mfile, cfile string
+	for _, fn := range files {
+		f, err := os.Open(fn)
+		if err == nil {
+			defer f.Close()
+			dat, _ := io.ReadAll(f)
+			switch {
+			case bytes.HasPrefix(dat, []byte("<?xml")):
+				if bytes.Contains(dat, []byte("<MISSION")) || bytes.Contains(dat, []byte("<mission")) {
+					mfile = fn
+				}
+			case bytes.Contains(dat, []byte("safehome")), bytes.Contains(dat, []byte("fwapproach")),
+				bytes.Contains(dat, []byte("geozone")):
+				cfile = fn
+			}
+		}
+	}
+
+	err := generateKML(mfile, idx, dms, home, cfile)
 	if err != nil {
 		log.Fatalf("mission2kmk: %+v\n", err)
 	}
@@ -118,43 +139,46 @@ func generateKML(mfile string, idx int, dms bool, homep []float64, clifile strin
 	kname := filepath.Base(mfile)
 	d := kml.Folder(kml.Name(kname)).Add(kml.Open(true))
 	k := kml.KML(d)
+	var err error
 
-	inithp := len(homep)
-	_, mm, err := mission.Read_Mission_File(mfile)
-	if err == nil {
-		isviz := true
-		for nm, _ := range mm.Segment {
-			nmx := nm + 1
-			if idx == 0 || nmx == idx {
-				ms := mm.To_mission(nmx)
+	if mfile != "" {
+		inithp := len(homep)
+		_, mm, err := mission.Read_Mission_File(mfile)
+		if err == nil {
+			isviz := true
+			for nm, _ := range mm.Segment {
+				nmx := nm + 1
+				if idx == 0 || nmx == idx {
+					ms := mm.To_mission(nmx)
 
-				if len(homep) == 0 {
-					if ms.Metadata.Homey != 0 && ms.Metadata.Homex != 0 {
-						homep = append(homep, ms.Metadata.Homey, ms.Metadata.Homex)
+					if len(homep) == 0 {
+						if ms.Metadata.Homey != 0 && ms.Metadata.Homex != 0 {
+							homep = append(homep, ms.Metadata.Homey, ms.Metadata.Homex)
+						}
 					}
-				}
 
-				var hpos types.HomeRec
-				if len(homep) == 2 {
-					hpos.HomeLat = homep[0]
-					hpos.HomeLon = homep[1]
-					hpos.Flags = types.HOME_ARM
-				}
-				if len(homep) > 2 {
-					hpos.HomeAlt = homep[2]
-					hpos.Flags |= types.HOME_ALT
-				}
+					var hpos types.HomeRec
+					if len(homep) == 2 {
+						hpos.HomeLat = homep[0]
+						hpos.HomeLon = homep[1]
+						hpos.Flags = types.HOME_ARM
+					}
+					if len(homep) > 2 {
+						hpos.HomeAlt = homep[2]
+						hpos.Flags |= types.HOME_ALT
+					}
 
-				mf := ms.To_kml(hpos, dms, false, nmx, isviz)
-				d.Add(mf)
-				isviz = false
+					mf := ms.To_kml(hpos, dms, false, nmx, isviz)
+					d.Add(mf)
+					isviz = false
+				}
+				homep = homep[:inithp]
 			}
-			homep = homep[:inithp]
 		}
 	}
 
 	if clifile != "" {
-		sf := kmlgen.Generate_safekml(clifile)
+		sf := kmlgen.Generate_cli_kml(clifile)
 		d.Add(sf)
 	}
 	k.WriteIndent(os.Stdout, "", "  ")

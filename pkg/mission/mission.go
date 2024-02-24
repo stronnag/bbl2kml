@@ -17,6 +17,7 @@ import (
 )
 
 import (
+	"cli"
 	"options"
 	"types"
 )
@@ -95,21 +96,10 @@ type MissionDetail struct {
 	} `xml:"distance,omitempty" json:"distance,omitempty"`
 }
 
-type FWApproach struct {
-	No      int8   `xml:"no,attr" json:"no"`
-	Index   int8   `xml:"index,attr" json:"index"`
-	Appalt  int32  `xml:"approachalt,attr" json:"appalt"`
-	Landalt int32  `xml:"landalt,attr" json:"landalt"`
-	Dirn1   int16  `xml:"landheading1,attr" json:"dirn1"`
-	Dirn2   int16  `xml:"landheading2,attr" json:"dirn2"`
-	Dref    string `xml:"approachdirection,attr" json:"dref"`
-	Aref    bool   `xml:"sealevelref,attr" json:"aref"`
-}
-
 type MissionSegment struct {
-	Metadata     MissionMWP    `xml:"meta" json:"meta"`
-	MissionItems []MissionItem `xml:"missionitem" json:"mission"`
-	FWApproach   FWApproach    `xml:"fwapproach" json:"fwapproach"`
+	Metadata     MissionMWP     `xml:"meta" json:"meta"`
+	MissionItems []MissionItem  `xml:"missionitem" json:"mission"`
+	FWApproach   cli.FWApproach `xml:"fwapproach" json:"fwapproach"`
 }
 
 type MultiMission struct {
@@ -120,13 +110,13 @@ type MultiMission struct {
 }
 
 type Mission struct {
-	XMLName      xml.Name      `xml:"mission"  json:"-"`
-	Version      Version       `xml:"version" json:"-"`
-	Comment      string        `xml:",comment" json:"-"`
-	Metadata     MissionMWP    `xml:"meta" json:"meta"`
-	MissionItems []MissionItem `xml:"missionitem" json:"mission"`
-	FWApproach   FWApproach    `xml:"fwapproach" json:"fwapproach"`
-	mission_file string        `xml:"-" json:"-"`
+	XMLName      xml.Name       `xml:"mission"  json:"-"`
+	Version      Version        `xml:"version" json:"-"`
+	Comment      string         `xml:",comment" json:"-"`
+	Metadata     MissionMWP     `xml:"meta" json:"meta"`
+	MissionItems []MissionItem  `xml:"missionitem" json:"mission"`
+	FWApproach   cli.FWApproach `xml:"fwapproach" json:"fwapproach"`
+	mission_file string         `xml:"-" json:"-"`
 }
 
 type PlaceMark struct {
@@ -804,7 +794,7 @@ func read_xml_mission(dat []byte) *MultiMission {
 	mis := []MissionItem{}
 	buf := bytes.NewBuffer(dat)
 	dec := xml.NewDecoder(buf)
-	fwa := []FWApproach{}
+	fwa := []cli.FWApproach{}
 
 	for {
 		t, _ := dec.Token()
@@ -826,7 +816,7 @@ func read_xml_mission(dat []byte) *MultiMission {
 				dec.DecodeElement(&mi, &se)
 				mis = append(mis, mi)
 			case "fwapproach":
-				var f FWApproach
+				var f cli.FWApproach
 				dec.DecodeElement(&f, &se)
 				fwa = append(fwa, f)
 			default:

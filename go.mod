@@ -25,6 +25,7 @@ require (
 )
 
 require (
+	cli v1.0.0 // indirect
 	github.com/bmizerany/perks v0.0.0-20230307044200-03f9df79da1e // indirect
 	github.com/deet/simpleline v0.0.0-20140919022041-9d297ff784a2 // indirect
 	github.com/eclipse/paho.mqtt.golang v1.4.3 // indirect
@@ -38,6 +39,7 @@ require (
 	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect
 	inav v1.0.0 // indirect
+	styles v1.0.0 // indirect
 )
 
 replace bbl v1.0.0 => ./pkg/bbl
@@ -67,3 +69,7 @@ replace ltmgen v1.0.0 => ./pkg/ltmgen
 replace kmlgen v1.0.0 => ./pkg/kmlgen
 
 replace sitlgen v1.0.0 => ./pkg/sitlgen
+
+replace styles v1.0.0 => ./pkg/styles
+
+replace cli v1.0.0 => ./pkg/cli
