@@ -509,8 +509,10 @@ func GenerateMissionOnly(outfn string) {
 			}
 		}
 		if len(options.Config.Cli) > 0 {
-			sf := Generate_cli_kml(options.Config.Cli)
-			d.Add(sf)
+			sfx := Generate_cli_kml(options.Config.Cli)
+			for _, s := range sfx {
+				d.Add(s)
+			}
 		}
 		write_kml(outfn, d)
 	}
@@ -554,8 +556,10 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 	}
 
 	if len(options.Config.Cli) > 0 {
-		sf := Generate_cli_kml(options.Config.Cli)
-		d.Add(sf)
+		sfx := Generate_cli_kml(options.Config.Cli)
+		for _, s := range sfx {
+			d.Add(s)
+		}
 	}
 
 	e := kml.ExtendedData(kml.Data(kml.Name("Log"), kml.Value(meta.LogName())))

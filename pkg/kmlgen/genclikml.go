@@ -39,8 +39,10 @@ func add_sh_circle(sh cli.SafeHome, i int) kml.Element {
 	return track
 }
 
-func Generate_cli_kml(fn string) kml.Element {
+func Generate_cli_kml(fn string) []kml.Element {
+	kmls := []kml.Element{}
 	sf := kml.Folder(kml.Name("Safehomes")).Add(kml.Open(true))
+	kmls = append(kmls, sf)
 	sha, fwa, gzone := cli.Read_clifile(fn)
 	if len(sha) > 0 {
 		sf.Add(styles.Get_safe_styles()...)
@@ -78,7 +80,7 @@ func Generate_cli_kml(fn string) kml.Element {
 	}
 	if len(gzone) > 0 {
 		gf := Gen_geozones(gzone)
-		sf.Add(gf)
+		kmls = append(kmls, gf)
 	}
-	return sf
+	return kmls
 }

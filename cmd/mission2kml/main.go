@@ -29,6 +29,7 @@ var (
 	dms     bool
 	homepos string
 	idx     int
+	outfile string
 )
 
 func getVersion() string {
@@ -77,8 +78,11 @@ Examples:
 	defs := os.Getenv("BBL2KML_OPTS")
 	dms = strings.Contains(defs, "-dms")
 
+	outfile = "-"
+
 	flag.BoolVar(&dms, "dms", dms, "Show positions as DMS (vice decimal degrees)")
 	flag.StringVar(&homepos, "home", homepos, "Use home location")
+	flag.StringVar(&outfile, "out", outfile, "Output file")
 	flag.IntVar(&idx, "mission-index", 0, "Mission Index")
 	flag.Parse()
 	files := flag.Args()
@@ -183,9 +187,19 @@ func generateKML(mfile string, idx int, dms bool, homep []float64, clifile strin
 	}
 
 	if clifile != "" {
-		sf := kmlgen.Generate_cli_kml(clifile)
-		d.Add(sf)
+		sfx := kmlgen.Generate_cli_kml(clifile)
+		for _, s := range sfx {
+			d.Add(s)
+		}
 	}
-	k.WriteIndent(os.Stdout, "", "  ")
+
+	var w io.WriteCloser
+	if outfile == "-" || outfile == "" {
+		w = os.Stdout
+	} else {
+		w, err = os.Create(outfile)
+		defer w.Close()
+	}
+	k.WriteIndent(w, "", "  ")
 	return err
 }
