@@ -35,6 +35,10 @@ func main() {
 			outms := kmlgen.GenKmlName(options.Config.Mission, options.Config.MissionIndex)
 			kmlgen.GenerateMissionOnly(outms)
 			show_output(outms)
+		} else if len(options.Config.Cli) > 0 {
+			outms := kmlgen.GenKmlName(options.Config.Cli, 0)
+			kmlgen.GenerateCliOnly(outms)
+			show_output(outms)
 		} else {
 			options.Usage()
 		}

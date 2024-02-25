@@ -479,6 +479,16 @@ func add_ground_track(rec types.LogRec) kml.Element {
 	return f
 }
 
+func GenerateCliOnly(outfn string) {
+	kname := filepath.Base(options.Config.Cli)
+	d := kml.Folder(kml.Name(kname)).Add(kml.Open(true))
+	sfx := Generate_cli_kml(options.Config.Cli)
+	for _, s := range sfx {
+		d.Add(s)
+	}
+	write_kml(outfn, d)
+}
+
 func GenerateMissionOnly(outfn string) {
 	kname := filepath.Base(options.Config.Mission)
 	d := kml.Folder(kml.Name(kname)).Add(kml.Open(true))
