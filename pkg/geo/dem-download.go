@@ -49,7 +49,6 @@ func unpack(fname string) {
 	}
 	defer gzfh.Close()
 	gzrd, err := gzip.NewReader(gzfh)
-	defer gzrd.Close()
 	n := len(fname) - 3
 	ofname := fname[:n]
 	outfh, err := os.Create(ofname)
@@ -58,6 +57,7 @@ func unpack(fname string) {
 	}
 	defer outfh.Close()
 	_, err = io.Copy(outfh, gzrd)
+	gzrd.Close()
 	if err == nil {
 		os.Remove(fname)
 	}
