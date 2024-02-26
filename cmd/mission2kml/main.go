@@ -32,7 +32,7 @@ var (
 	outfile string
 )
 
-func getVersion() string {
+func GetVersion() string {
 	return fmt.Sprintf("%s %s commit:%s", filepath.Base(os.Args[0]), GitTag, GitCommit)
 }
 
@@ -72,7 +72,7 @@ Examples:
 		flag.PrintDefaults()
 		fmt.Fprintln(os.Stderr)
 		fmt.Fprintln(os.Stderr, extra)
-		fmt.Fprintln(os.Stderr, getVersion())
+		fmt.Fprintln(os.Stderr, GetVersion())
 	}
 
 	defs := os.Getenv("BBL2KML_OPTS")
@@ -140,13 +140,20 @@ Examples:
 }
 
 func generateKML(mfile string, idx int, dms bool, homep []float64, clifile string) error {
-	var kname string
+	var sb strings.Builder
+	kname := ""
+	sb.Write([]byte(fmt.Sprintf("Generator: %s", GetVersion())))
 	if mfile != "" {
+		sb.Write([]byte(fmt.Sprintf(" mission: %s", filepath.Base(mfile))))
 		kname = filepath.Base(mfile)
-	} else {
-		kname = filepath.Base(clifile)
 	}
-	d := kml.Folder(kml.Name(kname)).Add(kml.Description(kname)).Add(kml.Open(true))
+	if clifile != "" {
+		sb.Write([]byte(fmt.Sprintf(" cli: %s", filepath.Base(clifile))))
+		if mfile == "" {
+			kname = filepath.Base(clifile)
+		}
+	}
+	d := kml.Folder(kml.Name(kname)).Add(kml.Description(sb.String())).Add(kml.Open(true))
 	k := kml.KML(d)
 	var err error
 

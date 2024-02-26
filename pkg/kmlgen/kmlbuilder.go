@@ -479,9 +479,10 @@ func add_ground_track(rec types.LogRec) kml.Element {
 	return f
 }
 
-func GenerateCliOnly(outfn string) {
+func GenerateCliOnly(outfn string, gv func() string) {
 	kname := filepath.Base(options.Config.Cli)
-	d := kml.Folder(kml.Name(kname)).Add(kml.Open(true))
+	desc := fmt.Sprintf("Generator: %s", gv())
+	d := kml.Folder(kml.Name(kname)).Add(kml.Description(desc)).Add(kml.Open(true))
 	sfx := Generate_cli_kml(options.Config.Cli)
 	for _, s := range sfx {
 		d.Add(s)
@@ -489,9 +490,10 @@ func GenerateCliOnly(outfn string) {
 	write_kml(outfn, d)
 }
 
-func GenerateMissionOnly(outfn string) {
+func GenerateMissionOnly(outfn string, gv func() string) {
 	kname := filepath.Base(options.Config.Mission)
-	d := kml.Folder(kml.Name(kname)).Add(kml.Open(true))
+	desc := fmt.Sprintf("Generator: %s", gv())
+	d := kml.Folder(kml.Name(kname)).Add(kml.Description(desc)).Add(kml.Open(true))
 	_, mm, err := mission.Read_Mission_File(options.Config.Mission)
 	if err == nil {
 		isviz := true
@@ -529,7 +531,7 @@ func GenerateMissionOnly(outfn string) {
 }
 
 func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
-	meta types.FlightMeta, smap types.MapRec) {
+	meta types.FlightMeta, smap types.MapRec, gv func() string) {
 
 	defviz := !(options.Config.Rssi && rec.Items[0].Rssi > 0)
 	ts0 := rec.Items[0].Utc
@@ -539,7 +541,8 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 		Add(generate_shared_styles(0)...).
 		Add(getPoints(rec, hpos, COL_STYLE_MODE, defviz)...)
 
-	d := kml.Folder(kml.Name(meta.LogName())).Add(kml.Open(true))
+	desc := fmt.Sprintf("Generator: %s", gv())
+	d := kml.Folder(kml.Name(meta.LogName())).Add(kml.Description(desc)).Add(kml.Open(true))
 	d.Add(add_ground_track(rec))
 
 	if len(options.Config.Mission) > 0 {

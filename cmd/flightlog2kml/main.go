@@ -23,21 +23,21 @@ import (
 var GitCommit = "local"
 var GitTag = "0.0.0"
 
-func getVersion() string {
+func GetVersion() string {
 	return fmt.Sprintf("%s %s commit:%s", filepath.Base(os.Args[0]), GitTag, GitCommit)
 }
 
 func main() {
 	dump_log := os.Getenv("DUMP_LOG") != ""
-	files, _ := options.ParseCLI(getVersion)
+	files, _ := options.ParseCLI(GetVersion)
 	if len(files) == 0 {
 		if len(options.Config.Mission) > 0 {
 			outms := kmlgen.GenKmlName(options.Config.Mission, options.Config.MissionIndex)
-			kmlgen.GenerateMissionOnly(outms)
+			kmlgen.GenerateMissionOnly(outms, GetVersion)
 			show_output(outms)
 		} else if len(options.Config.Cli) > 0 {
 			outms := kmlgen.GenKmlName(options.Config.Cli, 0)
-			kmlgen.GenerateCliOnly(outms)
+			kmlgen.GenerateCliOnly(outms, GetVersion)
 			show_output(outms)
 		} else {
 			options.Usage()
@@ -93,7 +93,7 @@ func main() {
 							}
 						} else if options.Config.Summary == false {
 							outfn = kmlgen.GenKmlName(b.Logname, b.Index)
-							kmlgen.GenerateKML(ls.H, ls.L, outfn, b, ls.M)
+							kmlgen.GenerateKML(ls.H, ls.L, outfn, b, ls.M, GetVersion)
 						}
 					}
 					for k, v := range ls.M {
