@@ -15,7 +15,7 @@ func add_sh_circle(sh cli.SafeHome, i int) kml.Element {
 	var points []kml.Coordinate
 
 	for j := 0; j < 360; j += 5 {
-		lat, lon := geo.Posit(sh.Lat, sh.Lon, float64(j), 200.0/1852.0)
+		lat, lon := geo.Posit(sh.Lat, sh.Lon, float64(j), cli.Safehome_distance)
 		points = append(points, kml.Coordinate{Lon: lon, Lat: lat, Alt: 0})
 	}
 	points = append(points, points[0])
@@ -49,9 +49,8 @@ func Generate_cli_kml(fn string) []kml.Element {
 		for i, sh := range sha {
 			name := fmt.Sprintf("Safehome %d", i)
 			shf := kml.Folder(kml.Name(name)).Add(kml.Description(name)).Add(kml.Visibility(true)).Add(add_sh_circle(sh, i))
-			sname := fmt.Sprintf("Point %d", i)
 			p := kml.Placemark(
-				kml.Name(sname),
+				kml.Name(name),
 				kml.StyleURL("#styleSAFEHOME"),
 				kml.Point(
 					kml.AltitudeMode(kml.AltitudeModeRelativeToGround),

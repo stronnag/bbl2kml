@@ -8,8 +8,6 @@ import (
 	"geo"
 )
 
-const LAYLEN = (350.0 / 1852.0)
-
 type FWApproach struct {
 	No      int8   `xml:"no,attr" json:"no"`
 	Index   int8   `xml:"index,attr" json:"index"`
@@ -120,14 +118,14 @@ func update_laylines(lat, lon float64, addAlt int32, lnd FWApproach) ([]kml.Coor
 		if lnd.Dirn1 < 0 {
 			lnd.Dirn1 = -lnd.Dirn1
 		} else {
-			la, lo = geo.Posit(lat, lon, float64(lnd.Dirn1), LAYLEN)
+			la, lo = geo.Posit(lat, lon, float64(lnd.Dirn1), Fwapproach_length)
 			p0 = kml.Coordinate{Lon: lo, Lat: la, Alt: float64(lnd.Appalt)}
 			lpath1 = append(lpath1, p0)
 		}
 		p0 = kml.Coordinate{Lon: lon, Lat: lat, Alt: float64(lnd.Landalt)}
 		lpath1 = append(lpath1, p0)
 		adir := (lnd.Dirn1 + 180) % 360
-		la, lo = geo.Posit(lat, lon, float64(adir), LAYLEN)
+		la, lo = geo.Posit(lat, lon, float64(adir), Fwapproach_length)
 		p0 = kml.Coordinate{Lon: lo, Lat: la, Alt: float64(lnd.Appalt)}
 		lpath1 = append(lpath1, p0)
 		apath1 = add_approach(lnd.Dref, int(lnd.Dirn1), lpath1)
@@ -137,14 +135,14 @@ func update_laylines(lat, lon float64, addAlt int32, lnd FWApproach) ([]kml.Coor
 		if lnd.Dirn2 < 0 {
 			lnd.Dirn2 = -lnd.Dirn2
 		} else {
-			la, lo = geo.Posit(lat, lon, float64(lnd.Dirn2), LAYLEN)
+			la, lo = geo.Posit(lat, lon, float64(lnd.Dirn2), Fwapproach_length)
 			p0 = kml.Coordinate{Lon: lo, Lat: la, Alt: float64(lnd.Appalt)}
 			lpath2 = append(lpath2, p0)
 		}
 		p0 = kml.Coordinate{Lon: lon, Lat: lat, Alt: float64(lnd.Landalt)}
 		lpath2 = append(lpath2, p0)
 		adir := (lnd.Dirn2 + 180) % 360
-		la, lo = geo.Posit(lat, lon, float64(adir), LAYLEN)
+		la, lo = geo.Posit(lat, lon, float64(adir), Fwapproach_length)
 		p0 = kml.Coordinate{Lon: lo, Lat: la, Alt: float64(lnd.Appalt)}
 		lpath2 = append(lpath2, p0)
 		apath2 = add_approach(lnd.Dref, int(lnd.Dirn2), lpath2)
@@ -168,12 +166,12 @@ func add_approach(dref string, dirn int, lpath []kml.Coordinate) []kml.Coordinat
 		iap = 2
 	}
 
-	lax, lox := geo.Posit(lpath[iap].Lat, lpath[iap].Lon, float64(xdir), LAYLEN/3.0)
+	lax, lox := geo.Posit(lpath[iap].Lat, lpath[iap].Lon, float64(xdir), Fwapproach_length/3.0)
 	apath = append(apath, lpath[iap])
 	apath = append(apath, kml.Coordinate{Lon: lox, Lat: lax, Alt: lpath[iap].Alt})
 	apath = append(apath, lpath[ilp])
 	if len(lpath) == 3 {
-		lax, lox = geo.Posit(lpath[0].Lat, lpath[0].Lon, float64(xdir), LAYLEN/3.0)
+		lax, lox = geo.Posit(lpath[0].Lat, lpath[0].Lon, float64(xdir), Fwapproach_length/3.0)
 		apath = append(apath, kml.Coordinate{Lon: lox, Lat: lax, Alt: lpath[iap].Alt})
 		apath = append(apath, lpath[0])
 	}

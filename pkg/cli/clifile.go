@@ -39,6 +39,11 @@ const (
 	TYPE_INC = 1
 )
 
+var (
+	Safehome_distance float64 = (200.0 / 1852.0)
+	Fwapproach_length float64 = (350.0 / 1852.0)
+)
+
 func (g *GeoZone) To_string() string {
 	var s1 string
 	s := fmt.Sprintf("geozone %d %d %d %d %d %d\n", g.Zid, g.Gtype, g.Shape, g.Minalt, g.Maxalt, g.Action)
@@ -148,6 +153,22 @@ func Read_clifile(fn string) ([]SafeHome, []FWApproach, []GeoZone) {
 								fw.Dirn2 = int16(iv)
 								fw.Aref = parts[7] == "1"
 								fwa = append(fwa, fw)
+							}
+						}
+					case "set":
+						// nav_fw_land_approach_length safehome_max_distancee
+						if len(parts) == 4 {
+							switch parts[1] {
+							case "nav_fw_land_approach_length":
+								fv, _ := strconv.ParseFloat(parts[3], 64)
+								if fv != 0 {
+									Fwapproach_length = fv / 100.0 / 1852.0
+								}
+							case "safehome_max_distance":
+								fv, _ := strconv.ParseFloat(parts[3], 64)
+								if fv != 0 {
+									Safehome_distance = fv / 100.0 / 1852.0
+								}
 							}
 						}
 					}
