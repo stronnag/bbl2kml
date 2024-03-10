@@ -188,7 +188,7 @@ func getPoints(rec types.LogRec, hpos types.HomeRec, colmode uint8, viz bool) []
 		et := float64(r.Stamp-startt) / 1e6
 
 		var sb strings.Builder
-		sb.Write([]byte(fmt.Sprintf("<h3>Track Point %d of %d (%.3fs)</h3>", np, tpts, et)))
+		sb.Write([]byte(fmt.Sprintf("<h3>Track Point %d of %d (%.3fs)</h3>", np+1, tpts, et)))
 
 		sb.Write([]byte(`<table style="border="1px" silver; border="1" silver; rules="all";;">`))
 
