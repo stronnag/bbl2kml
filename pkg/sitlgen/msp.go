@@ -449,7 +449,7 @@ func (m *MSPSerial) init(nchan chan RCInfo, schan chan byte, conf SimMeta) {
 					if v6 {
 						bystr++
 					}
-					if bystr != 0 {
+					if bystr == 2 {
 						m.bypass = true
 					}
 					if options.Config.Verbose > 0 {
