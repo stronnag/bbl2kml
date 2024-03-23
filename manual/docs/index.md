@@ -237,7 +237,9 @@ For such logs (log2mission 1.0.17+, INAV BBL 7.1.0+):
 * `-start-offset`, `-end-offset`, `-epsilon`, `-max-wp`, `-mode-filter`, `-split-time` have no effect and are ignored.
 * You should probably use a lower `-interval` (for example 10).
 
-    $ log2mission
+### Usage
+
+	$ log2mission
     Usage of log2mission [options] file...
       -end-offset int
         	End Offset (seconds) (default -30)
