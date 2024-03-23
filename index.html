@@ -381,6 +381,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#epsilon-tuning" class="md-nav__link">
     <span class="md-ellipsis">
       epsilon tuning
@@ -671,6 +680,15 @@
   
     <nav class="md-nav" aria-label="log2mission">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#epsilon-tuning" class="md-nav__link">
@@ -1001,6 +1019,13 @@ $ fl2mqtt -broker wss://test.mosquitto.org:8081/fl2mqtt/fl2mtqq/test -mission si
 <p><a href="https://github.com/stronnag/mwptools">mwp</a> can also process / display the BulletGCSS MQTT protocol, using a similar <a href="https://github.com/stronnag/mwptools/wiki/mqtt---bulletgcss-telemetry">URI definition</a>.</p>
 <h2 id="log2mission">log2mission<a class="headerlink" href="#log2mission" title="Permanent link">#</a></h2>
 <p><code>log2mission</code> will create an inav XML mission file from a supported flight log (Blackbox, OpenTX, BulletGCSS). The mission will not exceed the inav maximum of 120 mission points (or configurated maximum).</p>
+<p>From log2mission 1.0.17 and Blackbox logs from INAV 7.1.0 and later, the active waypoint number is stored in the log and the majority of filtering options are ignored.</p>
+<p>For such logs (log2mission 1.0.17+, INAV BBL 7.1.0+):</p>
+<ul>
+<li><code>-start-offset</code>, <code>-end-offset</code>, <code>-epsilon</code>, <code>-max-wp</code>, <code>-mode-filter</code>, <code>-split-time</code> have no effect and are ignored.</li>
+<li>You should probably use a lower <code>-interval</code> (for example 10).</li>
+</ul>
+<h3 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">#</a></h3>
 <pre><code>$ log2mission
 Usage of log2mission [options] file...
   -end-offset int

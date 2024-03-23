@@ -9,7 +9,7 @@ authors:
 
 A suite of tools to generate beautifully annotated KML/KMZ files (and other data) from **{{ inav }}** blackbox logs, OpenTX log files (inav S.Port telemetry, some support for OpenTX logs from Ardupilot), BulletGCSS and Aurduplot `.bin` logs.
 
-* [flightlog2kml](#flightlog2kml) - Generates KML/Z file(s) from Blackbox log(s), OpenTX (OTX) and Bullet GCSS logs (with optional mission file and CLI file for display of mission / safehomes).
+* [flightlog2kml](#flightlog2kml) - Generates KML/Z file(s) from Blackbox log(s), OpenTX (OTX) and Bullet GCSS logs (with optional mission file and CLI file for display of `mission` / `fwapproach` / `safehome` / `geozone`).
 * [fl2mqtt](#fl2mqtt) - Generates MQTT data to stimulate the on-line Ground Control Station [BulletGCSS](https://bulletgcss.fpvsampa.com/)
 * fl2ltm - If `fl2mqtt` is installed (typically by hard or soft link) as `fl2ltm` it generates LTM  (inav's Lightweight Telemetry). This is primarily for use by {{ mwp }} as a unified replay tool for Blackbox, OpenTx, BulletGCSS and Aurduplot `.bin` logs.
 * [log2mission](#log2mission) - Converts a flight log (Blackbox, OpenTx, BulletGCSS, AP) into a valid inav mission. A number of filters may be applied (time, flight mode).
@@ -149,6 +149,13 @@ Note: These images are rather old, it looks rather better now.
 #### RSSI
 
 ![Example 4](https://github.com/stronnag/mwptools/wiki/images/inav-tracer-rssi.jpg)
+
+#### Mission and CLI
+
+![Example 5](images/Safehome_ring_3d.png)
+
+
+![Example 6](images/fwland-3D.png)
 
 ### Using OpenTX logs
 
