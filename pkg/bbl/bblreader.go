@@ -369,8 +369,8 @@ func get_rec_value(r []string, key string) (string, bool) {
 	return s, ok
 }
 
-func dataCapability() uint8 {
-	var ret uint8 = 0
+func dataCapability() uint16 {
+	var ret uint16 = 0
 	if _, ok := hdrs["amperage (A)"]; ok {
 		ret |= types.CAP_AMPS
 	}
@@ -389,6 +389,9 @@ func dataCapability() uint8 {
 		ret |= types.CAP_ALTITUDE
 	}
 
+	if _, ok := hdrs["activeWpNumber"]; ok {
+		ret |= types.CAP_WPNO
+	}
 	return ret
 }
 

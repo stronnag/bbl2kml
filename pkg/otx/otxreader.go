@@ -204,8 +204,8 @@ func get_rec_value(r []string, key string) (string, string, bool) {
 	return s, v.u, ok
 }
 
-func dataCapability() uint8 {
-	var ret uint8 = 0
+func dataCapability() uint16 {
+	var ret uint16 = 0
 	var ok bool
 	if _, ok = hdrs["Curr"]; ok {
 		ret |= types.CAP_AMPS

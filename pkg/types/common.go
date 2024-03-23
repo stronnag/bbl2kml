@@ -33,6 +33,7 @@ const (
 	CAP_ENERGYC
 	CAP_SPEED
 	CAP_ALTITUDE
+	CAP_WPNO
 )
 
 const (
@@ -103,7 +104,7 @@ type LogItem struct {
 }
 
 type LogRec struct {
-	Cap   uint8
+	Cap   uint16
 	Items []LogItem
 }
 

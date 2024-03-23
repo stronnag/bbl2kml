@@ -121,8 +121,8 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 	return metas, err
 }
 
-func parse_bullet(line string, b *types.LogItem) uint8 {
-	cap := uint8(0)
+func parse_bullet(line string, b *types.LogItem) uint16 {
+	cap := uint16(0)
 	if parts := strings.Split(line, "|"); len(parts) == 2 {
 		lasttm, _ := strconv.ParseInt(parts[0], 10, 64)
 		b.Utc = time.Unix(lasttm/1000, 1000*1000*(lasttm%1000))
