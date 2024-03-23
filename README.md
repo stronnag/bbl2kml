@@ -60,3 +60,5 @@ The project includes the following:
 * `fl2sitl` : Replay BBL via the INAV SITL ([documentation](https://github.com/stronnag/bbl2kml/wiki/fl2sitl)). : `fl2sitl` can also provide a minimal simulator (no BBL needed) to enable the full use of the INAV SITL in the INAV configurator.
 * `log2mission` : Generate an INAV mission file from a flight log
 * `mission2kml` : General KML/Z from an INAV mission file (and optional CLI `diff` containing Safehome / FW Land data / (geozones))
+
+For details in the [User Guide & Installation Instructions](https://stronnag.github.io/bbl2kml/).
