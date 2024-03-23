@@ -28,6 +28,14 @@ func generate_filename(m types.FlightMeta) string {
 }
 
 func Generate_mission(seg types.LogSegment, meta types.FlightMeta) {
+	if (seg.L.Cap & types.CAP_WPNO) == types.CAP_WPNO {
+		generate_from_active(seg, meta)
+	} else {
+		generate_from_path(seg, meta)
+	}
+}
+
+func generate_from_path(seg types.LogSegment, meta types.FlightMeta) {
 	points := []simpleline.Point{}
 	var b types.LogItem
 	var st, et time.Time
@@ -101,6 +109,18 @@ func Generate_mission(seg types.LogSegment, meta types.FlightMeta) {
 		}
 	}
 
+	generate_log_mission(res, generate_filename(meta), needrth)
+	fmt.Printf("Mission  : %d points, epsilon: %.6f", nmi, ep)
+	if ntry > 0 {
+		fmt.Printf(" (reprocess: %d, epsilon: %.6f)", ntry, ep)
+	}
+	fmt.Println()
+	fmt.Println("Note: Increase epsilon to decrease the number of mission points,")
+	fmt.Println("      decrease epsilon to increase the number of mission points.")
+
+}
+
+func generate_log_mission(res []simpleline.Point, mfn string, needrth bool) {
 	var ms mission.Mission
 	for i, p := range res {
 		v := p.Vector()
@@ -111,12 +131,32 @@ func Generate_mission(seg types.LogSegment, meta types.FlightMeta) {
 		ms.MissionItems = append(ms.MissionItems,
 			mission.MissionItem{No: len(res), Lat: 0.0, Lon: 0.0, Alt: int32(0.0), Action: "RTH"})
 	}
-	fmt.Printf("Mission  : %d points, epsilon: %.6f", nmi, ep)
-	if ntry > 0 {
-		fmt.Printf(" (reprocess: %d, epsilon: %.6f)", ntry, ep)
+	ms.To_MWXML(mfn)
+}
+
+func generate_from_active(seg types.LogSegment, meta types.FlightMeta) {
+	points := []simpleline.Point{}
+	navm := false
+	lnavm := false
+	lwpno := uint8(0)
+
+	for _, b := range seg.L.Items {
+		navm = b.Fmode == types.FM_WP
+		if navm != lnavm {
+			if lnavm {
+				pt := simpleline.Point3d{X: b.Lon, Y: b.Lat, Z: b.Alt}
+				points = append(points, &pt)
+			}
+		}
+		if lwpno != b.ActiveWP {
+			if lwpno != 0 {
+				pt := simpleline.Point3d{X: b.Lon, Y: b.Lat, Z: b.Alt}
+				points = append(points, &pt)
+			}
+		}
+		lnavm = navm
+		lwpno = b.ActiveWP
 	}
-	fmt.Println()
-	fmt.Println("Note: Increase epsilon to decrease the number of mission points,")
-	fmt.Println("      decrease epsilon to increase the number of mission points.")
-	ms.To_MWXML(generate_filename(meta))
+	generate_log_mission(points, generate_filename(meta), false)
+	fmt.Printf("Mission  : %d active points\n", len(points))
 }

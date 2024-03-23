@@ -2,6 +2,7 @@ package mission
 
 import (
 	"archive/zip"
+	"bufio"
 	"bytes"
 	"encoding/csv"
 	"encoding/json"
@@ -99,7 +100,7 @@ type MissionDetail struct {
 type MissionSegment struct {
 	Metadata     MissionMWP     `xml:"meta" json:"meta"`
 	MissionItems []MissionItem  `xml:"missionitem" json:"mission"`
-	FWApproach   cli.FWApproach `xml:"fwapproach" json:"fwapproach"`
+	FWApproach   cli.FWApproach `xml:"fwapproach,omitempty" json:"fwapproach"`
 }
 
 type MultiMission struct {
@@ -115,7 +116,7 @@ type Mission struct {
 	Comment      string         `xml:",comment" json:"-"`
 	Metadata     MissionMWP     `xml:"meta" json:"meta"`
 	MissionItems []MissionItem  `xml:"missionitem" json:"mission"`
-	FWApproach   cli.FWApproach `xml:"fwapproach" json:"fwapproach"`
+	FWApproach   cli.FWApproach `xml:"fwapproach,omitempty" json:"fwapproach"`
 	mission_file string         `xml:"-" json:"-"`
 }
 
@@ -235,15 +236,21 @@ func (m *Mission) Dump(dms bool, homep ...float64) {
 }
 
 func (m *Mission) To_MWXML(fname string) {
-	m.Comment = "bbl2kml"
-	m.Metadata.Generator = "impload"
+	m.Comment = "flightlog2kml"
+	m.Metadata.Generator = "flightlog2kml"
 	m.Metadata.Stamp = time.Now().Format(time.RFC3339)
 	w, err := os.Create(fname)
 	if err == nil {
 		defer w.Close()
 		xs, _ := xml.MarshalIndent(m, "", " ")
 		fmt.Fprint(w, xml.Header)
-		fmt.Fprintln(w, string(xs))
+		scanner := bufio.NewScanner(strings.NewReader(string(xs)))
+		for scanner.Scan() {
+			l := scanner.Text()
+			if !strings.Contains(l, "fwapproach") {
+				fmt.Fprintln(w, l)
+			}
+		}
 	}
 }
 
