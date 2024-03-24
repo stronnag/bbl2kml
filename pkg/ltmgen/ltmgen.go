@@ -336,11 +336,14 @@ func LTMGen(ch chan interface{}, meta types.FlightMeta) {
 			if b.Fmode == types.FM_WP && ms != nil {
 				act := 0
 				tgt, act = inav.WP_state(ms, b, tgt)
+				//				fmt.Fprintf(os.Stderr, "WP N frame %v %v %v %v\n", xtgt, tgt, xnvs, b.NavMode)
 				if tgt != xtgt || b.NavMode != xnvs {
 					l := newLTM('N')
 					l.nframe(b, byte(act), byte(tgt))
 					s.Write(l.msg)
 				}
+				xnvs = b.NavMode
+				xtgt = tgt
 			}
 
 			if b.Utc.After(g1t) {
