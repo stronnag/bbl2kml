@@ -28,14 +28,22 @@ func generate_filename(m types.FlightMeta) string {
 }
 
 func Generate_mission(seg types.LogSegment, meta types.FlightMeta) {
-	if (seg.L.Cap & types.CAP_WPNO) == types.CAP_WPNO {
+	mfilter := byte(0)
+	if strings.Contains(options.Config.Modefilter, "cruise") {
+		mfilter |= 1
+	}
+	if strings.Contains(options.Config.Modefilter, "wp") {
+		mfilter |= 2
+	}
+
+	if (mfilter == 0 && seg.L.Cap&types.CAP_WPNO) == types.CAP_WPNO {
 		generate_from_active(seg, meta)
 	} else {
-		generate_from_path(seg, meta)
+		generate_from_path(seg, meta, mfilter)
 	}
 }
 
-func generate_from_path(seg types.LogSegment, meta types.FlightMeta) {
+func generate_from_path(seg types.LogSegment, meta types.FlightMeta, mfilter byte) {
 	points := []simpleline.Point{}
 	var b types.LogItem
 	var st, et time.Time
@@ -50,14 +58,6 @@ func generate_from_path(seg types.LogSegment, meta types.FlightMeta) {
 	} else if options.Config.EndOff > 0 {
 		diff := (time.Duration(options.Config.EndOff) * time.Second)
 		et = seg.L.Items[0].Utc.Add(diff)
-	}
-
-	mfilter := byte(0)
-	if strings.Contains(options.Config.Modefilter, "cruise") {
-		mfilter |= 1
-	}
-	if strings.Contains(options.Config.Modefilter, "wp") {
-		mfilter |= 2
 	}
 
 	for _, b = range seg.L.Items {
