@@ -690,7 +690,7 @@ func (lg *BBLOG) Reader(meta types.FlightMeta, ch chan interface{}) (types.LogSe
 	var rec types.LogRec
 	var froboff time.Duration
 
-	frobing := geo.Getfrobnication()
+	fb := geo.Getfrobnication()
 
 	r := csv.NewReader(out)
 	r.TrimLeadingSpace = true
@@ -744,9 +744,9 @@ func (lg *BBLOG) Reader(meta types.FlightMeta, ch chan interface{}) (types.LogSe
 		if !have_origin {
 			if b.Fix > 1 && b.Numsat > 5 {
 				have_origin = true
-				if frobing {
-					geo.Frobnicate_set(b.Lat, b.Lon, b.GAlt)
-					b.Lat, b.Lon, b.GAlt = geo.Frobnicate_move(b.Lat, b.Lon, b.GAlt)
+				if fb != nil {
+					fb.set_origin(b.Lat, b.Lon, b.GAlt)
+					b.Lat, b.Lon, b.GAlt = fb.relocate(b.Lat, b.Lon, b.GAlt)
 					ttmp := time.Now().Add(time.Hour * 24 * 42)
 					froboff = ttmp.Sub(b.Utc)
 					b.Utc = ttmp
@@ -773,8 +773,8 @@ func (lg *BBLOG) Reader(meta types.FlightMeta, ch chan interface{}) (types.LogSe
 					homes.SafeLon = hlon
 					homes.Flags |= types.HOME_SAFE
 				}
-				if frobing && (homes.Flags&types.HOME_SAFE != 0) {
-					homes.SafeLat, homes.SafeLon, _ = geo.Frobnicate_move(homes.SafeLat, homes.SafeLon, b.GAlt)
+				if fb != nil && (homes.Flags&types.HOME_SAFE != 0) {
+					homes.SafeLat, homes.SafeLon, _ = fb.relocate(homes.SafeLat, homes.SafeLon, b.GAlt)
 				}
 				if ch != nil {
 					ch <- homes
@@ -793,9 +793,9 @@ func (lg *BBLOG) Reader(meta types.FlightMeta, ch chan interface{}) (types.LogSe
 					if !basetime.IsZero() {
 						b.Utc = basetime.Add(time.Duration(us) * time.Microsecond)
 					}
-					if frobing {
+					if fb != nil {
 						b.Utc = b.Utc.Add(froboff)
-						b.Lat, b.Lon, _ = geo.Frobnicate_move(b.Lat, b.Lon, 0)
+						b.Lat, b.Lon, _ = fb.relocate(b.Lat, b.Lon, 0)
 					}
 
 					c, d = geo.Csedist(homes.HomeLat, homes.HomeLon, b.Lat, b.Lon)

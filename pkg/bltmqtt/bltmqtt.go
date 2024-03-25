@@ -407,9 +407,6 @@ func MQTTGen(s types.LogSegment, meta types.FlightMeta) {
 		if err == nil {
 			var sb strings.Builder
 			for k, mi := range ms.MissionItems {
-				if geo.Getfrobnication() && mi.Is_GeoPoint() {
-					ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, _ = geo.Frobnicate_move(ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, 0)
-				}
 				act, ok := mission.ActionMap[mi.Action]
 				if !ok {
 					act = 1

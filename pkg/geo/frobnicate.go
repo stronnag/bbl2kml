@@ -9,15 +9,19 @@ import (
 	"options"
 )
 
+type Point struct {
+	lat float64
+	lon float64
+}
+
+type Frob struct {
+	orig  Point
+	reloc Point
+	ralt  float64
+}
+
 var (
-	jmp_dist  float64 = -1.0
-	jmp_angle float64 = 0.0
-	jmp_up    float64 = 0.0
-	jlat      float64
-	jlon      float64
-	frobinit  bool = false
-	dlat      float64
-	dlon      float64
+	fb *Frob
 )
 
 func Msplit(s string, separators []rune) []string {
@@ -32,43 +36,47 @@ func Msplit(s string, separators []rune) []string {
 	return strings.FieldsFunc(s, f)
 }
 
-func Frobnicate_init() bool {
+func Frobnicate_init() *Frob {
+	fb = nil
 	if len(options.Config.Rebase) != 0 {
 		parts := Msplit(options.Config.Rebase, []rune{'/', ':', ';', ' ', ','})
 		if len(parts) > 1 {
-			jlat, _ = strconv.ParseFloat(parts[0], 64)
-			jlon, _ = strconv.ParseFloat(parts[1], 64)
+			jmp_up := 0.0
+			jlat, _ := strconv.ParseFloat(parts[0], 64)
+			jlon, _ := strconv.ParseFloat(parts[1], 64)
 			if len(parts) == 3 {
 				jmp_up, _ = strconv.ParseFloat(parts[2], 64)
 			} else {
 				d := InitDem("")
 				jmp_up, _ = d.Get_Elevation(jlat, jlon)
 			}
-			frobinit = true
+			fb = &Frob{
+				Point{0.0, 0.0},
+				Point{jlat, jlon},
+				jmp_up,
+			}
+			return fb
 		}
+		return nil
 	}
-	return frobinit
+	return nil
 }
 
-func Frobnicate_set(lat float64, lon float64, alt float64) (float64, float64) {
-	jmp_angle, jmp_dist = Csedist(lat, lon, jlat, jlon)
-	dlat = jlat - lat
-	dlon = jlon - lon
-	if alt != 0 {
-		jmp_up -= alt
+func (f *Frob) set_origin(olat, olon, oalt float64) {
+	f.orig.lat = olat
+	f.orig.lon = olon
+	if oalt != 0 {
+		f.ralt -= oalt
 	}
-	return jmp_angle, jmp_dist
 }
 
-func Frobnicate_move(lat float64, lon float64, alt float64) (float64, float64, float64) {
-	var nlat, nlon, nalt float64
-	//	nlat, nlon = Posit(lat, lon, jmp_angle, jmp_dist, false)
-	nlat = lat + dlat
-	nlon = lon + dlon
-	nalt = alt + jmp_up
-	return nlat, nlon, nalt
+func (f *Frob) relocate(lat, lon, alt float64) (float64, float64, float64) {
+	c, d := Csedist(f.orig.lat, f.orig.lon, lat, lon)
+	xlat, xlon := Posit(f.reloc.lat, f.reloc.lon, c, d)
+	xalt := alt + f.ralt
+	return xlat, xlon, xalt
 }
 
-func Getfrobnication() bool {
-	return frobinit
+func Getfrobnication() *Frob {
+	return fb
 }

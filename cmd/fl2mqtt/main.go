@@ -36,6 +36,7 @@ func main() {
 	}
 
 	geo.Frobnicate_init()
+
 	var lfr types.FlightLog
 	for _, fn := range files {
 		ftype := types.EvinceFileType(fn)
