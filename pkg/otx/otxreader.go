@@ -591,7 +591,7 @@ func (lg *OTXLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegm
 	rec := types.LogRec{}
 	var froboff time.Duration
 
-	frobing := geo.Getfrobnication()
+	fb := geo.Getfrobnication()
 
 	fh, err := os.Open(lg.name)
 	if err != nil {
@@ -656,9 +656,9 @@ func (lg *OTXLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegm
 							}
 						}
 
-						if frobing {
-							geo.Frobnicate_set(homes.HomeLat, homes.HomeLon, b.GAlt)
-							homes.HomeLat, homes.HomeLon, homes.HomeAlt = geo.Frobnicate_move(homes.HomeLat, homes.HomeLon, homes.HomeAlt)
+						if fb != nil {
+							fb.Set_origin(homes.HomeLat, homes.HomeLon, b.GAlt)
+							homes.HomeLat, homes.HomeLon, homes.HomeAlt = fb.Relocate(homes.HomeLat, homes.HomeLon, homes.HomeAlt)
 							ttmp := time.Now().Add(time.Hour * 24 * 42)
 							froboff = ttmp.Sub(b.Utc)
 							b.Utc = ttmp
@@ -670,9 +670,9 @@ func (lg *OTXLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegm
 						}
 					}
 				} else {
-					if frobing {
+					if fb != nil {
 						b.Utc = b.Utc.Add(froboff)
-						b.Lat, b.Lon, _ = geo.Frobnicate_move(b.Lat, b.Lon, 0)
+						b.Lat, b.Lon, _ = fb.Relocate(b.Lat, b.Lon, 0)
 					}
 				}
 

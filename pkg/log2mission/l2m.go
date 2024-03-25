@@ -2,6 +2,7 @@ package log2mission
 
 import (
 	"fmt"
+	"geo"
 	"github.com/deet/simpleline"
 	"log"
 	"os"
@@ -36,7 +37,7 @@ func Generate_mission(seg types.LogSegment, meta types.FlightMeta) {
 		mfilter |= 2
 	}
 
-	if (mfilter == 0 && seg.L.Cap&types.CAP_WPNO) == types.CAP_WPNO {
+	if (mfilter == 0) && (seg.L.Cap&types.CAP_WPNO) == types.CAP_WPNO {
 		generate_from_active(seg, meta)
 	} else {
 		generate_from_path(seg, meta, mfilter)
@@ -109,7 +110,7 @@ func generate_from_path(seg types.LogSegment, meta types.FlightMeta, mfilter byt
 		}
 	}
 
-	generate_log_mission(res, generate_filename(meta), needrth)
+	generate_log_mission(res, generate_filename(meta), needrth, seg.H)
 	fmt.Printf("Mission  : %d points, epsilon: %.6f", nmi, ep)
 	if ntry > 0 {
 		fmt.Printf(" (reprocess: %d, epsilon: %.6f)", ntry, ep)
@@ -120,11 +121,24 @@ func generate_from_path(seg types.LogSegment, meta types.FlightMeta, mfilter byt
 
 }
 
-func generate_log_mission(res []simpleline.Point, mfn string, needrth bool) {
+func generate_log_mission(res []simpleline.Point, mfn string, needrth bool, homes types.HomeRec) {
 	var ms mission.Mission
+	fb := geo.Getfrobnication()
+	if fb != nil {
+		fb.Set_origin(homes.HomeLat, homes.HomeLon, homes.HomeAlt)
+		ms.Metadata.Homey = homes.HomeLat
+		ms.Metadata.Homex = homes.HomeLon
+	}
+
 	for i, p := range res {
 		v := p.Vector()
-		mi := mission.MissionItem{No: i + 1, Lat: v[1], Lon: v[0], Alt: int32(v[2]), Action: "WAYPOINT"}
+		la := v[1]
+		lo := v[0]
+		alt := v[2]
+		if fb != nil {
+			la, lo, alt = fb.Relocate(la, lo, alt)
+		}
+		mi := mission.MissionItem{No: i + 1, Lat: la, Lon: lo, Alt: int32(alt), Action: "WAYPOINT"}
 		ms.MissionItems = append(ms.MissionItems, mi)
 	}
 	if needrth {
@@ -157,6 +171,6 @@ func generate_from_active(seg types.LogSegment, meta types.FlightMeta) {
 		lnavm = navm
 		lwpno = b.ActiveWP
 	}
-	generate_log_mission(points, generate_filename(meta), false)
+	generate_log_mission(points, generate_filename(meta), false, seg.H)
 	fmt.Printf("Mission  : %d active points\n", len(points))
 }

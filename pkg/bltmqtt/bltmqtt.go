@@ -16,7 +16,7 @@ import (
 )
 
 import (
-	"geo"
+	//	"geo"
 	"inav"
 	"mission"
 	"options"

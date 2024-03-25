@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"geo"
 	"io"
 	"io/ioutil"
 	"log"
@@ -321,14 +320,6 @@ func NewMultiMission(mis []MissionItem) *MultiMission {
 		}
 	}
 	return mm
-}
-
-func (mm *MultiMission) fixup() {
-	fb := geo.Getfrobnication
-	if fb != nil {
-		for _, ms := range mm.Segment {
-		}
-	}
 }
 
 func read_kml(dat []byte) *MultiMission {

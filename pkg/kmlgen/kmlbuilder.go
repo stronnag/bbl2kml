@@ -497,19 +497,24 @@ func GenerateMissionOnly(outfn string, gv func() string) {
 	_, mm, err := mission.Read_Mission_File(options.Config.Mission)
 	if err == nil {
 		isviz := true
+		fb := geo.Getfrobnication()
 		for nm, _ := range mm.Segment {
 			nmx := nm + 1
 			if options.Config.MissionIndex == 0 || nmx == options.Config.MissionIndex {
 				ms := mm.To_mission(nmx)
-				if geo.Getfrobnication() {
+				if fb != nil {
+					if ms.Metadata.Homey != 0 && ms.Metadata.Homex != 0 {
+						fb.Set_origin(ms.Metadata.Homey, ms.Metadata.Homex, 0)
+						ms.Metadata.Homey, ms.Metadata.Homex, _ = fb.Get_rebase()
+						ms.Metadata.Cy, ms.Metadata.Cx, _ = fb.Relocate(ms.Metadata.Cy, ms.Metadata.Cx, 0)
+					}
 					for k, mi := range ms.MissionItems {
 						if mi.Is_GeoPoint() {
-							ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, _ = geo.Frobnicate_move(ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, 0)
+							ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, _ = fb.Relocate(ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, 0)
 						}
 					}
 				}
 				var hpos types.HomeRec
-
 				if ms.Metadata.Homey != 0 && ms.Metadata.Homex != 0 {
 					hpos.HomeLat = ms.Metadata.Homey
 					hpos.HomeLon = ms.Metadata.Homex
@@ -549,14 +554,20 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 		_, mm, err := mission.Read_Mission_File(options.Config.Mission)
 		if err == nil {
 			isviz := true
+			fb := geo.Getfrobnication()
 			for nm, _ := range mm.Segment {
 				nmx := nm + 1
 				if options.Config.MissionIndex == 0 || nmx == options.Config.MissionIndex {
 					ms := mm.To_mission(nmx)
-					if geo.Getfrobnication() {
+					if fb != nil {
+						if ms.Metadata.Homey != 0 && ms.Metadata.Homex != 0 {
+							fb.Set_origin(ms.Metadata.Homey, ms.Metadata.Homex, 0)
+							ms.Metadata.Homey, ms.Metadata.Homex, _ = fb.Get_rebase()
+							ms.Metadata.Cy, ms.Metadata.Cx, _ = fb.Relocate(ms.Metadata.Cy, ms.Metadata.Cx, 0)
+						}
 						for k, mi := range ms.MissionItems {
 							if mi.Is_GeoPoint() {
-								ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, _ = geo.Frobnicate_move(ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, 0)
+								ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, _ = fb.Relocate(ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, 0)
 							}
 						}
 					}

@@ -18,7 +18,7 @@ import (
 )
 
 import (
-	"geo"
+	//	"geo"
 	"options"
 	"types"
 )
@@ -334,14 +334,15 @@ func (x *SitlGen) Faker() {
 
 	var sim SimData
 	sim.Acc_z = 1.0
-	if geo.Frobnicate_init() {
-		geo.Frobnicate_set(0.0, 0.0, 0)
-		la, lo, alt := geo.Frobnicate_move(0.0, 0.0, 0.0)
-		sim.Lat = float32(la)
-		sim.Lon = float32(lo)
-		sim.Alt = float32(alt)
-	}
-
+	/*
+		if geo.Frobnicate_init() {
+			geo.Frobnicate_set(0.0, 0.0, 0)
+			la, lo, alt := geo.Frobnicate_move(0.0, 0.0, 0.0)
+			sim.Lat = float32(la)
+			sim.Lon = float32(lo)
+			sim.Alt = float32(alt)
+		}
+	*/
 	// sim data to SITL
 	simchan := make(chan SimData, 1)
 	// socket addr, socket is open

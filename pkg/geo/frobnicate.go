@@ -62,7 +62,11 @@ func Frobnicate_init() *Frob {
 	return nil
 }
 
-func (f *Frob) set_origin(olat, olon, oalt float64) {
+func (f *Frob) Get_rebase() (float64, float64, float64) {
+	return f.reloc.lat, f.reloc.lon, f.ralt
+}
+
+func (f *Frob) Set_origin(olat, olon, oalt float64) {
 	f.orig.lat = olat
 	f.orig.lon = olon
 	if oalt != 0 {
@@ -70,7 +74,7 @@ func (f *Frob) set_origin(olat, olon, oalt float64) {
 	}
 }
 
-func (f *Frob) relocate(lat, lon, alt float64) (float64, float64, float64) {
+func (f *Frob) Relocate(lat, lon, alt float64) (float64, float64, float64) {
 	c, d := Csedist(f.orig.lat, f.orig.lon, lat, lon)
 	xlat, xlon := Posit(f.reloc.lat, f.reloc.lon, c, d)
 	xalt := alt + f.ralt

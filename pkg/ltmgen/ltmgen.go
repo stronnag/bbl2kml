@@ -215,9 +215,18 @@ func read_mission() *mission.Mission {
 		var err error
 		_, ms, err = mission.Read_Mission_File_Index(options.Config.Mission, options.Config.MissionIndex)
 		if err == nil {
+			fb := geo.Getfrobnication()
+			if fb != nil {
+				if ms.Metadata.Homey != 0 && ms.Metadata.Homex != 0 {
+					fb.Set_origin(ms.Metadata.Homey, ms.Metadata.Homex, 0)
+					ms.Metadata.Homey, ms.Metadata.Homex, _ = fb.Get_rebase()
+					ms.Metadata.Cy, ms.Metadata.Cx, _ = fb.Relocate(ms.Metadata.Cy, ms.Metadata.Cx, 0)
+				}
+			}
+
 			for k, mi := range ms.MissionItems {
-				if mi.Is_GeoPoint() && geo.Getfrobnication() {
-					ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, _ = geo.Frobnicate_move(ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, 0)
+				if mi.Is_GeoPoint() && fb != nil {
+					ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, _ = fb.Relocate(ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, 0)
 				}
 				if mi.Action == "JUMP" {
 					ms.MissionItems[k].P3 = ms.MissionItems[k].P2

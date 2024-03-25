@@ -745,8 +745,8 @@ func (lg *BBLOG) Reader(meta types.FlightMeta, ch chan interface{}) (types.LogSe
 			if b.Fix > 1 && b.Numsat > 5 {
 				have_origin = true
 				if fb != nil {
-					fb.set_origin(b.Lat, b.Lon, b.GAlt)
-					b.Lat, b.Lon, b.GAlt = fb.relocate(b.Lat, b.Lon, b.GAlt)
+					fb.Set_origin(b.Lat, b.Lon, b.GAlt)
+					b.Lat, b.Lon, b.GAlt = fb.Relocate(b.Lat, b.Lon, b.GAlt)
 					ttmp := time.Now().Add(time.Hour * 24 * 42)
 					froboff = ttmp.Sub(b.Utc)
 					b.Utc = ttmp
@@ -774,7 +774,7 @@ func (lg *BBLOG) Reader(meta types.FlightMeta, ch chan interface{}) (types.LogSe
 					homes.Flags |= types.HOME_SAFE
 				}
 				if fb != nil && (homes.Flags&types.HOME_SAFE != 0) {
-					homes.SafeLat, homes.SafeLon, _ = fb.relocate(homes.SafeLat, homes.SafeLon, b.GAlt)
+					homes.SafeLat, homes.SafeLon, _ = fb.Relocate(homes.SafeLat, homes.SafeLon, b.GAlt)
 				}
 				if ch != nil {
 					ch <- homes
@@ -795,7 +795,7 @@ func (lg *BBLOG) Reader(meta types.FlightMeta, ch chan interface{}) (types.LogSe
 					}
 					if fb != nil {
 						b.Utc = b.Utc.Add(froboff)
-						b.Lat, b.Lon, _ = fb.relocate(b.Lat, b.Lon, 0)
+						b.Lat, b.Lon, _ = fb.Relocate(b.Lat, b.Lon, 0)
 					}
 
 					c, d = geo.Csedist(homes.HomeLat, homes.HomeLon, b.Lat, b.Lon)
