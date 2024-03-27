@@ -30,13 +30,17 @@ func generate_filename(m types.FlightMeta) string {
 
 func Generate_mission(seg types.LogSegment, meta types.FlightMeta) {
 	mfilter := byte(0)
-	if strings.Contains(options.Config.Modefilter, "cruise") {
-		mfilter |= 1
-	}
-	if strings.Contains(options.Config.Modefilter, "wp") {
-		mfilter |= 2
-	}
 
+	if options.Config.Modefilter == "any" {
+		mfilter = 0xff
+	} else {
+		if strings.Contains(options.Config.Modefilter, "cruise") {
+			mfilter |= 1
+		}
+		if strings.Contains(options.Config.Modefilter, "wp") {
+			mfilter |= 2
+		}
+	}
 	if (mfilter == 0) && (seg.L.Cap&types.CAP_WPNO) == types.CAP_WPNO {
 		generate_from_active(seg, meta)
 	} else {
@@ -68,9 +72,11 @@ func generate_from_path(seg types.LogSegment, meta types.FlightMeta, mfilter byt
 		if !et.IsZero() && b.Utc.After(et) {
 			continue
 		}
-		if (mfilter&1 == 1 && b.Fmode != types.FM_CRUISE2D && b.Fmode != types.FM_CRUISE3D) ||
-			(mfilter&2 == 2 && b.Fmode != types.FM_WP) {
-			continue
+		if mfilter != 0xff {
+			if ((mfilter&1 == 1) && b.Fmode != types.FM_CRUISE2D && b.Fmode != types.FM_CRUISE3D) ||
+				(mfilter&2 == 2 && b.Fmode != types.FM_WP) {
+				continue
+			}
 		}
 		pt := simpleline.Point3d{X: b.Lon, Y: b.Lat, Z: b.Alt}
 		points = append(points, &pt)

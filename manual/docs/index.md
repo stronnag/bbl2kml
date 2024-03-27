@@ -230,11 +230,11 @@ If a mission file is given, this will also be displayed by BulletGCSS, albeit in
 
 `log2mission` will create an inav XML mission file from a supported flight log (Blackbox, OpenTX, BulletGCSS). The mission will not exceed the inav maximum of 120 mission points (or configurated maximum).
 
-From log2mission 1.0.17 and Blackbox logs from INAV 7.1.0 and later, the active waypoint number is stored in the log and the majority of filtering options are ignored.
+From log2mission 1.0.17 and Blackbox logs from INAV 7.1.0 and later, the active waypoint number is stored in the log and the majority of filtering options are ignored, unless  `-mode-filter` is uses, which reimposes the legacy simplification algorithm.
 
 For such logs (log2mission 1.0.17+, INAV BBL 7.1.0+):
 
-* `-start-offset`, `-end-offset`, `-epsilon`, `-max-wp`, `-mode-filter`, `-split-time` have no effect and are ignored.
+* `-start-offset`, `-end-offset`, `-epsilon`, `-max-wp`,  `-split-time` have no effect and are ignored **unless** `-mode-filter` is used (which then bypasses the INAV 7.1.0+ `activeWpNumber`).
 * You should probably use a lower `-interval` (for example 10).
 
 ### Usage

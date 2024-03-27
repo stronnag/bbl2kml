@@ -165,7 +165,7 @@ func ParseCLI(gv func() string) ([]string, string) {
 		flag.Float64Var(&Config.Epsilon, "epsilon", Config.Epsilon, "Epsilon")
 		flag.IntVar(&Config.StartOff, "start-offset", Config.StartOff, "Start Offset (seconds)")
 		flag.IntVar(&Config.EndOff, "end-offset", Config.EndOff, "End Offset (seconds)")
-		flag.StringVar(&Config.Modefilter, "mode-filter", Config.Modefilter, "Mode filter (cruise,wp)")
+		flag.StringVar(&Config.Modefilter, "mode-filter", Config.Modefilter, "Mode filter (cruise,wp,any)")
 		flag.IntVar(&Config.MaxWP, "max-wp", Config.MaxWP, "Maximum WPs in mission")
 	} else if strings.HasPrefix(app, "fl2sitl") {
 		Config.Intvl = 100
