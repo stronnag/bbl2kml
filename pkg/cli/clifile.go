@@ -42,6 +42,7 @@ const (
 var (
 	Safehome_distance float64 = (200.0 / 1852.0)
 	Fwapproach_length float64 = (350.0 / 1852.0)
+	Fwloiter_radius   float64 = (50.0 / 1852.0)
 )
 
 func (g *GeoZone) To_string() string {
@@ -168,6 +169,11 @@ func Read_clifile(fn string) ([]SafeHome, []FWApproach, []GeoZone) {
 								fv, _ := strconv.ParseFloat(parts[3], 64)
 								if fv != 0 {
 									Safehome_distance = fv / 100.0 / 1852.0
+								}
+							case "nav_fw_loiter_radius":
+								fv, _ := strconv.ParseFloat(parts[3], 64)
+								if fv != 0 {
+									Fwloiter_radius = fv / 100.0 / 1852.0
 								}
 							}
 						}

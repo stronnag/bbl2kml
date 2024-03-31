@@ -166,12 +166,17 @@ func add_approach(dref string, dirn int, lpath []kml.Coordinate) []kml.Coordinat
 		iap = 2
 	}
 
-	lax, lox := geo.Posit(lpath[iap].Lat, lpath[iap].Lon, float64(xdir), Fwapproach_length/3.0)
+	fwax := Fwapproach_length / 2.0
+	if 4.0*Fwloiter_radius > fwax {
+		fwax = 4.0 * Fwloiter_radius
+	}
+
+	lax, lox := geo.Posit(lpath[iap].Lat, lpath[iap].Lon, float64(xdir), fwax)
 	apath = append(apath, lpath[iap])
 	apath = append(apath, kml.Coordinate{Lon: lox, Lat: lax, Alt: lpath[iap].Alt})
 	apath = append(apath, lpath[ilp])
 	if len(lpath) == 3 {
-		lax, lox = geo.Posit(lpath[0].Lat, lpath[0].Lon, float64(xdir), Fwapproach_length/3.0)
+		lax, lox = geo.Posit(lpath[0].Lat, lpath[0].Lon, float64(xdir), fwax)
 		apath = append(apath, kml.Coordinate{Lon: lox, Lat: lax, Alt: lpath[iap].Alt})
 		apath = append(apath, lpath[0])
 	}
