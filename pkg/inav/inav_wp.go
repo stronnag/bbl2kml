@@ -5,9 +5,11 @@ import (
 )
 
 import (
+	//	"fmt"
 	"geo"
 	"mission"
 	"options"
+	//"os"
 	"types"
 )
 
@@ -62,6 +64,12 @@ func WP_state(ms *mission.Mission, b types.LogItem, tgt int) (int, int) {
 		}
 	} else {
 		if b.ActiveWP == 0 {
+			if k == -1 {
+				//				fmt.Fprintf(os.Stderr, "k == -1. active %d tgt = %d is_timed %v items %d\n",
+				//					b.ActiveWP, tgt, isTimed, len(ms.MissionItems))
+				return tgt, 1
+			}
+
 			cdist := 1.25 * b.Spd * float64(options.Config.Intvl/1000.0)
 			if cdist < 30 {
 				cdist = 30
