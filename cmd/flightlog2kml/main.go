@@ -30,6 +30,7 @@ func GetVersion() string {
 func main() {
 	dump_log := os.Getenv("DUMP_LOG") != ""
 	files, _ := options.ParseCLI(GetVersion)
+	geo.Frobnicate_init()
 	if len(files) == 0 {
 		if len(options.Config.Mission) > 0 {
 			outms := kmlgen.GenKmlName(options.Config.Mission, options.Config.MissionIndex)
@@ -44,8 +45,6 @@ func main() {
 		}
 		os.Exit(1)
 	}
-
-	geo.Frobnicate_init()
 
 	var lfr types.FlightLog
 	for _, fn := range files {

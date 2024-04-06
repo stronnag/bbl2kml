@@ -480,10 +480,11 @@ func add_ground_track(rec types.LogRec) kml.Element {
 }
 
 func GenerateCliOnly(outfn string, gv func() string) {
+	fb := geo.Getfrobnication()
 	kname := filepath.Base(options.Config.Cli)
 	desc := fmt.Sprintf("Generator: %s", gv())
 	d := kml.Folder(kml.Name(kname)).Add(kml.Description(desc)).Add(kml.Open(true))
-	sfx := Generate_cli_kml(options.Config.Cli, nil)
+	sfx := Generate_cli_kml(options.Config.Cli, fb)
 	for _, s := range sfx {
 		d.Add(s)
 	}
