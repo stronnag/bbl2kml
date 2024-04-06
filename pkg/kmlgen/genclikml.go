@@ -39,7 +39,7 @@ func add_sh_circle(sh cli.SafeHome, i int) kml.Element {
 	return track
 }
 
-func Generate_cli_kml(fn string) []kml.Element {
+func Generate_cli_kml(fn string, fb *geo.Frob) []kml.Element {
 	kmls := []kml.Element{}
 	sf := kml.Folder(kml.Name("Safehomes")).Add(kml.Open(true))
 	kmls = append(kmls, sf)
@@ -47,13 +47,16 @@ func Generate_cli_kml(fn string) []kml.Element {
 	if len(sha) > 0 {
 		sf.Add(styles.Get_safe_styles()...)
 		for i, sh := range sha {
+			if fb != nil {
+				sh.Lat, sh.Lon, _ = fb.Relocate(sh.Lat, sh.Lon, 0)
+			}
 			name := fmt.Sprintf("Safehome %d", i)
 			shf := kml.Folder(kml.Name(name)).Add(kml.Description(name)).Add(kml.Visibility(true)).Add(add_sh_circle(sh, i))
 			p := kml.Placemark(
 				kml.Name(name),
 				kml.StyleURL("#styleSAFEHOME"),
 				kml.Point(
-					kml.AltitudeMode(kml.AltitudeModeRelativeToGround),
+					kml.AltitudeMode(kml.AltitudeModeClampToGround),
 					kml.Coordinates(kml.Coordinate{Lon: sh.Lon, Lat: sh.Lat, Alt: 0.0}),
 				),
 			)

@@ -194,7 +194,7 @@ func generateKML(mfile string, idx int, dms bool, homep []float64, clifile strin
 	}
 
 	if clifile != "" {
-		sfx := kmlgen.Generate_cli_kml(clifile)
+		sfx := kmlgen.Generate_cli_kml(clifile, nil)
 		for _, s := range sfx {
 			d.Add(s)
 		}

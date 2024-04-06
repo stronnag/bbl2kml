@@ -483,7 +483,7 @@ func GenerateCliOnly(outfn string, gv func() string) {
 	kname := filepath.Base(options.Config.Cli)
 	desc := fmt.Sprintf("Generator: %s", gv())
 	d := kml.Folder(kml.Name(kname)).Add(kml.Description(desc)).Add(kml.Open(true))
-	sfx := Generate_cli_kml(options.Config.Cli)
+	sfx := Generate_cli_kml(options.Config.Cli, nil)
 	for _, s := range sfx {
 		d.Add(s)
 	}
@@ -526,7 +526,7 @@ func GenerateMissionOnly(outfn string, gv func() string) {
 			}
 		}
 		if len(options.Config.Cli) > 0 {
-			sfx := Generate_cli_kml(options.Config.Cli)
+			sfx := Generate_cli_kml(options.Config.Cli, fb)
 			for _, s := range sfx {
 				d.Add(s)
 			}
@@ -550,11 +550,11 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 	d := kml.Folder(kml.Name(meta.LogName())).Add(kml.Description(desc)).Add(kml.Open(true))
 	d.Add(add_ground_track(rec))
 
+	fb := geo.Getfrobnication()
 	if len(options.Config.Mission) > 0 {
 		_, mm, err := mission.Read_Mission_File(options.Config.Mission)
 		if err == nil {
 			isviz := true
-			fb := geo.Getfrobnication()
 			for nm, _ := range mm.Segment {
 				nmx := nm + 1
 				if options.Config.MissionIndex == 0 || nmx == options.Config.MissionIndex {
@@ -580,7 +580,7 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 	}
 
 	if len(options.Config.Cli) > 0 {
-		sfx := Generate_cli_kml(options.Config.Cli)
+		sfx := Generate_cli_kml(options.Config.Cli, fb)
 		for _, s := range sfx {
 			d.Add(s)
 		}

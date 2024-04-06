@@ -5,11 +5,9 @@ import (
 )
 
 import (
-	//	"fmt"
 	"geo"
 	"mission"
 	"options"
-	//"os"
 	"types"
 )
 
