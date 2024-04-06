@@ -81,7 +81,7 @@ func Generate_cli_kml(fn string, fb *geo.Frob) []kml.Element {
 		}
 	}
 	if len(gzone) > 0 {
-		gf := Gen_geozones(gzone)
+		gf := Gen_geozones(gzone, fb)
 		kmls = append(kmls, gf)
 	}
 	return kmls

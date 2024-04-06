@@ -21,10 +21,14 @@ func get_style(t int) string {
 	return st
 }
 
-func add_poly(g cli.GeoZone) kml.Element {
+func add_poly(g cli.GeoZone, fb *geo.Frob) kml.Element {
 	var points []kml.Coordinate
 	st := get_style(g.Gtype)
 	for _, pt := range g.Points {
+		if fb != nil {
+			pt.Lat, pt.Lon, _ = fb.Relocate(pt.Lat, pt.Lon, 0)
+		}
+
 		points = append(points, kml.Coordinate{Lon: pt.Lon, Lat: pt.Lat, Alt: float64(g.Maxalt / 100.0)})
 	}
 	points = append(points, points[0])
@@ -50,9 +54,13 @@ func add_poly(g cli.GeoZone) kml.Element {
 	return kml
 }
 
-func add_circle(g cli.GeoZone) kml.Element {
+func add_circle(g cli.GeoZone, fb *geo.Frob) kml.Element {
 	var points []kml.Coordinate
 	st := get_style(g.Gtype)
+
+	if fb != nil {
+		g.Points[0].Lat, g.Points[0].Lon, _ = fb.Relocate(g.Points[0].Lat, g.Points[0].Lon, 0)
+	}
 
 	for j := 0; j < 360; j += 5 {
 		lat, lon := geo.Posit(g.Points[0].Lat, g.Points[0].Lon, float64(j), g.Points[1].Lat/1852.0)
@@ -82,15 +90,15 @@ func add_circle(g cli.GeoZone) kml.Element {
 	return kml
 }
 
-func Gen_geozones(gzones []cli.GeoZone) kml.Element {
+func Gen_geozones(gzones []cli.GeoZone, fb *geo.Frob) kml.Element {
 	d := kml.Folder(kml.Name("Geozone")).Add(kml.Open(true))
 	d.Add(styles.Get_zone_styles()...)
 	for _, g := range gzones {
 		switch g.Shape {
 		case cli.SHAPE_CIRCLE:
-			d.Add(add_circle(g))
+			d.Add(add_circle(g, fb))
 		case cli.SHAPE_POLY:
-			d.Add(add_poly(g))
+			d.Add(add_poly(g, fb))
 		}
 	}
 	return d
