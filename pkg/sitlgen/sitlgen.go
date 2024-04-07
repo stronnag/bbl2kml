@@ -155,7 +155,7 @@ func (x *SitlGen) sender(conn net.PacketConn, addr net.Addr, ch chan SimData) {
 
 func (x *SitlGen) xplreader(conn net.PacketConn, achan chan net.Addr) {
 	buf := make([]byte, 512)
-	updatemap := true // Do not access a map in multiple threads
+	updatemap := true // only "release" the map once we've done writing it. Avoid overhead of sync.map
 	for {
 		n, addr, err := conn.ReadFrom(buf)
 		if err == nil {
