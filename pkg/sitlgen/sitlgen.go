@@ -96,7 +96,7 @@ func (x *SitlGen) change_mode(mranges []ModeRange, _from, _to uint16) string {
 	str := fmt.Sprintf("<%s> => <%s>", fstr, tstr)
 	for _, v := range from {
 		for _, m := range mranges {
-			if uint16(m.boxid) == v {
+			if uint16(m.permid) == v {
 				x.rc.chans[MODE_OFFSET+m.chanidx] = clrvalue(mranges, m)
 			}
 		}
@@ -104,7 +104,7 @@ func (x *SitlGen) change_mode(mranges []ModeRange, _from, _to uint16) string {
 
 	for _, v := range to {
 		for _, m := range mranges {
-			if uint16(m.boxid) == v {
+			if uint16(m.permid) == v {
 				x.rc.chans[MODE_OFFSET+m.chanidx] = setvalue(m)
 			}
 		}
@@ -298,7 +298,7 @@ func log_mode_change(mranges []ModeRange, imodes []uint16, fname string, chg str
 	sb.WriteByte(' ')
 	for _, r := range mranges {
 		for _, k := range imodes {
-			if uint16(r.boxid) == k {
+			if uint16(r.permid) == k {
 				fmt.Fprintf(&sb, " %+v", r)
 			}
 		}
@@ -590,7 +590,7 @@ func (x *SitlGen) Run(rdrchan chan interface{}, meta types.FlightMeta) {
 				if x.swchan == -1 {
 					mranges = m.get_ranges()
 					for _, r := range mranges {
-						if r.boxid == PERM_ARM {
+						if r.permid == PERM_ARM {
 							x.swchan = 4 + int16(r.chanidx)
 							x.swval = uint16(r.end+r.start)*25/2 + 900
 							break

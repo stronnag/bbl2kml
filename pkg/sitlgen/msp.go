@@ -134,7 +134,7 @@ type MSPSerial struct {
 }
 
 type ModeRange struct {
-	boxid   byte
+	permid  byte
 	chanidx byte
 	start   byte
 	end     byte
@@ -520,7 +520,7 @@ func (m *MSPSerial) init(nchan chan RCInfo, schan chan byte, conf SimMeta) {
 		log.Println("Serial init completed, with modes")
 		if options.Config.Verbose > 1 {
 			for _, u := range m.mranges {
-				_, s := mode_to_fm(uint16(u.boxid))
+				_, s := mode_to_fm(uint16(u.permid))
 				log.Printf("    %+v %s\n", u, s)
 			}
 		}
