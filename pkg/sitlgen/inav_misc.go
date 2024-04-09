@@ -5,17 +5,18 @@ import (
 )
 
 const (
-	PERM_ARM     = 0
-	PERM_MANUAL  = 12
-	PERM_HORIZON = 2
-	PERM_ANGLE   = 1
-	PERM_LAUNCH  = 36
-	PERM_RTH     = 10
-	PERM_WP      = 28
-	PERM_CRUISE  = 45
-	PERM_ALTHOLD = 3
-	PERM_POSHOLD = 11
-	PERM_FS      = 27
+	PERM_ARM      = 0
+	PERM_MANUAL   = 12
+	PERM_HORIZON  = 2
+	PERM_ANGLE    = 1
+	PERM_LAUNCH   = 36
+	PERM_RTH      = 10
+	PERM_WP       = 28
+	PERM_CRUISE   = 45
+	PERM_ALTHOLD  = 3
+	PERM_POSHOLD  = 11
+	PERM_FS       = 27
+	PERM_MSP_OVER = 13
 )
 
 type FModeMap struct {
@@ -39,6 +40,7 @@ var fmodes []FModeMap = []FModeMap{
 	{types.FM_EMERG, []uint16{0xfffe}, "Emergency"},
 	{types.FM_FS, []uint16{PERM_FS}, "Failsafe"},
 	{types.FM_ARM, []uint16{PERM_ARM}, "Arm"},
+	{types.FM_MSP_OVER, []uint16{PERM_MSP_OVER}, "Override"},
 }
 
 func fm_to_mode(fm uint16) ([]uint16, string) {

@@ -20,6 +20,7 @@ const (
 	FM_AH
 	FM_EMERG
 	FM_FS
+	FM_MSP_OVER
 	// For SITL
 	FM_UNK = 0xd0d0
 	FM_ARM = 0xf00d
