@@ -893,22 +893,24 @@ func read_inav_cli(dat []byte) *MultiMission {
 			if len(parts) == 10 {
 				no, _ := strconv.Atoi(parts[1])
 				iact, _ := strconv.Atoi(parts[2])
-				ilat, _ := strconv.Atoi(parts[3])
-				ilon, _ := strconv.Atoi(parts[4])
-				alt, _ := strconv.Atoi(parts[5])
-				p1, _ := strconv.Atoi(parts[6])
-				p2, _ := strconv.Atoi(parts[7])
-				p3, _ := strconv.Atoi(parts[8])
-				flg, _ := strconv.Atoi(parts[9])
-				lat := float64(ilat) / 1.0e7
-				lon := float64(ilon) / 1.0e7
-				action := decode_action(byte(iact))
-				if iact == 6 {
-					p1++
+				if iact != 0 {
+					ilat, _ := strconv.Atoi(parts[3])
+					ilon, _ := strconv.Atoi(parts[4])
+					alt, _ := strconv.Atoi(parts[5])
+					p1, _ := strconv.Atoi(parts[6])
+					p2, _ := strconv.Atoi(parts[7])
+					p3, _ := strconv.Atoi(parts[8])
+					flg, _ := strconv.Atoi(parts[9])
+					lat := float64(ilat) / 1.0e7
+					lon := float64(ilon) / 1.0e7
+					action := decode_action(byte(iact))
+					if iact == 6 {
+						p1++
+					}
+					alt /= 100
+					item := MissionItem{no, action, lat, lon, int32(alt), int16(p1), int16(p2), int16(p3), uint8(flg)}
+					mis = append(mis, item)
 				}
-				alt /= 100
-				item := MissionItem{no, action, lat, lon, int32(alt), int16(p1), int16(p2), int16(p3), uint8(flg)}
-				mis = append(mis, item)
 			}
 		}
 		if strings.HasPrefix(ln, "fwapproach ") {
@@ -921,15 +923,17 @@ func read_inav_cli(dat []byte) *MultiMission {
 					dirn, _ := strconv.Atoi(parts[4])
 					hdr1, _ := strconv.Atoi(parts[5])
 					hdr2, _ := strconv.Atoi(parts[6])
-					absa, _ := strconv.Atoi(parts[7])
-					var dref string
-					if dirn == 0 {
-						dref = "left"
-					} else {
-						dref = "right"
+					if hdr1 != 0 && hdr2 != 0 {
+						absa, _ := strconv.Atoi(parts[7])
+						var dref string
+						if dirn == 0 {
+							dref = "left"
+						} else {
+							dref = "right"
+						}
+						f := cli.FWApproach{int8(idx), int8(idx - 8), int32(appa), int32(lnda), int16(hdr1), int16(hdr2), dref, (absa == 1)}
+						fwa = append(fwa, f)
 					}
-					f := cli.FWApproach{int8(idx), int8(idx - 8), int32(appa), int32(lnda), int16(hdr1), int16(hdr2), dref, (absa == 1)}
-					fwa = append(fwa, f)
 				}
 			}
 		}
@@ -982,7 +986,7 @@ func handle_mission_data(dat []byte, path string) (string, *MultiMission) {
 	case bytes.Contains(dat[0:100], []byte(`"fileType": "Plan"`)):
 		mtype = "qgc-json"
 		m = process_qgc(dat, mtype)
-	case bytes.HasPrefix(dat, []byte("# wp")), bytes.HasPrefix(dat, []byte("#wp")), bytes.HasPrefix(dat, []byte("wp 0")):
+	case bytes.HasPrefix(dat, []byte("# ")):
 		mtype = "inav cli"
 		m = read_inav_cli(dat)
 	default:

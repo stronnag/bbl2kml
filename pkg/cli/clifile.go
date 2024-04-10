@@ -152,8 +152,10 @@ func Read_clifile(fn string) ([]SafeHome, []FWApproach, []GeoZone) {
 								fw.Dirn1 = int16(iv)
 								iv, _ = strconv.Atoi(parts[6])
 								fw.Dirn2 = int16(iv)
-								fw.Aref = parts[7] == "1"
-								fwa = append(fwa, fw)
+								if fw.Dirn1 != 0 && fw.Dirn2 != 0 {
+									fw.Aref = parts[7] == "1"
+									fwa = append(fwa, fw)
+								}
 							}
 						}
 					case "set":
