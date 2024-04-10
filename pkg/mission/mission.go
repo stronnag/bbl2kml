@@ -886,6 +886,7 @@ func read_json(dat []byte, flg int) *MultiMission {
 
 func read_inav_cli(dat []byte) *MultiMission {
 	mis := []MissionItem{}
+	fwa := []cli.FWApproach{}
 	for _, ln := range strings.Split(string(dat), "\n") {
 		if strings.HasPrefix(ln, "wp ") {
 			parts := strings.Split(ln, " ")
@@ -910,8 +911,38 @@ func read_inav_cli(dat []byte) *MultiMission {
 				mis = append(mis, item)
 			}
 		}
+		if strings.HasPrefix(ln, "fwapproach ") {
+			parts := strings.Split(ln, " ")
+			if len(parts) == 8 {
+				idx, _ := strconv.Atoi(parts[1])
+				if idx > 7 {
+					appa, _ := strconv.Atoi(parts[2])
+					lnda, _ := strconv.Atoi(parts[3])
+					dirn, _ := strconv.Atoi(parts[4])
+					hdr1, _ := strconv.Atoi(parts[5])
+					hdr2, _ := strconv.Atoi(parts[6])
+					absa, _ := strconv.Atoi(parts[7])
+					var dref string
+					if dirn == 0 {
+						dref = "left"
+					} else {
+						dref = "right"
+					}
+					f := cli.FWApproach{int8(idx), int8(idx - 8), int32(appa), int32(lnda), int16(hdr1), int16(hdr2), dref, (absa == 1)}
+					fwa = append(fwa, f)
+				}
+			}
+		}
 	}
-	return NewMultiMission(mis)
+	mm := NewMultiMission(mis)
+	for j := range mm.Segment {
+		for k := range fwa {
+			if fwa[k].Index == int8(j) {
+				mm.Segment[j].FWApproach = fwa[k]
+			}
+		}
+	}
+	return mm
 }
 
 func handle_mission_data(dat []byte, path string) (string, *MultiMission) {
