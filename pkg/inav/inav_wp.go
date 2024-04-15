@@ -103,6 +103,10 @@ func WP_state(ms *mission.Mission, b types.LogItem, tgt int) (int, int) {
 			}
 		}
 	}
+	if k >= len(ms.MissionItems) {
+		k = len(ms.MissionItems) - 1
+		tgt = k
+	}
 	act, _ := mission.ActionMap[ms.MissionItems[k].Action]
 	return tgt, act
 }
