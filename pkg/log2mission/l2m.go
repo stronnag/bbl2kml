@@ -129,11 +129,13 @@ func generate_from_path(seg types.LogSegment, meta types.FlightMeta, mfilter byt
 
 func generate_log_mission(res []simpleline.Point, mfn string, needrth bool, homes types.HomeRec) {
 	var ms mission.Mission
+	ms.Metadata.Homey = homes.HomeLat
+	ms.Metadata.Homex = homes.HomeLon
 	fb := geo.Getfrobnication()
+
 	if fb != nil {
 		fb.Set_origin(homes.HomeLat, homes.HomeLon, homes.HomeAlt)
-		ms.Metadata.Homey = homes.HomeLat
-		ms.Metadata.Homex = homes.HomeLon
+		ms.Metadata.Homey, ms.Metadata.Homex, _ = fb.Relocate(ms.Metadata.Homey, ms.Metadata.Homex, 0)
 	}
 
 	for i, p := range res {
@@ -159,7 +161,9 @@ func generate_from_active(seg types.LogSegment, meta types.FlightMeta) {
 	navm := false
 	lnavm := false
 	lwpno := uint8(0)
-
+	llat := 0.0
+	llon := 0.0
+	lalt := 0.0
 	for _, b := range seg.L.Items {
 		navm = b.Fmode == types.FM_WP
 		if navm != lnavm {
@@ -176,7 +180,15 @@ func generate_from_active(seg types.LogSegment, meta types.FlightMeta) {
 		}
 		lnavm = navm
 		lwpno = b.ActiveWP
+		llat = b.Lat
+		llon = b.Lon
+		lalt = b.Alt
 	}
+	if navm {
+		pt := simpleline.Point3d{X: llon, Y: llat, Z: lalt}
+		points = append(points, &pt)
+	}
+
 	generate_log_mission(points, generate_filename(meta), false, seg.H)
 	fmt.Printf("Mission  : %d active points\n", len(points))
 }
