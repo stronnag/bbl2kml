@@ -40,7 +40,7 @@ $(APP): ser2tcp.c serial.c find_best.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 
-$(APP).arm64: ser2tcp.c serial.c find_best.c
+$(ARMAPP): ser2tcp.c serial.c find_best.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)  -target arm64-apple-macos11
 
 universal: $(APP) $(ARMAPP)
