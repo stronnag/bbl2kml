@@ -52,6 +52,7 @@ const (
 	msp_SET_TX_INFO   = 186
 	msp_SET_RX_CONFIG = 45
 	msp_BOXNAMES      = 116
+	msp_BOXIDS        = 119
 	msp_SET_WP        = 209
 	msp_RX_CONFIG     = 44
 
@@ -146,6 +147,11 @@ type SerialConf struct {
 }
 
 type MSPChans [18]uint16
+
+var (
+	iv_boxnames string
+	iv_boxids   []byte
+)
 
 func crc8_dvb_s2(crc byte, a byte) byte {
 	crc ^= a
@@ -485,6 +491,14 @@ func (m *MSPSerial) init(nchan chan RCInfo, schan chan byte, conf SimMeta) {
 			case msp_BOXNAMES:
 				if v.len > 0 {
 					Sitl_logger(2, "%s\n", v.data)
+					iv_boxnames = string(v.data)
+				}
+				m.Send_msp(msp_BOXIDS, nil)
+
+			case msp_BOXIDS:
+				if v.len > 0 {
+					iv_boxids = v.data
+					Sitl_logger(2, "BOXIDs %+v\n", v.data)
 				}
 				m.Send_msp(msp2_COMMON_SERIAL_CONFIG, nil)
 			case msp2_COMMON_SERIAL_CONFIG:
@@ -767,7 +781,7 @@ func (s *StatusInfo) parse_status(schan chan byte, data []byte) {
 
 	if options.Config.Verbose > 2 {
 		if !((s.boxflags == boxflags) && (armflags == s.armflags)) {
-			log.Printf("Boxflags: %x Armflags: %s\n", boxflags, arm_status(armflags))
+			log.Printf("Boxflags: %x [%s] Armflags: %s\n", boxflags, box2text(boxflags), arm_status(armflags))
 		}
 	}
 	// Unarmed, able to arm
@@ -782,13 +796,14 @@ func (s *StatusInfo) parse_status(schan chan byte, data []byte) {
 	}
 	if (s.boxflags & 1) != (boxflags & 1) {
 		if options.Config.Verbose > 0 {
-			log.Printf("boxflags changed %x -> %x (%x)\n", s.boxflags, boxflags, armflags)
+			log.Printf("boxflags changed %x -> %x [%s] (%x)\n", s.boxflags, boxflags,
+				box2text(boxflags), armflags)
 		}
 		if (boxflags & 1) == 0 {
 			if s.rvstat != 2 {
 				s.rvstat = 2
 				if options.Config.Verbose > 1 {
-					log.Printf("Set boxflags %d (%x)\n", s.rvstat, armflags)
+					log.Printf("Set rvstat %d (%x)\n", s.rvstat, armflags)
 				}
 				schan <- 2
 			}
@@ -796,7 +811,7 @@ func (s *StatusInfo) parse_status(schan chan byte, data []byte) {
 			if s.rvstat != 3 {
 				s.rvstat = 3
 				if options.Config.Verbose > 1 {
-					log.Printf("Set boxflags %d (%x)\n", s.rvstat, armflags)
+					log.Printf("Set rvstat %d (%x)\n", s.rvstat, armflags)
 				}
 				schan <- 3
 			}
@@ -841,6 +856,19 @@ func (m *MSPSerial) Close() {
 		m.ok = false
 		m.conn.Close()
 	}
+}
+
+func box2text(ids uint64) string {
+	var sarry []string
+	for i := uint64(0); i < 64; i++ {
+		sht := uint64(1 << i)
+		if (ids & sht) != 0 {
+			var permid = iv_boxids[i]
+			var s = perm2name(permid)
+			sarry = append(sarry, s)
+		}
+	}
+	return strings.Join(sarry, " ")
 }
 
 func arm_status(status uint32) string {
