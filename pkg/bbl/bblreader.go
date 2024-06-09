@@ -168,6 +168,12 @@ func metas(fn string) ([]types.FlightMeta, error) {
 					fw := string(l)[n+1:]
 					bes[nbes].Firmware = fw
 					bes[nbes].Flags |= types.Has_Firmware
+					/*
+						if fw[5] == '8' && os.Getenv("BBL_ALLOW_INAV8") != "" {
+							fmt.Fprintf(os.Stderr, "Unsupported INAV Version. Please direct complaints to < https://github.com/iNavFlight/inav/pull/10068>")
+							os.Exit(127)
+						}
+					*/
 				}
 
 			case strings.HasPrefix(string(l), "H Firmware date:"):
@@ -475,6 +481,8 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 			md = types.FM_RTH
 		} else if inav.IsWP(inav_vers, int(i64)) {
 			md = types.FM_WP
+		} else if inav.IsLand(inav_vers, int(i64)) {
+			md = types.FM_LAND
 		} else if inav.IsLaunch(inav_vers, int(i64)) {
 			md = types.FM_LAUNCH
 		} else if inav.IsPH(inav_vers, int(i64)) {

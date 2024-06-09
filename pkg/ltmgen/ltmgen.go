@@ -163,6 +163,8 @@ func ltm_flight_mode(fm uint8) uint8 {
 		fms = 13
 	case types.FM_WP:
 		fms = 10
+	case types.FM_LAND:
+		fms = 15
 	case types.FM_CRUISE3D, types.FM_CRUISE2D:
 		fms = 18
 	case types.FM_PH:

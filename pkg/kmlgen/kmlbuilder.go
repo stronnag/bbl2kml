@@ -34,6 +34,8 @@ const (
 func getflightColour(mode uint8) color.Color {
 	var c color.Color
 	switch mode {
+	case types.FM_LAND:
+		c = color.RGBA{R: 0xff, G: 0x9a, B: 0xf0, A: 0xa0}
 	case types.FM_LAUNCH:
 		c = color.RGBA{R: 0, G: 160, B: 160, A: 0xa0}
 	case types.FM_RTH:
@@ -76,6 +78,8 @@ func getStyleURL(r types.LogItem, colmode uint8) string {
 			s = "#styleRTH"
 		case types.FM_WP:
 			s = "#styleWP"
+		case types.FM_LAND:
+			s = "#styleLand"
 		case types.FM_CRUISE3D, types.FM_CRUISE2D:
 			s = "#styleCRS"
 		case types.FM_PH:
@@ -359,6 +363,16 @@ func generate_shared_styles(style uint8) []kml.Element {
 				kml.IconStyle(
 					kml.Scale(0.5),
 					kml.Color(getflightColour(types.FM_WP)),
+					kml.Icon(
+						kml.Href(icon.PaletteHref(2, 18)),
+					),
+				),
+			).Add(balloon_style(BS_DESC_ONLY)),
+			kml.SharedStyle(
+				"styleLand",
+				kml.IconStyle(
+					kml.Scale(0.5),
+					kml.Color(getflightColour(types.FM_LAND)),
 					kml.Icon(
 						kml.Href(icon.PaletteHref(2, 18)),
 					),

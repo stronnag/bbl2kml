@@ -68,6 +68,14 @@ func IsLaunch(vers, val int) bool {
 	return false
 }
 
+func IsLand(vers, val int) bool {
+	switch {
+	case vers > 0x6ffff:
+		return contains([]int{42, 43, 44, 45, 46, 47, 48}, val)
+	}
+	return false
+}
+
 func IsPH(vers, val int) bool {
 	switch {
 	case vers > 0x1ffff: // 2.0.0 and later

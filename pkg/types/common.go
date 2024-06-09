@@ -20,7 +20,7 @@ const (
 	FM_AH
 	FM_EMERG
 	FM_FS
-
+	FM_LAND
 	// For SITL
 	FM_MSP_OVER
 	FM_GCS_NAV
@@ -113,7 +113,7 @@ type LogRec struct {
 }
 
 var Mnames = []string{"Acro", "Manual", "Horizon", "Angle", "Launch", "RTH", "WP",
-	"3CRS", "CRS", "PH", "AH", "EMERGENCY", "F/S"}
+	"3CRS", "CRS", "PH", "AH", "EMERGENCY", "F/S", "LAND", "Unk", "Unk", "Unk", "Unk"}
 
 const (
 	HOME_ARM  = 1
