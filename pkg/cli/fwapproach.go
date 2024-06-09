@@ -167,8 +167,10 @@ func add_approach(dref string, dirn int, lpath []kml.Coordinate) []kml.Coordinat
 	}
 
 	fwax := Fwapproach_length / 2.0
-	if 4.0*Fwloiter_radius > fwax {
-		fwax = 4.0 * Fwloiter_radius
+	fwlr := Fwloiter_radius * 4.0
+
+	if fwax < fwlr {
+		fwax = fwlr
 	}
 
 	lax, lox := geo.Posit(lpath[iap].Lat, lpath[iap].Lon, float64(xdir), fwax)
