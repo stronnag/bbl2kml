@@ -268,7 +268,7 @@ func (ml *MissionSegment) MarshalXML(e *xml.Encoder, start xml.StartElement) err
 		}
 	}
 
-	if ml.FWApproach.No > 7 && ml.FWApproach.Dirn1 != 0 && ml.FWApproach.Dirn2 != 0 {
+	if ml.FWApproach.No > 7 && !(ml.FWApproach.Dirn1 == 0 && ml.FWApproach.Dirn2 == 0) {
 		err := e.EncodeElement(ml.FWApproach, xml.StartElement{Name: xml.Name{Local: "fwapproach"}})
 		return err
 	}

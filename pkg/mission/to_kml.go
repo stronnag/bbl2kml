@@ -195,7 +195,7 @@ func (m *Mission) To_kml(hpos types.HomeRec, dms bool, fake bool, mmidx int, isv
 		Add(kml.Visibility(isvis)).Add(styles.Get_mission_styles()...).Add(track).Add(wps...)
 
 	if landid != -1 && m.FWApproach.No == int8(mmidx+7) &&
-		(m.FWApproach.Dirn1 != 0 || m.FWApproach.Dirn2 != 0) {
+		!(m.FWApproach.Dirn1 == 0 && m.FWApproach.Dirn2 == 0) {
 		f := kml.Folder(kml.Name("Approaches")).Add(kml.Open(true))
 		f.Add(styles.Get_approach_styles()...)
 		for _, ll := range cli.AddLaylines(m.MissionItems[landid].Lat, m.MissionItems[landid].Lon, addAlt, m.FWApproach, isvis) {
