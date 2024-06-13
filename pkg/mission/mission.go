@@ -986,7 +986,7 @@ func handle_mission_data(dat []byte, path string) (string, *MultiMission) {
 	case bytes.Contains(dat[0:100], []byte(`"fileType": "Plan"`)):
 		mtype = "qgc-json"
 		m = process_qgc(dat, mtype)
-	case bytes.HasPrefix(dat, []byte("# ")):
+	case bytes.Contains(dat, []byte("\nwp 0 ")):
 		mtype = "inav cli"
 		m = read_inav_cli(dat)
 	default:
