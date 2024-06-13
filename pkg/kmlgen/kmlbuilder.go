@@ -546,10 +546,8 @@ func GenerateMissionOnly(outfn string, gv func() string) {
 				isviz = false
 			}
 		}
-		if len(options.Config.Cli) > 0 {
-			for _, s := range sfx {
-				d.Add(s)
-			}
+		for _, s := range sfx {
+			d.Add(s)
 		}
 		write_kml(outfn, d)
 	}
@@ -605,10 +603,8 @@ func GenerateKML(hpos types.HomeRec, rec types.LogRec, outfn string,
 		}
 	}
 
-	if len(options.Config.Cli) > 0 {
-		for _, s := range sfx {
-			d.Add(s)
-		}
+	for _, s := range sfx {
+		d.Add(s)
 	}
 
 	e := kml.ExtendedData(kml.Data(kml.Name("Log"), kml.Value(meta.LogName())))
