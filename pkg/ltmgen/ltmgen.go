@@ -307,10 +307,12 @@ func LTMGen(ch chan interface{}, meta types.FlightMeta) {
 
 	g1diff := time.Duration(100) * time.Millisecond
 	g2diff := time.Duration(200) * time.Millisecond
+	g4diff := time.Duration(500) * time.Millisecond
 	g3diff := time.Duration(2) * time.Second
 	var g1t time.Time
 	var g2t time.Time
 	var g3t time.Time
+	var g4t time.Time
 
 	done := false
 	for !done {
@@ -375,11 +377,6 @@ func LTMGen(ch chan interface{}, meta types.FlightMeta) {
 				l = newLTM('a') // private current
 				l.paframe(b)
 				s.Write(l.msg)
-				if b.Ail > 0 {
-					l := newLTM('r')
-					l.prframe(b)
-					s.Write(l.msg)
-				}
 				g2t = b.Utc.Add(g2diff)
 			}
 
@@ -392,6 +389,13 @@ func LTMGen(ch chan interface{}, meta types.FlightMeta) {
 				s.Write(l.msg)
 				xcount = (xcount + 1) & 0xff
 				g3t = b.Utc.Add(g3diff)
+			}
+
+			if b.Utc.After(g4t) { // sticks
+				l := newLTM('r')
+				l.prframe(b)
+				s.Write(l.msg)
+				g4t = b.Utc.Add(g4diff)
 			}
 
 			if !lt.IsZero() {
