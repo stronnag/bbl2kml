@@ -375,6 +375,11 @@ func LTMGen(ch chan interface{}, meta types.FlightMeta) {
 				l = newLTM('a') // private current
 				l.paframe(b)
 				s.Write(l.msg)
+				if b.Ail > 0 {
+					l := newLTM('r')
+					l.prframe(b)
+					s.Write(l.msg)
+				}
 				g2t = b.Utc.Add(g2diff)
 			}
 
@@ -387,12 +392,6 @@ func LTMGen(ch chan interface{}, meta types.FlightMeta) {
 				s.Write(l.msg)
 				xcount = (xcount + 1) & 0xff
 				g3t = b.Utc.Add(g3diff)
-			}
-
-			if b.Ail > 0 {
-				l := newLTM('r')
-				l.prframe(b)
-				s.Write(l.msg)
 			}
 
 			if !lt.IsZero() {
