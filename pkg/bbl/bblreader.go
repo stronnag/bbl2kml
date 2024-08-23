@@ -735,6 +735,11 @@ func (lg *BBLOG) Reader(meta types.FlightMeta, ch chan interface{}) (types.LogSe
 	leffic := 0.0
 	lwhkm := 0.0
 	whacc := 0.0
+	var skiptime uint64 = 0
+
+	if options.Config.SkipTime > 0 {
+		skiptime = uint64(options.Config.SkipTime) * 1000
+	}
 
 	for i := 0; ; i++ {
 		record, err := r.Read()
@@ -793,6 +798,11 @@ func (lg *BBLOG) Reader(meta types.FlightMeta, ch chan interface{}) (types.LogSe
 			}
 		} else {
 			us := b.Stamp
+			var deltat = us - st
+			if skiptime > 0 && deltat < skiptime {
+				continue
+			}
+
 			if us > st {
 				var d float64
 				var c float64

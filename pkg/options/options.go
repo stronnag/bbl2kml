@@ -60,6 +60,7 @@ type Configuration struct {
 	Verbose         int     `json:"-"`
 	SitlConfig      string  `json:"-"`
 	SitlMinimal     bool    `json:"-"`
+	SkipTime        int     `json:"-"`
 }
 
 var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120, Epsilon: 0.015, StartOff: 30, EndOff: -30, Engunit: "mah", MaxWP: 120}
@@ -161,6 +162,7 @@ func ParseCLI(gv func() string) ([]string, string) {
 		flag.BoolVar(&Config.Metas, "metas", false, "list metadata and exit")
 		flag.BoolVar(&Config.Fast, "fast", false, "faster replay")
 		flag.IntVar(&Config.Type, "type", Config.Type, "model type")
+		flag.IntVar(&Config.SkipTime, "skiptime", Config.SkipTime, "[BBL] Skip Time (ms)")
 	} else if strings.HasPrefix(app, "log2mission") {
 		flag.Float64Var(&Config.Epsilon, "epsilon", Config.Epsilon, "Epsilon")
 		flag.IntVar(&Config.StartOff, "start-offset", Config.StartOff, "Start Offset (seconds)")
