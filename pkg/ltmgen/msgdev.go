@@ -44,7 +44,7 @@ func check_device(device string, baud int) DevDescription {
 	if devdesc.name == "" {
 		log.Fatalln("msgdev: No device available")
 	} else {
-		log.Printf("Using device [%v]\n", devdesc.name)
+		fmt.Printf("fl2ltm using device [%v]\n", devdesc.name)
 	}
 	return devdesc
 }
