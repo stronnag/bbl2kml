@@ -70,18 +70,29 @@ func NewMSPSerial(device string, baud int) *MSPSerial {
 	var reader *bufio.Reader
 	var conn net.Conn
 	var err error
+	usefam := "udp6"
 	dd := check_device(device, baud)
 	if dd.name == "" {
-		laddr, err = net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", dd.name, dd.param))
+		laddr, err = net.ResolveUDPAddr(usefam, fmt.Sprintf("%s:%d", dd.name, dd.param))
+		if err != nil {
+			usefam := "udp"
+			laddr, err = net.ResolveUDPAddr(usefam, fmt.Sprintf("%s:%d", dd.name, dd.param))
+		}
 	} else {
-		raddr, err = net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", dd.name, dd.param))
+		raddr, err = net.ResolveUDPAddr("udp6", fmt.Sprintf("%s:%d", dd.name, dd.param))
+		if err != nil {
+			usefam := "udp"
+			raddr, err = net.ResolveUDPAddr(usefam, fmt.Sprintf("%s:%d", dd.name, dd.param))
+		}
 	}
 	if err == nil {
-		conn, err = net.DialUDP("udp", laddr, raddr)
+		conn, err = net.DialUDP(usefam, laddr, raddr)
 		if err == nil {
 			reader = bufio.NewReader(conn)
 		}
 	}
+	fmt.Printf("UDP connection %+v\n", conn.LocalAddr())
+
 	if err != nil {
 		log.Fatalf("msgdev: %+v\n", err)
 	}
