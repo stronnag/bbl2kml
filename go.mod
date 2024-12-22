@@ -34,9 +34,9 @@ require (
 	github.com/mattn/go-tty v0.0.7 // indirect
 	github.com/mazznoer/csscolorparser v0.1.5 // indirect
 	github.com/twpayne/go-kmz v0.0.0-20160614194227-165281381e72 // indirect
-	golang.org/x/net v0.31.0 // indirect
-	golang.org/x/sync v0.9.0 // indirect
-	golang.org/x/sys v0.27.0 // indirect
+	golang.org/x/net v0.33.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
 	inav v1.0.0 // indirect
 	styles v1.0.0 // indirect
 )

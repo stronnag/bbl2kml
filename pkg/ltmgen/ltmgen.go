@@ -314,6 +314,10 @@ func LTMGen(ch chan interface{}, meta types.FlightMeta) {
 	var g3t time.Time
 	var g4t time.Time
 
+	if options.Config.Fast {
+		options.Config.Speed = 10
+	}
+
 	done := false
 	for !done {
 		v := <-ch
@@ -399,8 +403,8 @@ func LTMGen(ch chan interface{}, meta types.FlightMeta) {
 			}
 
 			if !lt.IsZero() {
-				if options.Config.Fast {
-					time.Sleep(10 * time.Millisecond)
+				if options.Config.Speed > 0 {
+					time.Sleep(tdiff / time.Duration(options.Config.Speed))
 				} else if tdiff > 0 {
 					time.Sleep(tdiff)
 				}
