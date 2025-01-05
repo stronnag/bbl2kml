@@ -45,6 +45,8 @@ func newLTM(mtype byte) *ltmbuf {
 		paylen = 2
 	case 'r':
 		paylen = 8
+	case 'w':
+		paylen = 6
 	default:
 		log.Fatalf("LTM: No payload defined for type '%c'\n", mtype)
 	}
@@ -84,6 +86,13 @@ func (l *ltmbuf) aframe(b types.LogItem) {
 	binary.LittleEndian.PutUint16(l.msg[3:5], uint16(b.Pitch))
 	binary.LittleEndian.PutUint16(l.msg[5:7], uint16(b.Roll))
 	binary.LittleEndian.PutUint16(l.msg[7:9], uint16(b.Cse))
+	l.checksum()
+}
+
+func (l *ltmbuf) wframe(b types.LogItem) {
+	binary.LittleEndian.PutUint16(l.msg[3:5], uint16(b.Wind[0]))
+	binary.LittleEndian.PutUint16(l.msg[5:7], uint16(b.Wind[1]))
+	binary.LittleEndian.PutUint16(l.msg[7:9], uint16(b.Wind[2]))
 	l.checksum()
 }
 
@@ -268,6 +277,7 @@ func LTMGen(ch chan interface{}, meta types.FlightMeta) {
 
 	xcount := uint8(0)
 	ld := uint16(0)
+	cap := uint16(0)
 
 	var st, lt time.Time
 	var hlon, hlat float64
@@ -322,6 +332,9 @@ func LTMGen(ch chan interface{}, meta types.FlightMeta) {
 	for !done {
 		v := <-ch
 		switch v.(type) {
+		case uint16:
+			cap = v.(uint16)
+
 		case types.LogItem:
 			b := v.(types.LogItem)
 			if st.IsZero() {
@@ -382,6 +395,11 @@ func LTMGen(ch chan interface{}, meta types.FlightMeta) {
 				l.paframe(b)
 				s.Write(l.msg)
 				g2t = b.Utc.Add(g2diff)
+				if (cap & types.CAP_WIND) != 0 {
+					l := newLTM('w')
+					l.wframe(b)
+					s.Write(l.msg)
+				}
 			}
 
 			if b.Utc.After(g3t) {

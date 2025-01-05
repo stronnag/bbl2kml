@@ -38,6 +38,7 @@ const (
 	CAP_SPEED
 	CAP_ALTITUDE
 	CAP_WPNO
+	CAP_WIND
 )
 
 const (
@@ -105,6 +106,7 @@ type LogItem struct {
 	ActiveWP uint8
 	NavMode  byte
 	HWfail   bool
+	Wind     [3]int16
 }
 
 type LogRec struct {

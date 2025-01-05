@@ -1,4 +1,4 @@
-project('flightlog2kml', version : '1.0.27')
+project('flightlog2kml', version : '1.0.27ws')
 meson.add_install_script('meson/post_install.py')
 version = get_option('version')
 commit = get_option('commit')
@@ -22,10 +22,9 @@ if version != ''
 endif
 
 # This is beyond stupid ....
-pymodule = import('python3')
-python3 = pymodule.find_python()
+python = find_program('python')
 exe=''
-res = run_command(python3, '-c', 'import os; print(os.environ["EXE"])', check: false)
+res = run_command(python, '-c', 'import os; print(os.environ["EXE"])', check: false)
 if res.returncode() == 0
   exe = res.stdout().strip()
 endif

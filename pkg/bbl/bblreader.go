@@ -168,12 +168,6 @@ func metas(fn string) ([]types.FlightMeta, error) {
 					fw := string(l)[n+1:]
 					bes[nbes].Firmware = fw
 					bes[nbes].Flags |= types.Has_Firmware
-					/*
-						if fw[5] == '8' && os.Getenv("BBL_ALLOW_INAV8") != "" {
-							fmt.Fprintf(os.Stderr, "Unsupported INAV Version. Please direct complaints to < https://github.com/iNavFlight/inav/pull/10068>")
-							os.Exit(127)
-						}
-					*/
 				}
 
 			case strings.HasPrefix(string(l), "H Firmware date:"):
@@ -397,6 +391,9 @@ func dataCapability() uint16 {
 
 	if _, ok := hdrs["activeWpNumber"]; ok {
 		ret |= types.CAP_WPNO
+	}
+	if _, ok := hdrs["wind[0]"]; ok {
+		ret |= types.CAP_WIND
 	}
 	return ret
 }
@@ -671,6 +668,25 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 			val = (val >> 2)
 		}
 	}
+
+	if s, ok = get_rec_value(r, "wind[0]"); ok {
+		i64, _ := strconv.Atoi(s)
+		b.Wind[0] = int16(i64)
+		if s, ok = get_rec_value(r, "wind[1]"); ok {
+			i64, _ = strconv.Atoi(s)
+			b.Wind[1] = int16(i64)
+			if s, ok = get_rec_value(r, "wind[2]"); ok {
+				i64, _ = strconv.Atoi(s)
+				b.Wind[2] = int16(i64)
+			}
+		}
+	} /*
+		else {
+			b.Wind[0] = -32768
+			b.Wind[1] = -32768
+			b.Wind[2] = -32768
+		}
+	*/
 	return b
 }
 
@@ -749,6 +765,9 @@ func (lg *BBLOG) Reader(meta types.FlightMeta, ch chan interface{}) (types.LogSe
 		if i == 0 {
 			build_headers(record)
 			rec.Cap = dataCapability()
+			if ch != nil {
+				ch <- rec.Cap
+			}
 			continue
 		}
 
