@@ -21,12 +21,11 @@ if version != ''
   ldflags += ' -X main.GitTag='+ version
 endif
 
-# This is beyond stupid ....
-python = find_program('python')
 exe=''
-res = run_command(python, '-c', 'import os; print(os.environ["EXE"])', check: false)
-if res.returncode() == 0
-  exe = res.stdout().strip()
+r = run_command('go', 'env', 'GOOS', check: false)
+res = r.stdout().strip()
+if res  == 'windows'
+  exe = '.exe'
 endif
 
 # This is for old distros like Debain 10, in which case the '-v' is harmles
