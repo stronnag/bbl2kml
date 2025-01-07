@@ -26,6 +26,8 @@ r = run_command('go', 'env', 'GOOS', check: false)
 res = r.stdout().strip()
 if res  == 'windows'
   exe = '.exe'
+  env = environment()
+  env.set('EXE', exe)
 endif
 
 # This is for old distros like Debain 10, in which case the '-v' is harmles
