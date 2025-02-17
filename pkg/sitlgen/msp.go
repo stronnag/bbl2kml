@@ -860,7 +860,7 @@ func (m *MSPSerial) Close() {
 
 func box2text(ids uint64) string {
 	var sarry []string
-	for i := uint64(0); i < 64; i++ {
+	for i := uint64(0); i < uint64(len(iv_data)); i++ {
 		sht := uint64(1 << i)
 		if (ids & sht) != 0 {
 			var permid = iv_boxids[i]
