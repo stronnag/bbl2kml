@@ -454,13 +454,15 @@ Compiled with:
 or more simply
 
     # First time
-    meson build --prefix=~/.local
+    meson setup build -DVersion=''  --prefix=~/.local
     cd build
     ninja install
 
     # Subsequently
     cd build
     ninja install
+
+`-DVersion=''` reads the project version from `meson.build`, otherwise, if you wished to provide a custom version, then you can provide a custom version e.g. `-Dversion=6.6.6-cursed`.
 
 **flightlog2kml** depends on [twpayne/go-kml](https://github.com/twpayne/go-kml), an outstanding open source Golang KML library.
 
