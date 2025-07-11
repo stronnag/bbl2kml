@@ -181,6 +181,7 @@ type LogSegment struct {
 	L LogRec
 	H HomeRec
 	M MapRec
+	S string
 }
 
 type FlightLog interface {

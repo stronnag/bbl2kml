@@ -7,12 +7,14 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 import (
 	"aplog"
 	"bbl"
 	"bltlog"
+	"flsql"
 	"geo"
 	"kmlgen"
 	"options"
@@ -78,6 +80,14 @@ func main() {
 			}
 			defer os.RemoveAll(options.Config.Tmpdir)
 
+			var db flsql.DBL
+			use_db := false
+			if options.Config.Sql != "" {
+				db = flsql.NewSQLliteDB(options.Config.Sql)
+				use_db = true
+				defer db.Close()
+			}
+
 			for _, b := range metas {
 				outfn := ""
 				if (options.Config.Idx == 0 || options.Config.Idx == b.Index) && b.Flags&types.Is_Valid != 0 {
@@ -87,8 +97,16 @@ func main() {
 					ls, res := lfr.Reader(b, nil)
 					if res {
 						if dump_log {
-							for _, b := range ls.L.Items {
-								fmt.Fprintf(os.Stderr, "%+v\n", b)
+							for _, bi := range ls.L.Items {
+								fmt.Fprintf(os.Stderr, "%+v\n", bi)
+							}
+						} else if use_db {
+							db.Begin()
+							for _, bi := range ls.L.Items {
+								db.Writelog(b.Index, bi)
+							}
+							if ls.S != "" {
+								db.Writeerr(b.Index, ls.S)
 							}
 						} else if options.Config.Summary == false {
 							outfn = kmlgen.GenKmlName(b.Logname, b.Index)
@@ -107,6 +125,17 @@ func main() {
 						show_output(outfn)
 					}
 					fmt.Println()
+					if use_db {
+						n := len(ls.L.Items)
+						if n > 0 {
+							if b.Duration == 0 {
+								ns := int64((ls.L.Items[n-1].Stamp - ls.L.Items[0].Stamp))
+								b.Duration = time.Duration(ns) * time.Microsecond
+							}
+							db.Writemeta(b)
+							db.Commit()
+						}
+					}
 				}
 			}
 		} else {

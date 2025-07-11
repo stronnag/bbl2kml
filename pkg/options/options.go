@@ -62,6 +62,7 @@ type Configuration struct {
 	SitlMinimal     bool    `json:"-"`
 	SkipTime        int     `json:"-"`
 	Speed           int     `json:"-"`
+	Sql             string  `json:"-"`
 }
 
 var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120, Epsilon: 0.015, StartOff: 30, EndOff: -30, Engunit: "mah", MaxWP: 120}
@@ -200,6 +201,10 @@ func ParseCLI(gv func() string) ([]string, string) {
 	flag.BoolVar(&showversion, "version", false, "Just show version")
 	if app != "fl2sitl" {
 		flag.StringVar(&cfgfile, "config", "", "alternate file")
+	}
+
+	if app == "flightlog2kml" || app == "bbsummary" {
+		flag.StringVar(&Config.Sql, "sql", Config.Sql, "Output db file (sqlite)")
 	}
 
 	flag.Parse()

@@ -66,6 +66,7 @@ func get_headers(fn string) {
 		"--datetime", "--merge-gps", "--stdout", "--index", "1", fn)
 	types.SetSilentProcess(cmd)
 	out, err := cmd.StdoutPipe()
+
 	defer cmd.Wait()
 	defer out.Close()
 	r := csv.NewReader(out)
@@ -706,7 +707,9 @@ func (lg *BBLOG) Reader(meta types.FlightMeta, ch chan interface{}) (types.LogSe
 		"--datetime", "--merge-gps", "--stdout", "--index",
 		strconv.Itoa(meta.Index), lg.name)
 	types.SetSilentProcess(cmd)
-	out, err := cmd.StdoutPipe()
+	out, _ := cmd.StdoutPipe()
+	serr, _ := cmd.StderrPipe()
+
 	defer cmd.Wait()
 	defer out.Close()
 
@@ -719,7 +722,7 @@ func (lg *BBLOG) Reader(meta types.FlightMeta, ch chan interface{}) (types.LogSe
 	r := csv.NewReader(out)
 	r.TrimLeadingSpace = true
 
-	err = cmd.Start()
+	err := cmd.Start()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to start err=%v", err)
 		os.Exit(1)
@@ -901,8 +904,16 @@ func (lg *BBLOG) Reader(meta types.FlightMeta, ch chan interface{}) (types.LogSe
 			break
 		}
 	}
+
+	sbytes, err := io.ReadAll(serr)
+	serr.Close()
+
+	logerrs := parse_errors(string(sbytes))
+
 	srec := stats.Summary(lt - st)
 	ls := types.LogSegment{}
+	ls.S = logerrs
+
 	if ch != nil {
 		ch <- srec
 		return ls, true
@@ -915,4 +926,15 @@ func (lg *BBLOG) Reader(meta types.FlightMeta, ch chan interface{}) (types.LogSe
 		}
 		return ls, ok
 	}
+}
+
+func parse_errors(s string) string {
+	var sb strings.Builder
+	parts := strings.Split(s, "\n")
+	for _, p := range parts {
+		if strings.HasPrefix(p, "\tWarning: ") || strings.HasPrefix(p, "\tError: ") {
+			fmt.Fprintf(&sb, "%s\n", p[1:])
+		}
+	}
+	return sb.String()
 }
