@@ -632,6 +632,9 @@ func (lg *OTXLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegm
 				if st.IsZero() {
 					st = b.Utc
 					lt = st
+				} else {
+					adiff := b.Utc.Sub(st)
+					b.Stamp = uint64(adiff.Microseconds())
 				}
 
 				if homes.Flags == 0 {
