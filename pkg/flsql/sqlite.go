@@ -13,7 +13,7 @@ import (
 
 const SCHEMA = `CREATE TABLE IF NOT EXISTS meta (id integer NOT NULL PRIMARY KEY, dtg timestamp with time zone, duration integer);
 CREATE TABLE IF NOT EXISTS logerrs (id integer NOT NULL PRIMARY KEY, errstr text);
-CREATE TABLE IF NOT EXISTS logs(id integer ,
+CREATE TABLE IF NOT EXISTS logs(id integer, idx integer,
  stamp integer, lat double precision, lon double precision,
  alt  double precision, galt  double precision, spd  double precision,
  amps  double precision, volts double precision,
@@ -30,11 +30,12 @@ CREATE TABLE IF NOT EXISTS logs(id integer ,
 
 const IMETA = `insert into meta (id, dtg, duration) values ($1,$2,$3)`
 const ISERR = `insert into logerrs (id, errstr) values ($1,$2)`
-const ILOG = `insert into logs (id,stamp,lat,lon,alt,galt,spd,amps,volts,hlat,hlon,vrange,tdist,effic,energy,whkm,whAcc,qval,sval,aval,bval,fmtext,utc,throttle,cse,cog,bearing,roll,pitch,hdop,ail,ele,rud,thr,gyro_x,gyro_y,gyro_z,acc_x,acc_y,acc_z,fix,numsat,fmode,rssi,status,activewp,navmode,hwfail,windx,windy,windz) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51)`
+const ILOG = `insert into logs (id,idx, stamp,lat,lon,alt,galt,spd,amps,volts,hlat,hlon,vrange,tdist,effic,energy,whkm,whAcc,qval,sval,aval,bval,fmtext,utc,throttle,cse,cog,bearing,roll,pitch,hdop,ail,ele,rud,thr,gyro_x,gyro_y,gyro_z,acc_x,acc_y,acc_z,fix,numsat,fmode,rssi,status,activewp,navmode,hwfail,windx,windy,windz) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52)`
 
 type DBL struct {
-	db *sql.DB
-	//	tx *sql.TX
+	db    *sql.DB
+	count int
+	stamp uint64
 }
 
 func NewSQLliteDB(fn string) DBL {
@@ -52,6 +53,11 @@ func NewSQLliteDB(fn string) DBL {
 		log.Fatalf("tables %+v\n", err)
 	}
 	return d
+}
+
+func (d *DBL) Reset() {
+	d.count = 0
+	d.stamp = 0
 }
 
 func (d *DBL) Writemeta(m types.FlightMeta) {
@@ -79,8 +85,14 @@ func (d *DBL) Commit() {
 }
 
 func (d *DBL) Writelog(idx int, b types.LogItem) {
-	_, err := d.db.Exec(ILOG, idx,
-		b.Stamp,
+	var stamp uint64
+	if d.count == 0 {
+		d.stamp = b.Stamp
+	}
+	stamp = b.Stamp - d.stamp
+
+	_, err := d.db.Exec(ILOG, idx, d.count,
+		stamp,
 		b.Lat,
 		b.Lon,
 		b.Alt,
@@ -133,6 +145,7 @@ func (d *DBL) Writelog(idx int, b types.LogItem) {
 	if err != nil {
 		log.Fatalf("log %+v\n", err)
 	}
+	d.count++
 }
 
 func (d *DBL) Close() {

@@ -91,8 +91,12 @@ func main() {
 			for _, b := range metas {
 				outfn := ""
 				if (options.Config.Idx == 0 || options.Config.Idx == b.Index) && b.Flags&types.Is_Valid != 0 {
-					for k, v := range b.Summary() {
-						fmt.Printf("%-8.8s : %s\n", k, v)
+					if use_db {
+						db.Reset()
+					} else {
+						for k, v := range b.Summary() {
+							fmt.Printf("%-8.8s : %s\n", k, v)
+						}
 					}
 					ls, res := lfr.Reader(b, nil)
 					if res {
@@ -113,27 +117,34 @@ func main() {
 							kmlgen.GenerateKML(ls.H, ls.L, outfn, b, ls.M, GetVersion)
 						}
 					}
-					for k, v := range ls.M {
-						fmt.Printf("%-8.8s : %s\n", k, v)
+					if !use_db {
+						for k, v := range ls.M {
+							fmt.Printf("%-8.8s : %s\n", k, v)
+						}
+						if s, ok := b.ShowDisarm(); ok {
+							fmt.Printf("%-8.8s : %s\n", "Disarm", s)
+						}
+						if !res {
+							fmt.Fprintf(os.Stderr, "*** skipping KML/Z for log  with no valid geospatial data\n")
+						} else {
+							show_output(outfn)
+						}
+						fmt.Println()
 					}
-					if s, ok := b.ShowDisarm(); ok {
-						fmt.Printf("%-8.8s : %s\n", "Disarm", s)
-					}
-					if !res {
-						fmt.Fprintf(os.Stderr, "*** skipping KML/Z for log  with no valid geospatial data\n")
-					} else {
-						show_output(outfn)
-					}
-					fmt.Println()
 					if use_db {
 						n := len(ls.L.Items)
 						if n > 0 {
 							if b.Duration == 0 {
-								ns := int64((ls.L.Items[n-1].Stamp - ls.L.Items[0].Stamp))
+								ns := int64(ls.L.Items[n-1].Stamp - ls.L.Items[0].Stamp)
 								b.Duration = time.Duration(ns) * time.Microsecond
 							}
 							db.Writemeta(b)
 							db.Commit()
+							fmt.Printf("%d\t%s\t%.1f\t%d", b.Index, b.Date, b.Duration.Seconds(), n)
+							if ls.S != "" {
+								fmt.Printf("\t*")
+							}
+							fmt.Println()
 						}
 					}
 				}
