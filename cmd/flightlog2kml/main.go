@@ -105,10 +105,38 @@ func main() {
 								fmt.Fprintf(os.Stderr, "%+v\n", bi)
 							}
 						} else if use_db {
-							db.Begin()
-							for _, bi := range ls.L.Items {
-								db.Writelog(b.Index, bi)
+							n := len(ls.L.Items)
+							ns := uint64(0)
+							if n > 0 {
+								ns = uint64(ls.L.Items[n-1].Stamp - ls.L.Items[0].Stamp)
+								b.Duration = time.Duration(ns) * time.Microsecond
 							}
+							ndelay := uint64(100 * 1000) // 100 millsecs
+							if ns > 10*60*1000*1000 {    // > 10 mins
+								ndelay = ns / uint64(6000)
+							}
+
+							db.Begin()
+							dt := uint64(0)
+							nx := 0
+							for _, bi := range ls.L.Items {
+								ut := bi.Stamp
+								if (ut - dt) >= ndelay {
+									db.Writelog(b.Index, bi)
+									nx += 1
+									dt = ut
+								}
+							}
+							if dt != ls.L.Items[n-1].Stamp {
+								db.Writelog(b.Index, ls.L.Items[n-1])
+								nx += 1
+							}
+							fmt.Printf("%d\t%s\t%.1f\t%d", b.Index, b.Date, b.Duration.Seconds(), nx)
+							if ls.S != "" {
+								fmt.Printf("\t*")
+							}
+							fmt.Println()
+
 							if ls.S != "" {
 								db.Writeerr(b.Index, ls.S)
 							}
@@ -132,20 +160,8 @@ func main() {
 						fmt.Println()
 					}
 					if use_db {
-						n := len(ls.L.Items)
-						if n > 0 {
-							if b.Duration == 0 {
-								ns := int64(ls.L.Items[n-1].Stamp - ls.L.Items[0].Stamp)
-								b.Duration = time.Duration(ns) * time.Microsecond
-							}
-							db.Writemeta(b)
-							db.Commit()
-							fmt.Printf("%d\t%s\t%.1f\t%d", b.Index, b.Date, b.Duration.Seconds(), n)
-							if ls.S != "" {
-								fmt.Printf("\t*")
-							}
-							fmt.Println()
-						}
+						db.Writemeta(b)
+						db.Commit()
 					}
 				}
 			}

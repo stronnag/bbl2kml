@@ -11,7 +11,7 @@ import (
 	"types"
 )
 
-const SCHEMA = `CREATE TABLE IF NOT EXISTS meta (id integer NOT NULL PRIMARY KEY, dtg timestamp with time zone, duration integer);
+const SCHEMA = `CREATE TABLE IF NOT EXISTS meta (id integer NOT NULL PRIMARY KEY, dtg timestamp with time zone, duration integer, mname text, firmware text);
 CREATE TABLE IF NOT EXISTS logerrs (id integer NOT NULL PRIMARY KEY, errstr text);
 CREATE TABLE IF NOT EXISTS logs(id integer, idx integer,
  stamp integer, lat double precision, lon double precision,
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS logs(id integer, idx integer,
  fix  integer, numsat integer, fmode integer, rssi  integer, status integer, activewp integer,
  navMode integer, hwfail integer, windx integer, windy integer, windz integer)`
 
-const IMETA = `insert into meta (id, dtg, duration) values ($1,$2,$3)`
+const IMETA = `insert into meta (id, dtg, duration, mname,firmware) values ($1,$2,$3,$4,$5)`
 const ISERR = `insert into logerrs (id, errstr) values ($1,$2)`
 const ILOG = `insert into logs (id,idx, stamp,lat,lon,alt,galt,spd,amps,volts,hlat,hlon,vrange,tdist,effic,energy,whkm,whAcc,qval,sval,aval,bval,fmtext,utc,throttle,cse,cog,bearing,roll,pitch,hdop,ail,ele,rud,thr,gyro_x,gyro_y,gyro_z,acc_x,acc_y,acc_z,fix,numsat,fmode,rssi,status,activewp,navmode,hwfail,windx,windy,windz) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52)`
 
@@ -61,7 +61,7 @@ func (d *DBL) Reset() {
 }
 
 func (d *DBL) Writemeta(m types.FlightMeta) {
-	if _, err := d.db.Exec(IMETA, m.Index, m.Date, m.Duration.Seconds()); err != nil {
+	if _, err := d.db.Exec(IMETA, m.Index, m.Date, m.Duration.Seconds(), m.Craft, m.Firmware); err != nil {
 		log.Fatalf("meta %+v\n", err)
 	}
 }
@@ -84,12 +84,47 @@ func (d *DBL) Commit() {
 	}
 }
 
+func ltm_flight_mode(fm uint8) uint8 {
+	var fms byte
+	switch fm {
+	case types.FM_ACRO:
+		fms = 1
+	case types.FM_MANUAL:
+		fms = 0
+	case types.FM_HORIZON:
+		fms = 3
+	case types.FM_ANGLE:
+		fms = 2
+	case types.FM_LAUNCH:
+		fms = 20
+	case types.FM_RTH:
+		fms = 13
+	case types.FM_WP:
+		fms = 10
+	case types.FM_LAND:
+		fms = 15
+	case types.FM_CRUISE3D, types.FM_CRUISE2D:
+		fms = 18
+	case types.FM_PH:
+		fms = 9
+	case types.FM_AH:
+		fms = 8
+	case types.FM_EMERG:
+		fms = 19
+	default:
+		fms = 0
+	}
+	return fms
+}
+
 func (d *DBL) Writelog(idx int, b types.LogItem) {
 	var stamp uint64
 	if d.count == 0 {
 		d.stamp = b.Stamp
 	}
 	stamp = b.Stamp - d.stamp
+
+	ltmmode := ltm_flight_mode(b.Fmode)
 
 	_, err := d.db.Exec(ILOG, idx, d.count,
 		stamp,
@@ -133,7 +168,7 @@ func (d *DBL) Writelog(idx int, b types.LogItem) {
 		b.Acc_z,
 		b.Fix,
 		b.Numsat,
-		b.Fmode,
+		ltmmode,
 		b.Rssi,
 		b.Status,
 		b.ActiveWP,
