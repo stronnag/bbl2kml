@@ -199,11 +199,11 @@ func ParseCLI(gv func() string) ([]string, string) {
 	flag.StringVar(&Config.Rebase, "rebase", "", "rebase all positions on lat,lon[,alt]")
 	flag.IntVar(&Config.Intvl, "interval", Config.Intvl, "Sampling Interval (ms)")
 	flag.BoolVar(&showversion, "version", false, "Just show version")
-	if app != "fl2sitl" {
+	if !strings.HasPrefix(app, "fl2sitl") {
 		flag.StringVar(&cfgfile, "config", "", "alternate file")
 	}
 
-	if app == "flightlog2kml" || app == "bbsummary" {
+	if strings.HasPrefix(app, "flightlog2kml") || strings.HasPrefix(app, "bbsummary") {
 		flag.StringVar(&Config.Sql, "sql", Config.Sql, "Output db file (sqlite)")
 	}
 
