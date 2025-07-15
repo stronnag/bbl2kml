@@ -13,9 +13,17 @@ if commit != ''
   ldflags += ' -X main.GitCommit=' + commit
 endif
 
+message('First version <' + version + '>')
+
 if version == ''
   version = meson.project_version()
+else
+  if meson.project_version().version_compare('>'+version)
+      version = meson.project_version()
+  endif
 endif
+
+message('2nd version <' + version + '>')
 
 if version != ''
   ldflags += ' -X main.GitTag='+ version
