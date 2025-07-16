@@ -144,6 +144,10 @@ func main() {
 							outfn = kmlgen.GenKmlName(b.Logname, b.Index)
 							kmlgen.GenerateKML(ls.H, ls.L, outfn, b, ls.M, GetVersion)
 						}
+						if use_db {
+							db.Writemeta(b)
+							db.Commit()
+						}
 					}
 					if !use_db {
 						for k, v := range ls.M {
@@ -158,10 +162,6 @@ func main() {
 							show_output(outfn)
 						}
 						fmt.Println()
-					}
-					if use_db {
-						db.Writemeta(b)
-						db.Commit()
 					}
 				}
 			}
