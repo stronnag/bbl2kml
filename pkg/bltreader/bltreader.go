@@ -138,6 +138,7 @@ func parse_bullet(line string, b *types.LogItem) uint16 {
 					b.Pitch = int16(tmp / 10)
 				case "hea":
 					b.Cse = uint32(tmp)
+					b.Cog = b.Cse
 				case "alt":
 					b.Alt = float64(tmp) / 100.0
 					cap |= types.CAP_ALTITUDE
@@ -317,6 +318,11 @@ func (lg *BLTLOG) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegm
 					if st.IsZero() {
 						st = b.Utc
 						lt = st
+					} else {
+						mdiff := b.Utc.Sub(st).Microseconds()
+						if mdiff > 0 {
+							b.Stamp = uint64(mdiff)
+						}
 					}
 
 					if b.Vrange > stats.Max_range {
