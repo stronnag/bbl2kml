@@ -21,6 +21,7 @@ require (
 	log2mission v1.0.0
 	ltmgen v1.0.0
 	mission v1.0.0
+	mwpjson v1.0.0
 	options v1.0.0
 	otx v1.0.0
 	sitlgen v1.0.0
@@ -46,10 +47,10 @@ require (
 	golang.org/x/sync v0.16.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
 	inav v1.0.0 // indirect
-	modernc.org/libc v1.66.3 // indirect
+	modernc.org/libc v1.66.4 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
-	modernc.org/sqlite v1.38.0 // indirect
+	modernc.org/sqlite v1.38.1 // indirect
 	styles v1.0.0 // indirect
 )
 
@@ -86,3 +87,5 @@ replace styles v1.0.0 => ./pkg/styles
 replace cli v1.0.0 => ./pkg/cli
 
 replace flsql v1.0.0 => ./pkg/flsql
+
+replace mwpjson v1.0.0 => ./pkg/mwpjson/

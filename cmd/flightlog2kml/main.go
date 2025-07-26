@@ -17,6 +17,7 @@ import (
 	"flsql"
 	"geo"
 	"kmlgen"
+	"mwpjson"
 	"options"
 	"otx"
 	"types"
@@ -64,11 +65,15 @@ func main() {
 		case types.IS_AP:
 			l := aplog.NewAPReader(fn)
 			lfr = &l
+		case types.IS_MWP:
+			l := mwpjson.NewMWPJSONReader(fn)
+			lfr = &l
 		default:
 			log.Fatalf("%s: unknown log format\n", fn)
 		}
 
 		metas, err := lfr.GetMetas()
+
 		if err == nil {
 			if options.Config.Dump {
 				lfr.Dump()

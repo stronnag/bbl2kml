@@ -178,7 +178,7 @@ func (d *DBL) Writelog(idx int, b types.LogItem) {
 		b.Wind[1],
 		b.Wind[2])
 	if err != nil {
-		log.Fatalf("log %+v\n", err)
+		log.Fatalf("Sql log %+v \n", err)
 	}
 	d.count++
 }

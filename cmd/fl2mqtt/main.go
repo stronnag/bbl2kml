@@ -15,6 +15,7 @@ import (
 	"bltmqtt"
 	"geo"
 	"ltmgen"
+	"mwpjson"
 	"options"
 	"otx"
 	"types"
@@ -53,10 +54,12 @@ func main() {
 		case types.IS_AP:
 			l := aplog.NewAPReader(fn)
 			lfr = &l
+		case types.IS_MWP:
+			l := mwpjson.NewMWPJSONReader(fn)
+			lfr = &l
 		default:
 			log.Fatal("Unknown log format")
 		}
-
 		metas, err := lfr.GetMetas()
 		if err == nil {
 			if options.Config.Dump {
