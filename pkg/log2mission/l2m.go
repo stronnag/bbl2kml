@@ -18,13 +18,18 @@ import (
 )
 
 func generate_filename(m types.FlightMeta) string {
-	outfn := filepath.Base(m.Logname)
-	ext := filepath.Ext(outfn)
-	if len(ext) < len(outfn) {
-		outfn = outfn[0 : len(outfn)-len(ext)]
+	var outfn string
+	if options.Config.Mission == "" {
+		outfn = filepath.Base(m.Logname)
+		ext := filepath.Ext(outfn)
+		if len(ext) < len(outfn) {
+			outfn = outfn[0 : len(outfn)-len(ext)]
+		}
+		ext = fmt.Sprintf(".%d.mission", m.Index)
+		outfn = outfn + ext
+	} else {
+		outfn = options.Config.Mission
 	}
-	ext = fmt.Sprintf(".%d.mission", m.Index)
-	outfn = outfn + ext
 	return outfn
 }
 
@@ -129,6 +134,9 @@ func generate_from_path(seg types.LogSegment, meta types.FlightMeta, mfilter byt
 
 func generate_log_mission(res []simpleline.Point, mfn string, needrth bool, homes types.HomeRec) {
 	var ms mission.Mission
+
+	ms.Version.Value = "latest"
+
 	ms.Metadata.Homey = homes.HomeLat
 	ms.Metadata.Homex = homes.HomeLon
 	fb := geo.Getfrobnication()
@@ -153,7 +161,12 @@ func generate_log_mission(res []simpleline.Point, mfn string, needrth bool, home
 		ms.MissionItems = append(ms.MissionItems,
 			mission.MissionItem{No: len(res), Lat: 0.0, Lon: 0.0, Alt: int32(0.0), Action: "RTH"})
 	}
-	ms.To_MWXML(mfn)
+
+	n := len(ms.MissionItems)
+	if n > 0 {
+		ms.MissionItems[n-1].Flag = 165
+		ms.To_MWXML(mfn)
+	}
 }
 
 func generate_from_active(seg types.LogSegment, meta types.FlightMeta) {
@@ -189,6 +202,8 @@ func generate_from_active(seg types.LogSegment, meta types.FlightMeta) {
 		points = append(points, &pt)
 	}
 
-	generate_log_mission(points, generate_filename(meta), false, seg.H)
+	mfn := generate_filename(meta)
+	generate_log_mission(points, mfn, false, seg.H)
 	fmt.Printf("Mission  : %d active points\n", len(points))
+	fmt.Printf("Output   : %s\n", mfn)
 }

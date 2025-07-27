@@ -13,6 +13,7 @@ import (
 	"bltlog"
 	"geo"
 	ltom "log2mission"
+	"mwpjson"
 	"options"
 	"otx"
 	"types"
@@ -48,6 +49,9 @@ func main() {
 			lfr = &l
 		case types.IS_AP:
 			l := aplog.NewAPReader(fn)
+			lfr = &l
+		case types.IS_MWP:
+			l := mwpjson.NewMWPJSONReader(fn)
 			lfr = &l
 		default:
 			log.Fatal("Unknown log format")

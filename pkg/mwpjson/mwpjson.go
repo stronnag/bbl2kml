@@ -154,6 +154,7 @@ func parse_json(l string, b *types.LogItem) (bool, uint16) {
 		case 5, 6, 7: // WP
 			b.Status |= (10 << 2)
 			b.Fmode = types.FM_WP
+			cap |= types.CAP_WPNO
 		case 8, 10, 11, 12, 13, 14: // Land
 			b.Status |= (15 << 2)
 			b.Fmode = types.FM_LAND
@@ -178,7 +179,10 @@ func parse_json(l string, b *types.LogItem) (bool, uint16) {
 			if hlat == -999 && hlon == -999 {
 				hlat = b.Lat
 				hlon = b.Lon
-				homes.Flags |= types.HOME_ARM
+				homes.Flags |= types.HOME_ARM | types.HOME_ALT
+				homes.HomeLat = hlat
+				homes.HomeLon = hlon
+				homes.HomeAlt = b.GAlt
 			}
 			b.Hlat = hlat
 			b.Hlon = hlon
