@@ -37,7 +37,7 @@ func NewOTXReader(fn string) OTXLOG {
 }
 
 func (o *OTXLOG) LogType() byte {
-	return 'O'
+	return types.LOGOTX
 }
 
 func (o *OTXLOG) GetMetas() ([]types.FlightMeta, error) {

@@ -20,6 +20,7 @@ import (
 	"mwpjson"
 	"options"
 	"otx"
+	"sqlreader"
 	"types"
 )
 
@@ -67,6 +68,9 @@ func main() {
 			lfr = &l
 		case types.IS_MWP:
 			l := mwpjson.NewMWPJSONReader(fn)
+			lfr = &l
+		case types.IS_SQL:
+			l := sqlreader.NewSQLReader(fn)
 			lfr = &l
 		default:
 			log.Fatalf("%s: unknown log format\n", fn)
@@ -132,6 +136,7 @@ func main() {
 									dt = ut
 								}
 							}
+							db.Commit()
 							if dt != ls.L.Items[n-1].Stamp {
 								db.Writelog(b.Index, ls.L.Items[n-1])
 								nx += 1
@@ -143,13 +148,16 @@ func main() {
 							fmt.Println()
 
 							if ls.S != "" {
+								db.Begin()
 								db.Writeerr(b.Index, ls.S)
+								db.Commit()
 							}
 						} else if options.Config.Summary == false {
 							outfn = kmlgen.GenKmlName(b.Logname, b.Index)
 							kmlgen.GenerateKML(ls.H, ls.L, outfn, b, ls.M, GetVersion)
 						}
 						if use_db {
+							db.Begin()
 							db.Writemeta(b)
 							db.Commit()
 						}

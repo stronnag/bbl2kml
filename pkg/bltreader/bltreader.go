@@ -42,7 +42,7 @@ func NewBLTReader(fn string) BLTLOG {
 }
 
 func (o *BLTLOG) LogType() byte {
-	return 'G'
+	return types.LOGBLT
 }
 func (o *BLTLOG) GetMetas() ([]types.FlightMeta, error) {
 	m, err := types.ReadMetaCache(o.name)

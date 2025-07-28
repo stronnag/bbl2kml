@@ -1,11 +1,11 @@
 package types
 
 import (
-	"strings"
 	"bufio"
-	"os"
-	"log"
 	"bytes"
+	"log"
+	"os"
+	"strings"
 )
 
 const (
@@ -15,6 +15,7 @@ const (
 	IS_BLT     = 3
 	IS_MWP     = 4
 	IS_AP      = 5
+	IS_SQL     = 6
 )
 
 func EvinceFileType(fn string) int {
@@ -38,6 +39,8 @@ func EvinceFileType(fn string) int {
 			res = IS_MWP
 		case bytes.HasPrefix(sig, []byte{0xa3, 0x95, 0x80, 0x80, 0x59, 0x46, 0x4d, 0x54}):
 			res = IS_AP
+		case strings.HasPrefix(string(sig), "SQLite format 3"):
+			res = IS_SQL
 		}
 	}
 	return res

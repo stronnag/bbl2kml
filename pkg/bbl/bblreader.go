@@ -53,7 +53,7 @@ func (o *BBLOG) GetDurations() {
 }
 
 func (o *BBLOG) LogType() byte {
-	return 'B'
+	return types.LOGBBL
 }
 
 func (o *BBLOG) Dump() {

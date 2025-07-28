@@ -25,7 +25,7 @@ func NewMWPJSONReader(fn string) MWPJSON {
 }
 
 func (o *MWPJSON) LogType() byte {
-	return 'J'
+	return types.LOGMWP
 }
 
 func (o *MWPJSON) GetDurations() {

@@ -25,6 +25,7 @@ require (
 	options v1.0.0
 	otx v1.0.0
 	sitlgen v1.0.0
+	sqlreader v1.0.0
 	types v1.0.0
 )
 
@@ -36,6 +37,7 @@ require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
+	github.com/jmoiron/sqlx v1.4.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-tty v0.0.7 // indirect
 	github.com/mazznoer/csscolorparser v0.1.6 // indirect
@@ -89,3 +91,5 @@ replace cli v1.0.0 => ./pkg/cli
 replace flsql v1.0.0 => ./pkg/flsql
 
 replace mwpjson v1.0.0 => ./pkg/mwpjson/
+
+replace sqlreader v1.0.0 => ./pkg/readsql/

@@ -7,6 +7,15 @@ import (
 )
 
 const (
+	LOGARP = 'A'
+	LOGBBL = 'B'
+	LOGOTX = 'O'
+	LOGBLT = 'G'
+	LOGMWP = 'M'
+	LOGSQL = 'S'
+)
+
+const (
 	FM_ACRO = iota
 	FM_MANUAL
 	FM_HORIZON

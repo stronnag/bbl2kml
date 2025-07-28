@@ -16,6 +16,7 @@ import (
 	"mwpjson"
 	"options"
 	"otx"
+	"sqlreader"
 	"types"
 )
 
@@ -52,6 +53,9 @@ func main() {
 			lfr = &l
 		case types.IS_MWP:
 			l := mwpjson.NewMWPJSONReader(fn)
+			lfr = &l
+		case types.IS_SQL:
+			l := sqlreader.NewSQLReader(fn)
 			lfr = &l
 		default:
 			log.Fatal("Unknown log format")

@@ -148,7 +148,7 @@ func NewAPReader(fn string) APLOG {
 }
 
 func (o *APLOG) LogType() byte {
-	return 'A'
+	return types.LOGARP
 }
 
 func (o *APLOG) GetMetas() ([]types.FlightMeta, error) {
