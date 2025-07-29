@@ -173,7 +173,7 @@ func (d *DBL) Writelog(idx int, b types.LogItem) {
 		b.Rssi,
 		b.Status,
 		b.ActiveWP,
-		b.NavMode,
+		b.Navmode,
 		b.HWfail,
 		b.Wind[0],
 		b.Wind[1],

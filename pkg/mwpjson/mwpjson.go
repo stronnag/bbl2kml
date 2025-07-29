@@ -73,7 +73,7 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 				nsec := int64((lt - float64(sec)) * 1e9)
 				baseutc = time.Unix(sec, nsec)
 				mt.Date = baseutc
-			case "armed":
+			case "td.armed", "armed":
 				if (o["armed"]).(bool) {
 					if st == 0 {
 						st = (o["utime"].(float64))
@@ -95,6 +95,7 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 	}
 	if len(metas) == 0 {
 		err = errors.New("No records in MWP JSON log")
+	} else {
 	}
 
 	return metas, err
@@ -108,12 +109,46 @@ var (
 	homes      types.HomeRec
 )
 
+func fm_ltm(ltm uint8) uint8 {
+	var fm uint8
+	switch ltm {
+	case 0:
+		fm = types.FM_MANUAL
+	case 1:
+		fm = types.FM_ACRO
+	case 2:
+		fm = types.FM_ANGLE
+	case 3:
+		fm = types.FM_HORIZON
+	case 8:
+		fm = types.FM_AH
+	case 9:
+		fm = types.FM_PH
+	case 10:
+		fm = types.FM_WP
+	case 13:
+		fm = types.FM_RTH
+	case 15:
+		fm = types.FM_LAND
+	case 18:
+		fm = types.FM_CRUISE3D
+	case 19:
+		fm = types.FM_EMERG
+	case 20:
+		fm = types.FM_LAUNCH
+	default:
+		fm = types.FM_ACRO
+	}
+	return fm
+}
+
 func parse_json(l string, b *types.LogItem) (bool, uint16) {
 	cap := uint16(0)
 	done := false
 
 	var o map[string]interface{}
 	json.Unmarshal([]byte(l), &o)
+
 	lt = o["utime"].(float64)
 	switch o["type"] {
 	case "environment":
@@ -122,19 +157,82 @@ func parse_json(l string, b *types.LogItem) (bool, uint16) {
 		hlon = -999
 		b.Status = 0
 		b.Tdist = 0
-	case "armed":
+
+	case "armed", "td.armed":
 		if (o["armed"]).(bool) {
 			if st == 0 {
 				st = (o["utime"].(float64))
 				b.Stamp = uint64((lt - st) * 1000 * 1000)
 			}
-
 			b.Status |= 1
 			if b.Cse == 0xffff {
 				b.Cse = b.Cog
 			}
 			done = true
 		}
+
+	case "td.navmode":
+		b.Navmode = byte(o["nav_mode"].(float64))
+		b.ActiveWP = uint8(o["wp_number"].(float64))
+
+	case "td.origin":
+		b.Hlat = o["lat"].(float64)
+		b.Hlon = o["lon"].(float64)
+		homes.Flags |= types.HOME_ARM | types.HOME_ALT
+		homes.HomeLat = b.Hlat
+		homes.HomeLon = b.Hlon
+		homes.HomeAlt = o["alt"].(float64)
+
+	case "td.sframe":
+		b.Status = uint8(o["flags"].(float64))
+		ltmmode := uint8(o["ltmmode"].(float64))
+		b.Fmode = fm_ltm(ltmmode)
+
+	case "td.attitude":
+		b.Cse = uint32(o["yaw"].(float64))
+		b.Roll = int16(o["roll"].(float64))
+		b.Pitch = int16(o["pitch"].(float64))
+
+	case "td.altitude", "altitude":
+		cap |= types.CAP_ALTITUDE
+		b.Alt = o["estalt"].(float64)
+		// b.Vario = o["vario"].(float64)
+
+	case "td.power":
+		b.Volts = o["voltage"].(float64)
+		b.Amps = o["amps"].(float64)
+		b.Energy = o["power"].(float64)
+		b.Rssi = uint8(o["rssi"].(float64) * 100 / 255)
+		cap |= (types.CAP_RSSI_VALID | types.CAP_VOLTS | types.CAP_AMPS)
+
+	case "td.gps":
+		b.Stamp = uint64((lt - st) * 1000 * 1000)
+		sec := int64(lt)
+		nsec := int64((lt - float64(sec)) * 1e9)
+		b.Utc = time.Unix(sec, nsec)
+		b.Lat = o["lat"].(float64)
+		b.Lon = o["lon"].(float64)
+		b.Cog = uint32(o["cog"].(float64))
+		b.Spd = o["speed"].(float64)
+		b.GAlt = o["alt"].(float64)
+		b.Fix = uint8(o["fix"].(float64))
+		b.Numsat = uint8(o["numsat"].(float64))
+		b.Hdop = uint16(o["hdop"].(float64))
+		cap |= types.CAP_SPEED
+
+	case "td.range_bearing", "comp_gps":
+		b.Vrange = o["range"].(float64)
+		b.Bearing = int32(o["bearing"].(float64))
+
+	case "td.xframe", "ltm_xframe":
+		if o["sensorok"].(float64) != 0 {
+			b.HWfail = true
+		} else {
+			b.HWfail = false
+		}
+
+		/*******************/
+
 	case "analog2":
 		b.Volts = o["voltage"].(float64)
 		b.Amps = o["amps"].(float64) / 100.0
@@ -142,9 +240,9 @@ func parse_json(l string, b *types.LogItem) (bool, uint16) {
 		cap |= (types.CAP_RSSI_VALID | types.CAP_VOLTS | types.CAP_AMPS)
 
 	case "status":
-		b.NavMode = byte(o["nav_mode"].(float64))
+		b.Navmode = byte(o["nav_mode"].(float64))
 		b.ActiveWP = uint8(o["wp_number"].(float64))
-		switch b.NavMode {
+		switch b.Navmode {
 		case 1, 2: // RTH
 			b.Status |= (13 << 2)
 			b.Fmode = types.FM_RTH
@@ -175,38 +273,12 @@ func parse_json(l string, b *types.LogItem) (bool, uint16) {
 		b.Hdop = uint16(o["hdop"].(float64))
 		b.Cog = uint32(o["cse"].(float64))
 		b.Spd = o["spd"].(float64)
-		if (b.Status & 1) != 0 {
-			if hlat == -999 && hlon == -999 {
-				hlat = b.Lat
-				hlon = b.Lon
-				homes.Flags |= types.HOME_ARM | types.HOME_ALT
-				homes.HomeLat = hlat
-				homes.HomeLon = hlon
-				homes.HomeAlt = b.GAlt
-			}
-			b.Hlat = hlat
-			b.Hlon = hlon
-		}
 		cap |= types.CAP_SPEED
-
-	case "comp_gps":
-		b.Vrange = o["range"].(float64)
-		b.Bearing = int32(o["bearing"].(float64))
-
-	case "ltm_xframe":
-		if o["sensorok"].(float64) != 0 {
-			b.HWfail = true
-		}
 
 	case "attitude":
 		b.Cse = uint32(o["heading"].(float64))
 		b.Roll = int16(o["angx"].(float64))
 		b.Pitch = int16(o["angy"].(float64))
-
-	case "altitude":
-		cap |= types.CAP_ALTITUDE
-		b.Alt = o["estalt"].(float64)
-		// FIXME vario (mwp update)
 
 	case "ltm_raw_sframe":
 		// FIXME more fields (mwp update)
@@ -247,6 +319,7 @@ func (lg *MWPJSON) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSeg
 		l := scanner.Text()
 		done, cap := parse_json(l, &b)
 		rec.Cap |= cap
+
 		if done {
 			if b.Vrange > stats.Max_range {
 				stats.Max_range = b.Vrange

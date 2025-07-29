@@ -498,7 +498,7 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 				md = types.FM_HORIZON
 			}
 		}
-		b.NavMode = inav.NavMode(inav_vers, int(i64))
+		b.Navmode = inav.Navmode(inav_vers, int(i64))
 	}
 	// fallback for old inav bug
 	if sok && strings.Contains(s0, "NAVRTH") {

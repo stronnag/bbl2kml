@@ -188,7 +188,7 @@ func parse_bullet(line string, b *types.LogItem) uint16 {
 				case "trp":
 					b.Throttle = tmp
 				case "nvs":
-					b.NavMode = byte(tmp)
+					b.Navmode = byte(tmp)
 				case "hla":
 					homes.HomeLat = float64(tmp) / 1e7
 					homes.Flags |= types.HOME_ARM

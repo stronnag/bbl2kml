@@ -167,7 +167,7 @@ func (lg *SQLREAD) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSeg
 			&b.Rssi,
 			&b.Status,
 			&b.ActiveWP,
-			&b.NavMode,
+			&b.Navmode,
 			&b.HWfail,
 			&b.Wind[0],
 			&b.Wind[1],

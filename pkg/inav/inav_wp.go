@@ -58,7 +58,7 @@ func WP_state(ms *mission.Mission, b types.LogItem, tgt int) (int, int) {
 			tgt = get_next_wp(ms, k)
 			isTimed = false
 		} else {
-			b.NavMode = 4
+			b.Navmode = 4
 		}
 	} else {
 		if b.ActiveWP == 0 {
@@ -93,7 +93,7 @@ func WP_state(ms *mission.Mission, b types.LogItem, tgt int) (int, int) {
 							}
 							phtime = b.Utc.Add(phwait)
 							isTimed = true
-							b.NavMode = 4
+							b.Navmode = 4
 						} else {
 							tgt = get_next_wp(ms, k)
 							//						fmt.Fprintf(os.Stderr, "New target WP %d %d (%s)\n", tgt, nvs, ms.MissionItems[k+1].Action)

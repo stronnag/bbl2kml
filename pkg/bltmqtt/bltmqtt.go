@@ -294,7 +294,7 @@ func make_bullet_msg(b types.LogItem, homeamsl float64, elapsed int, ncells int,
 	sb.WriteByte(',')
 
 	if tgt != 0 {
-		sb.WriteString(fmt.Sprintf("cwn:%d,nvs:%d,", tgt, b.NavMode))
+		sb.WriteString(fmt.Sprintf("cwn:%d,nvs:%d,", tgt, b.Navmode))
 	}
 
 	armed := b.Status & 1
@@ -526,7 +526,7 @@ func MQTTGen(s types.LogSegment, meta types.FlightMeta) {
 			}
 			msg := make_bullet_mode(fmode, ncells, b.HWfail)
 			output_message(c, wfh, msg, b.Utc)
-			output_message(c, wfh, fmt.Sprintf("cwn:%d,nvs:%d", tgt, b.NavMode), b.Utc)
+			output_message(c, wfh, fmt.Sprintf("cwn:%d,nvs:%d", tgt, b.Navmode), b.Utc)
 			laststat = b.Fmode
 		}
 

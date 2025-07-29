@@ -166,7 +166,7 @@ func is_hover(vers, val int) bool {
 	}
 }
 
-func NavMode(vers, val int) byte {
+func Navmode(vers, val int) byte {
 	if is_rth_start(vers, val) {
 		return 1
 	} else if IsRTH(vers, val) {

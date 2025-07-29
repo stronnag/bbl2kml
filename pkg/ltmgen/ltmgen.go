@@ -127,18 +127,18 @@ func (l *ltmbuf) nframe(b types.LogItem, action byte, wpno byte) {
 	l.msg[6] = 0
 	switch b.Fmode {
 	case types.FM_AH, types.FM_PH:
-		l.msg[3] = 1
+		l.msg[3] = 1 // POSHOLD
 	case types.FM_RTH:
-		l.msg[3] = 2
+		l.msg[3] = 2 // RTH
 	case types.FM_WP:
-		l.msg[3] = 3
+		l.msg[3] = 3 // WP
 		l.msg[5] = action
 		l.msg[6] = wpno
 	default:
 		l.msg[3] = 0
 	}
 
-	l.msg[4] = b.NavMode
+	l.msg[4] = b.Navmode
 	l.msg[7] = 0
 	l.msg[8] = 0
 	l.checksum()
@@ -366,14 +366,14 @@ func LTMGen(ch chan interface{}, meta types.FlightMeta) {
 			if b.Fmode == types.FM_WP && ms != nil {
 				act := 0
 				tgt, act = inav.WP_state(ms, b, tgt)
-				//				fmt.Fprintf(os.Stderr, "WP N frame %v %v %v %v\n", xtgt, tgt, xnvs, b.NavMode)
-				//				if tgt != xtgt || b.NavMode != xnvs {
+				//				fmt.Fprintf(os.Stderr, "WP N frame %v %v %v %v\n", xtgt, tgt, xnvs, b.Navmode)
+				//				if tgt != xtgt || b.Navmode != xnvs {
 				if b.Utc.After(g2t) {
 					l := newLTM('N')
 					l.nframe(b, byte(act), byte(tgt))
 					s.Write(l.msg)
 				}
-				//				xnvs = b.NavMode
+				//				xnvs = b.Navmode
 				//xtgt = tgt
 			}
 

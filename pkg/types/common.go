@@ -113,7 +113,7 @@ type LogItem struct {
 	Rssi     uint8
 	Status   uint8
 	ActiveWP uint8
-	NavMode  byte
+	Navmode  byte
 	HWfail   bool
 	Wind     [3]int16
 }
