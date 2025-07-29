@@ -136,11 +136,11 @@ func main() {
 									dt = ut
 								}
 							}
-							db.Commit()
 							if dt != ls.L.Items[n-1].Stamp {
 								db.Writelog(b.Index, ls.L.Items[n-1])
 								nx += 1
 							}
+							db.Commit()
 							fmt.Printf("%d\t%s\t%.1f\t%d", b.Index, b.Date, b.Duration.Seconds(), nx)
 							if ls.S != "" {
 								fmt.Printf("\t*")

@@ -126,7 +126,7 @@ func (d *DBL) Writelog(idx int, b types.LogItem) {
 	stamp = b.Stamp - d.stamp
 
 	ltmmode := ltm_flight_mode(b.Fmode)
-
+	// log.Printf("%d %d %v %+v\n", idx, d.count, stamp, b)
 	d.tx.MustExec(ILOG, idx, d.count,
 		stamp,
 		b.Lat,

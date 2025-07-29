@@ -269,9 +269,11 @@ func (lg *MWPJSON) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSeg
 				deltat := lt - blt
 				if deltat > 0 {
 					if (rec.Cap & types.CAP_AMPS) == types.CAP_AMPS {
-						b.Effic = b.Amps * 1000 / (3.6 * b.Spd) // efficiency
+						if b.Spd > 1 {
+							b.Whkm = b.Amps * b.Volts / (3.6 * b.Spd)
+							b.Effic = b.Amps * 1000 / (3.6 * b.Spd) // efficiency
+						}
 						leffic = b.Effic
-						b.Whkm = b.Amps * b.Volts / (3.6 * b.Spd)
 						whacc += b.Amps * b.Volts * deltat / 3600
 						b.WhAcc = whacc
 						lwhkm = b.Whkm
