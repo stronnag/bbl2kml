@@ -246,11 +246,12 @@ type FlightMeta struct {
 	Index    int
 	Start    int
 	End      int
-	Flags    uint8
+	Acc1G    uint16
+	Sensors  uint16
+	Features uint32
 	Motors   uint8
 	Servos   uint8
-	Sensors  uint16
-	Acc1G    uint16
+	Flags    uint8
 }
 
 func (b *FlightMeta) LogName() string {
@@ -262,7 +263,7 @@ func (b *FlightMeta) LogName() string {
 }
 
 func (b *FlightMeta) ShowSize() (string, bool) {
-	if b.Flags&Has_Size == 0 {
+	if b.Flags&Has_Size == 0 || b.Size == 0 {
 		return "", false
 	} else {
 		var s string

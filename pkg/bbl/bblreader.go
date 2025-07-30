@@ -261,6 +261,7 @@ func metas(fn string) ([]types.FlightMeta, error) {
 					fstr := string(l)[n+1:]
 					if len(fstr) > 0 {
 						features, _ := strconv.Atoi(fstr)
+						bes[nbes].Features = uint32(features)
 						if (features & types.Feature_GPS) != 0 {
 							bes[nbes].Sensors |= types.Has_GPS
 						}
@@ -374,10 +375,15 @@ func dataCapability() uint16 {
 	var ret uint16 = 0
 	if _, ok := hdrs["amperage (A)"]; ok {
 		ret |= types.CAP_AMPS
+	} else if _, ok := hdrs["amperageLatest (A)"]; ok {
+		ret |= types.CAP_AMPS
 	}
 	if _, ok := hdrs["vbat (V)"]; ok {
 		ret |= types.CAP_VOLTS
+	} else if _, ok = hdrs["vbatLatest (V)"]; ok {
+		ret |= types.CAP_VOLTS
 	}
+
 	if _, ok := hdrs["energyCumulative (mAh)"]; ok {
 		ret |= types.CAP_ENERGY
 	}
@@ -615,6 +621,8 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 	}
 
 	if s, ok = get_rec_value(r, "amperage (A)"); ok {
+		b.Amps, _ = strconv.ParseFloat(s, 64)
+	} else if s, ok = get_rec_value(r, "amperageLatest (A)"); ok {
 		b.Amps, _ = strconv.ParseFloat(s, 64)
 	}
 

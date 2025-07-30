@@ -604,7 +604,7 @@ func deserialise_rx(b []byte) []uint16 {
 
 func (m *MSPSerial) Rssi(r byte) {
 	rk := uint16(r) * 255 / 100
-	ra := []byte{byte(rk)}
+	ra := []byte{byte(rk & 0xff)}
 	m.Send_msp(msp_SET_TX_INFO, ra)
 }
 

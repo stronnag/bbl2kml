@@ -89,7 +89,8 @@ func (o *SQLREAD) metas(logfile string) ([]types.FlightMeta, error) {
 			m := types.FlightMeta{Logname: bp, Start: 1}
 			var dt string
 			var tm string
-			err := rows.Scan(&m.Index, &tm, &dt, &m.Craft, &m.Firmware)
+			err := rows.Scan(&m.Index, &tm, &dt, &m.Craft, &m.Firmware, &m.Fwdate, &m.Disarm,
+				&m.Flags, &m.Motors, &m.Servos, &m.Sensors, &m.Acc1G, &m.Features)
 			if err != nil {
 				log.Printf("META SQL: %+v\n", err)
 				return metas, err
@@ -97,7 +98,7 @@ func (o *SQLREAD) metas(logfile string) ([]types.FlightMeta, error) {
 			dt = dt + "s"
 			m.Date, err = time.Parse("2006-01-02 15:04:05.999 -0700 MST", tm)
 			m.Duration, err = time.ParseDuration(dt)
-			m.Flags = types.Has_Start | types.Is_Valid | types.Has_Craft
+			m.Flags |= types.Has_Start | types.Is_Valid | types.Has_Craft
 			metas = append(metas, m)
 		}
 	}

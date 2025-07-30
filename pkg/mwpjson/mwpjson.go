@@ -8,6 +8,7 @@ import (
 	"geo"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 	"types"
 )
@@ -66,14 +67,52 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 			lt = o["utime"].(float64)
 			switch o["type"] {
 			case "environment":
-				mt.Craft = "No-name"
-				mt.Firmware = "INAV"
-				mt.Fwdate = "unknown"
 				sec := int64(lt)
 				nsec := int64((lt - float64(sec)) * 1e9)
 				baseutc = time.Unix(sec, nsec)
 				mt.Date = baseutc
-			case "td.armed", "armed":
+			case "init":
+				s, ok := o["vname"].(string)
+				if ok {
+					mt.Craft = s
+				} else {
+					mt.Craft = "NO-NAME"
+				}
+				s, ok = o["fc_var"].(string)
+				if ok {
+					var sb strings.Builder
+					sb.WriteString(s)
+					sb.WriteString(" ")
+					s = o["fc_vers_str"].(string)
+					sb.WriteString(s)
+					sb.WriteString(" (")
+					s = o["git_info"].(string)
+					sb.WriteString(s)
+					sb.WriteString(") ")
+					s = o["fcname"].(string)
+					sb.WriteString(s)
+					mt.Firmware = sb.String()
+				} else {
+					mt.Firmware = "INAV"
+				}
+				s, ok = o["fcdate"].(string)
+				if ok {
+					mt.Fwdate = s
+				} else {
+					mt.Fwdate = "unknown"
+				}
+				val, ok := o["sensors"].(float64)
+				if ok {
+					mt.Sensors = uint16(val)
+				} else {
+					mt.Sensors = types.Has_GPS | types.Has_Baro | types.Has_Acc
+				}
+				val, ok = o["features"].(float64)
+				if ok {
+					mt.Features = uint32(val)
+				}
+
+			case "v0:armed", "armed":
 				if (o["armed"]).(bool) {
 					if st == 0 {
 						st = (o["utime"].(float64))
@@ -158,7 +197,7 @@ func parse_json(l string, b *types.LogItem) (bool, uint16) {
 		b.Status = 0
 		b.Tdist = 0
 
-	case "armed", "td.armed":
+	case "armed", "v0:armed":
 		if (o["armed"]).(bool) {
 			if st == 0 {
 				st = (o["utime"].(float64))
@@ -171,11 +210,11 @@ func parse_json(l string, b *types.LogItem) (bool, uint16) {
 			done = true
 		}
 
-	case "td.navmode":
+	case "v0:navstatus":
 		b.Navmode = byte(o["nav_mode"].(float64))
 		b.ActiveWP = uint8(o["wp_number"].(float64))
 
-	case "td.origin":
+	case "v0:origin":
 		b.Hlat = o["lat"].(float64)
 		b.Hlon = o["lon"].(float64)
 		homes.Flags |= types.HOME_ARM | types.HOME_ALT
@@ -183,29 +222,29 @@ func parse_json(l string, b *types.LogItem) (bool, uint16) {
 		homes.HomeLon = b.Hlon
 		homes.HomeAlt = o["alt"].(float64)
 
-	case "td.sframe":
+	case "v0:sframe":
 		b.Status = uint8(o["flags"].(float64))
 		ltmmode := uint8(o["ltmmode"].(float64))
 		b.Fmode = fm_ltm(ltmmode)
 
-	case "td.attitude":
+	case "v0:attitude":
 		b.Cse = uint32(o["yaw"].(float64))
 		b.Roll = int16(o["roll"].(float64))
 		b.Pitch = int16(o["pitch"].(float64))
 
-	case "td.altitude", "altitude":
+	case "v0:altitude", "altitude":
 		cap |= types.CAP_ALTITUDE
 		b.Alt = o["estalt"].(float64)
 		// b.Vario = o["vario"].(float64)
 
-	case "td.power":
+	case "v0:power":
 		b.Volts = o["voltage"].(float64)
 		b.Amps = o["amps"].(float64)
 		b.Energy = o["power"].(float64)
 		b.Rssi = uint8(o["rssi"].(float64) * 100 / 255)
 		cap |= (types.CAP_RSSI_VALID | types.CAP_VOLTS | types.CAP_AMPS)
 
-	case "td.gps":
+	case "v0:gps":
 		b.Stamp = uint64((lt - st) * 1000 * 1000)
 		sec := int64(lt)
 		nsec := int64((lt - float64(sec)) * 1e9)
@@ -220,11 +259,11 @@ func parse_json(l string, b *types.LogItem) (bool, uint16) {
 		b.Hdop = uint16(o["hdop"].(float64))
 		cap |= types.CAP_SPEED
 
-	case "td.range_bearing", "comp_gps":
+	case "v0:range_bearing", "comp_gps":
 		b.Vrange = o["range"].(float64)
 		b.Bearing = int32(o["bearing"].(float64))
 
-	case "td.xframe", "ltm_xframe":
+	case "v0:xframe", "ltm_xframe":
 		if o["sensorok"].(float64) != 0 {
 			b.HWfail = true
 		} else {
@@ -274,6 +313,18 @@ func parse_json(l string, b *types.LogItem) (bool, uint16) {
 		b.Cog = uint32(o["cse"].(float64))
 		b.Spd = o["spd"].(float64)
 		cap |= types.CAP_SPEED
+		if (b.Status & 1) != 0 {
+			if hlat == -999 && hlon == -999 {
+				hlat = b.Lat
+				hlon = b.Lon
+				homes.Flags |= types.HOME_ARM | types.HOME_ALT
+				homes.HomeLat = hlat
+				homes.HomeLon = hlon
+				homes.HomeAlt = b.GAlt
+			}
+			b.Hlat = hlat
+			b.Hlon = hlon
+		}
 
 	case "attitude":
 		b.Cse = uint32(o["heading"].(float64))
