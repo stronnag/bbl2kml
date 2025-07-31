@@ -210,7 +210,7 @@ func parse_json(l string, b *types.LogItem) (bool, uint16) {
 			done = true
 		}
 
-	case "v0:navstatus":
+	case "v0:nav-status":
 		b.Navmode = byte(o["nav_mode"].(float64))
 		b.ActiveWP = uint8(o["wp_number"].(float64))
 
@@ -222,7 +222,7 @@ func parse_json(l string, b *types.LogItem) (bool, uint16) {
 		homes.HomeLon = b.Hlon
 		homes.HomeAlt = o["alt"].(float64)
 
-	case "v0:sframe":
+	case "v0:mode-flags":
 		b.Status = uint8(o["flags"].(float64))
 		ltmmode := uint8(o["ltmmode"].(float64))
 		b.Fmode = fm_ltm(ltmmode)
@@ -259,11 +259,11 @@ func parse_json(l string, b *types.LogItem) (bool, uint16) {
 		b.Hdop = uint16(o["hdop"].(float64))
 		cap |= types.CAP_SPEED
 
-	case "v0:range_bearing", "comp_gps":
+	case "v0:range-bearing", "comp_gps":
 		b.Vrange = o["range"].(float64)
 		b.Bearing = int32(o["bearing"].(float64))
 
-	case "v0:xframe", "ltm_xframe":
+	case "v0:sensor-reason", "ltm_xframe":
 		if o["sensorok"].(float64) != 0 {
 			b.HWfail = true
 		} else {
