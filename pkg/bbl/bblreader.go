@@ -19,6 +19,7 @@ import (
 import (
 	"geo"
 	"inav"
+	"mission"
 	"options"
 	"types"
 )
@@ -710,6 +711,37 @@ func proc_start(w1 *os.File, args ...string) (p *os.Process, err error) {
 	}
 	return nil, err
 }
+
+func read_mission(fb *geo.Frob) *mission.Mission {
+	var ms *mission.Mission
+	ms = nil
+	if len(options.Config.Mission) > 0 {
+		var err error
+		_, ms, err = mission.Read_Mission_File_Index(options.Config.Mission, options.Config.MissionIndex)
+		if err == nil {
+			if fb != nil {
+				if ms.Metadata.Homey != 0 && ms.Metadata.Homex != 0 {
+					fb.Set_origin(ms.Metadata.Homey, ms.Metadata.Homex, 0)
+					ms.Metadata.Homey, ms.Metadata.Homex, _ = fb.Get_rebase()
+					ms.Metadata.Cy, ms.Metadata.Cx, _ = fb.Relocate(ms.Metadata.Cy, ms.Metadata.Cx, 0)
+				}
+			}
+
+			for k, mi := range ms.MissionItems {
+				if mi.Is_GeoPoint() && fb != nil {
+					ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, _ = fb.Relocate(ms.MissionItems[k].Lat, ms.MissionItems[k].Lon, 0)
+				}
+				if mi.Action == "JUMP" {
+					ms.MissionItems[k].P3 = ms.MissionItems[k].P2
+				}
+			}
+		} else {
+			fmt.Fprintf(os.Stderr, "* Failed to read mission file %s\n", options.Config.Mission)
+		}
+	}
+	return ms
+}
+
 func (lg *BBLOG) Reader(meta types.FlightMeta, ch chan interface{}) (types.LogSegment, bool) {
 	cmd := exec.Command(options.Config.Blackbox_decode,
 		"--datetime", "--merge-gps", "--stdout", "--index",
@@ -726,6 +758,8 @@ func (lg *BBLOG) Reader(meta types.FlightMeta, ch chan interface{}) (types.LogSe
 	var froboff time.Duration
 
 	fb := geo.Getfrobnication()
+
+	ms := read_mission(fb)
 
 	r := csv.NewReader(out)
 	r.TrimLeadingSpace = true
@@ -758,7 +792,8 @@ func (lg *BBLOG) Reader(meta types.FlightMeta, ch chan interface{}) (types.LogSe
 	}
 
 	ndelay := 1000 * uint64(options.Config.Intvl)
-
+	tgt := 0
+	laststat := uint8(255)
 	leffic := 0.0
 	lwhkm := 0.0
 	whacc := 0.0
@@ -862,6 +897,20 @@ func (lg *BBLOG) Reader(meta types.FlightMeta, ch chan interface{}) (types.LogSe
 					b.Tdist = (stats.Distance * 1852.0)
 					llat = b.Lat
 					llon = b.Lon
+
+					if b.Fmode != laststat {
+						if b.Fmode == types.FM_WP && ms != nil {
+							tgt = 1
+						} else {
+							tgt = 0
+						}
+						laststat = b.Fmode
+					}
+
+					if b.Fmode == types.FM_WP && b.ActiveWP == 0 && ms != nil {
+						tgt, _ = inav.WP_state(ms, b, tgt)
+						b.ActiveWP = uint8(tgt)
+					}
 
 					if (rec.Cap & types.CAP_AMPS) == types.CAP_AMPS {
 						if d > 0 {
