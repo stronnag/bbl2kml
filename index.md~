@@ -230,8 +230,16 @@ If a mission file is given, this will also be displayed by BulletGCSS, albeit in
 
 `log2mission` will create an inav XML mission file from a supported flight log (Blackbox, OpenTX, BulletGCSS). The mission will not exceed the inav maximum of 120 mission points (or configurated maximum).
 
+From log2mission 1.0.17 and Blackbox logs from INAV 7.1.0 and later, the active waypoint number is stored in the log and the majority of filtering options are ignored, unless  `-mode-filter` is uses, which reimposes the legacy simplification algorithm.
 
-    $ log2mission
+For such logs (log2mission 1.0.17+, INAV BBL 7.1.0+):
+
+* `-start-offset`, `-end-offset`, `-epsilon`, `-max-wp`,  `-split-time` have no effect and are ignored **unless** `-mode-filter` is used (which then bypasses the INAV 7.1.0+ `activeWpNumber`).
+* You should probably use a lower `-interval` (for example 10).
+
+### Usage
+
+	$ log2mission
     Usage of log2mission [options] file...
       -end-offset int
         	End Offset (seconds) (default -30)
@@ -446,13 +454,15 @@ Compiled with:
 or more simply
 
     # First time
-    meson build --prefix=~/.local
+    meson setup build -DVersion=''  --prefix=~/.local
     cd build
     ninja install
 
     # Subsequently
     cd build
     ninja install
+
+`-DVersion=''` reads the project version from `meson.build`, otherwise, if you wished to provide a custom version, then you can provide a custom version e.g. `-Dversion=6.6.6-cursed`.
 
 **flightlog2kml** depends on [twpayne/go-kml](https://github.com/twpayne/go-kml), an outstanding open source Golang KML library.
 
