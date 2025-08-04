@@ -412,14 +412,33 @@ Replaying Ardupilot logs requires [mavlogdump.py](https://github.com/ArduPilot/p
 
 ### Release media
 
+
 Binaries are provided for common operating systems in the [Release folder](https://github.com/stronnag/bbl2kml/releases).
+
+|  OS  | Architecture | Archive |
+| ---- | ------------ | ------- |
+| Linux | amd64 (x86_64) | flightlog2kml-x.y.z-linux-x86_64.tar.zst |
+| Linux | arm64 (aarch64) | flightlog2kml-x.y.z-linux-aarch64.tar.zst |
+| Linux | riscv64 | flightlog2kml-x.y.z-linux-riscv64.tar.zst |
+| MacOS (Darwin) | amd64 (x86_64) | flightlog2kml-x.y.z-darwin-x86_64.tar.zst |
+| MacOS (Darwin) | arm64 (aarch64) | flightlog2kml-x.y.z-darwin-aarch64.tar.zst |
+| FreeBSD | amd64 (x86_64) | flightlog2kml-x.y.z-freebsd-x86_64.tar.zst |
+| Windows | amd64 (x86_64) | flightlog2kml-x.y.z-win64-x86_64.zip |
+
+* Copy the required OS/Architecture archive from the assets below
+* Unpack the archive
+* Copy the binaries from the `fl2x/<OS>/<ARCH>/bin`  directory to a convenient PATH location.
+
+(`x.y.z` represents the version, `<OS>` the operating system, `<ARCH>` the archietecture.)
 
 #### Install from release archive
 
+Download the required archive, unpack, copy the binaries somewhere useful.
+
 For example (adjust version number, OS, archiver as necessary).
 
-    $ wget https://github.com/stronnag/bbl2kml/releases/download/0.12.0/flightlog2kml-0.12.0-linux-x86_64.tar.gz
-    $ tar -xvf flightlog2kml-0.12.0-linux-x86_64.tar.gz
+    $ wget https://github.com/stronnag/bbl2kml/releases/download/x.y.z/flightlog2kml-x.y.z-linux-x86_64.tar.gz
+    $ tar -xvf flightlog2kml-x.y.z-linux-x86_64.tar.gz
     fl2x/linux-x86_64/
     fl2x/linux-x86_64/bin/
     fl2x/linux-x86_64/bin/flightlog2kml
@@ -435,6 +454,8 @@ For example (adjust version number, OS, archiver as necessary).
     # Or system wide
     $ sudo cp -a fl2x/linux-x86_64/bin/* /usr/local/bin/
 
+Alternatively, download the archive in the browser, open the downloaded archive in the file manager and copy from there.
+
 The fl2x tools require that [inav blackbox_decode](https://github.com/iNavFlight/blackbox-tools) is installed and can be found by the operating system (e.g. `$PATH` / `%PATH%`).
 
 On Windows, as long as [inav blackbox_decode](https://github.com/iNavFlight/blackbox-tools) can be found (which may mean on `%PATH%` or in the same directory as `flightlog2kml` (and the other tools), then dropping logs onto `flightlog2kml` is supported.
@@ -445,7 +466,7 @@ In order to have a simple setup on Windows / drag and drop for both `blackbox_de
 
 ### Building from source
 
-Requires Go v1.13 or later.
+Requires Go v1.18 or later.
 Compiled with:
 
     $ go build cmd/flightlog2kml/main.go
