@@ -1,4 +1,4 @@
-project('flightlog2kml', version : '1.0.31')
+project('flightlog2kml', version : '1.0.32')
 meson.add_install_script('meson/post_install.py')
 version = get_option('version')
 commit = get_option('commit')

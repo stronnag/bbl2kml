@@ -5,6 +5,7 @@ import (
 	"log"
 	_ "modernc.org/sqlite"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -79,6 +80,20 @@ func fm_ltm(ltm uint8) uint8 {
 	return fm
 }
 
+func parse_time(tm string) (time.Time, error) {
+	dt, err := time.Parse("2006-01-02 15:04:05.999 -0700 MST", tm)
+	if err != nil {
+		parts := strings.Split(tm, " ")
+		if len(parts) == 4 {
+			tm = strings.Join(parts[0:3], " ")
+		} else if len(parts) == 2 {
+			tm = tm + " +0000"
+		}
+		dt, err = time.Parse("2006-01-02 15:04:05.999 -0700", tm)
+	}
+	return dt, err
+}
+
 func (o *SQLREAD) metas(logfile string) ([]types.FlightMeta, error) {
 	var metas []types.FlightMeta
 	bp := filepath.Base(logfile)
@@ -96,7 +111,7 @@ func (o *SQLREAD) metas(logfile string) ([]types.FlightMeta, error) {
 				return metas, err
 			}
 			dt = dt + "s"
-			m.Date, err = time.Parse("2006-01-02 15:04:05.999 -0700 MST", tm)
+			m.Date, err = parse_time(tm)
 			m.Duration, err = time.ParseDuration(dt)
 			m.Flags |= types.Has_Start | types.Is_Valid | types.Has_Craft
 			metas = append(metas, m)
