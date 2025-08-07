@@ -88,7 +88,6 @@ func build_headers(record []string) {
 	}
 	if _, ok := hdrs["dateTime"]; !ok {
 		fmt.Fprintln(os.Stderr, "No \"datetime\" header, probably blackbox_decode too old or broken")
-		os.Exit(1)
 	}
 }
 
