@@ -36,11 +36,11 @@ func (o *MWPJSON) Dump() {
 }
 
 func (o *MWPJSON) GetMetas() ([]types.FlightMeta, error) {
-	m, err := types.ReadMetaCache(o.name)
-	if err != nil {
-		m, err = metas(o.name)
-		types.WriteMetaCache(o.name, m)
-	}
+	//m, err := types.ReadMetaCache(o.name)
+	//if err != nil {
+	m, err := metas(o.name)
+	types.WriteMetaCache(o.name, m)
+	//}
 	o.meta = m
 	return m, err
 }
@@ -71,7 +71,14 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 				nsec := int64((lt - float64(sec)) * 1e9)
 				baseutc = time.Unix(sec, nsec)
 				mt.Date = baseutc
+
 			case "init":
+				if baseutc.IsZero() {
+					sec := int64(lt)
+					nsec := int64((lt - float64(sec)) * 1e9)
+					baseutc = time.Unix(sec, nsec)
+					mt.Date = baseutc
+				}
 				s, ok := o["vname"].(string)
 				if ok {
 					mt.Craft = s
@@ -83,13 +90,23 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 					var sb strings.Builder
 					sb.WriteString(s)
 					sb.WriteString(" ")
-					s = o["fc_vers_str"].(string)
+					s, ok = o["fc_vers_str"].(string)
+					if !ok {
+						x, ok := o["fc_vers"].(float64)
+						if ok {
+							xi := int(x)
+							a0 := xi & 0xff
+							a1 := (xi >> 8) & 0xff
+							a2 := (xi >> 16) & 0xff
+							s = fmt.Sprintf("%d.%d.%d", a2, a1, a0)
+						}
+					}
 					sb.WriteString(s)
 					sb.WriteString(" (")
 					s = o["git_info"].(string)
 					sb.WriteString(s)
 					sb.WriteString(") ")
-					s = o["fcname"].(string)
+					s, ok = o["fcname"].(string)
 					sb.WriteString(s)
 					mt.Firmware = sb.String()
 				} else {
@@ -108,6 +125,10 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 					mt.Sensors = types.Has_GPS | types.Has_Baro | types.Has_Acc
 				}
 				val, ok = o["features"].(float64)
+				if ok {
+					mt.Features = uint32(val)
+				}
+				val, ok = o["capability"].(float64)
 				if ok {
 					mt.Features = uint32(val)
 				}
@@ -190,7 +211,7 @@ func parse_json(l string, b *types.LogItem) (bool, uint16) {
 
 	lt = o["utime"].(float64)
 	switch o["type"] {
-	case "environment":
+	case "environment", "init":
 		st = 0
 		hlat = -999
 		hlon = -999
@@ -264,8 +285,8 @@ func parse_json(l string, b *types.LogItem) (bool, uint16) {
 		b.Bearing = int32(o["bearing"].(float64))
 
 	case "v0:sensor-reason", "ltm_xframe":
-		if o["sensorok"].(float64) != 0 {
-			b.HWfail = true
+		if s, ok := o["sensorok"].(float64); ok {
+			b.HWfail = (s != 0)
 		} else {
 			b.HWfail = false
 		}
