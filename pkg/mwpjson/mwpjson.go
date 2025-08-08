@@ -139,6 +139,7 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 							metas = append(metas, mt)
 						}
 						mt = types.FlightMeta{Logname: bp, Index: id + 1, Start: nl, Date: baseutc}
+						fmt.Fprintf(os.Stderr, "start %d %d %s, %+v\n", id, nl, o["type"], baseutc)
 						id += 1
 					}
 
@@ -208,6 +209,8 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 				}
 			}
 		}
+
+		mt.Sensors |= types.Has_GPS | types.Has_Baro | types.Has_Acc
 		mt.End = nl
 		mt.Duration = time.Duration(lt-st) * time.Second
 		metas = append(metas, mt)
@@ -375,11 +378,10 @@ func parse_json(o map[string]interface{}, b *types.LogItem) (bool, uint16) {
 				b.Status |= (10 << 2)
 				b.Fmode = types.FM_WP
 				cap |= types.CAP_WPNO
-			case 8, 10, 11, 12, 13, 14: // Land
+			case 8, 9, 10, 11, 12, 13, 14: // Land
 				b.Status |= (15 << 2)
 				b.Fmode = types.FM_LAND
 			default:
-				b.Fmode = types.FM_ACRO
 			}
 
 		case "raw_gps":
@@ -412,21 +414,29 @@ func parse_json(o map[string]interface{}, b *types.LogItem) (bool, uint16) {
 			}
 
 		case "attitude":
-			b.Cse = uint32(o["heading"].(float64))
+			mhead := o["heading"].(float64)
+			if mhead < 0 {
+				mhead += 360
+			}
+			b.Cse = uint32(mhead)
 			b.Roll = int16(o["angx"].(float64))
 			b.Pitch = int16(o["angy"].(float64))
 
 		case "ltm_raw_sframe":
 			b.Status = uint8(o["flags"].(float64))
 			b.Volts = o["vbat"].(float64) / 1000.0
-			b.Amps = o["vcurr"].(float64) / 1000.0
+			b.Energy = o["vcurr"].(float64)
 			b.Rssi = uint8(o["rssi"].(float64) * 100 / 255)
 			cap |= (types.CAP_RSSI_VALID | types.CAP_VOLTS | types.CAP_AMPS)
 			ltmmode := b.Status >> 2
 			b.Fmode = fm_ltm(ltmmode)
 
 		case "mavlink_attitude":
-			b.Cse = uint32(o["yaw"].(float64) * 57.29578)
+			cse := int(o["yaw"].(float64) * 57.29578)
+			if cse < 0 {
+				cse += 360
+			}
+			b.Cse = uint32(cse)
 			b.Roll = int16(o["roll"].(float64) * 57.29578)
 			b.Pitch = int16(-o["pitch"].(float64) * 57.29578)
 
@@ -446,8 +456,28 @@ func parse_json(o map[string]interface{}, b *types.LogItem) (bool, uint16) {
 				b.Hdop = uint16(eph / 100)
 			}
 			b.Numsat = uint8(o["satellites_visible"].(float64))
-			b.Cog = uint32(o["cog"].(float64)) / 100
-			b.Spd = o["vel"].(float64) / 100
+			ival := uint(o["vel"].(float64))
+			if ival != 0xffff {
+				b.Spd = float64(ival) / 100.0
+			}
+			ival = uint(o["cog"].(float64))
+			if ival != 0xffff {
+				b.Cog = uint32(ival) / 100
+			}
+
+			if (b.Status & 1) != 0 {
+				if hlat == -999 && hlon == -999 {
+					hlat = b.Lat
+					hlon = b.Lon
+					homes.Flags |= types.HOME_ARM | types.HOME_ALT
+					homes.HomeLat = hlat
+					homes.HomeLon = hlon
+					homes.HomeAlt = b.GAlt
+				}
+				b.Hlat = hlat
+				b.Hlon = hlon
+			}
+
 			if (homes.Flags & (types.HOME_ARM | types.HOME_ALT)) != 0 {
 				cs, dx := geo.Csedist(b.Hlat, b.Hlon, b.Lat, b.Lon)
 				b.Bearing = int32(cs)
