@@ -6,11 +6,65 @@ import (
 	"errors"
 	"fmt"
 	"geo"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+)
+
+import (
+	"options"
 	"types"
+)
+
+const (
+	PLANE_MODE_MANUAL        = 0
+	PLANE_MODE_CIRCLE        = 1
+	PLANE_MODE_STABILIZE     = 2
+	PLANE_MODE_TRAINING      = 3
+	PLANE_MODE_ACRO          = 4
+	PLANE_MODE_FLY_BY_WIRE_A = 5
+	PLANE_MODE_FLY_BY_WIRE_B = 6
+	PLANE_MODE_CRUISE        = 7
+	PLANE_MODE_AUTOTUNE      = 8
+	PLANE_MODE_AUTO          = 10
+	PLANE_MODE_RTL           = 11
+	PLANE_MODE_LOITER        = 12
+	PLANE_MODE_TAKEOFF       = 13
+	PLANE_MODE_AVOID_ADSB    = 14
+	PLANE_MODE_GUIDED        = 15
+	PLANE_MODE_INITIALIZING  = 16
+	PLANE_MODE_QSTABILIZE    = 17
+	PLANE_MODE_QHOVER        = 18
+	PLANE_MODE_QLOITER       = 19
+	PLANE_MODE_QLAND         = 20
+	PLANE_MODE_QRTL          = 21
+	PLANE_MODE_QAUTOTUNE     = 22
+	PLANE_MODE_ENUM_END      = 23
+)
+
+const (
+	COPTER_MODE_STABILIZE    = 0
+	COPTER_MODE_ACRO         = 1
+	COPTER_MODE_ALT_HOLD     = 2
+	COPTER_MODE_AUTO         = 3
+	COPTER_MODE_GUIDED       = 4
+	COPTER_MODE_LOITER       = 5
+	COPTER_MODE_RTL          = 6
+	COPTER_MODE_CIRCLE       = 7
+	COPTER_MODE_LAND         = 9
+	COPTER_MODE_DRIFT        = 11
+	COPTER_MODE_SPORT        = 13
+	COPTER_MODE_FLIP         = 14
+	COPTER_MODE_AUTOTUNE     = 15
+	COPTER_MODE_POSHOLD      = 16
+	COPTER_MODE_BRAKE        = 17
+	COPTER_MODE_THROW        = 18
+	COPTER_MODE_AVOID_ADSB   = 19
+	COPTER_MODE_GUIDED_NOGPS = 20
+	COPTER_MODE_SMART_RTL    = 21
+	COPTER_MODE_ENUM_END     = 22
 )
 
 type MWPJSON struct {
@@ -36,11 +90,11 @@ func (o *MWPJSON) Dump() {
 }
 
 func (o *MWPJSON) GetMetas() ([]types.FlightMeta, error) {
-	//m, err := types.ReadMetaCache(o.name)
-	//if err != nil {
-	m, err := metas(o.name)
-	types.WriteMetaCache(o.name, m)
-	//}
+	m, err := types.ReadMetaCache(o.name)
+	if err != nil || options.Config.Nocache {
+		m, err = metas(o.name)
+		types.WriteMetaCache(o.name, m)
+	}
 	o.meta = m
 	return m, err
 }
@@ -67,10 +121,12 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 			lt = o["utime"].(float64)
 			switch o["type"] {
 			case "environment":
-				sec := int64(lt)
-				nsec := int64((lt - float64(sec)) * 1e9)
-				baseutc = time.Unix(sec, nsec)
-				mt.Date = baseutc
+				if baseutc.IsZero() {
+					sec := int64(lt)
+					nsec := int64((lt - float64(sec)) * 1e9)
+					baseutc = time.Unix(sec, nsec)
+					mt.Date = baseutc
+				}
 
 			case "init":
 				if baseutc.IsZero() {
@@ -103,7 +159,7 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 					}
 					sb.WriteString(s)
 					sb.WriteString(" (")
-					s = o["git_info"].(string)
+					s, ok = o["git_info"].(string)
 					sb.WriteString(s)
 					sb.WriteString(") ")
 					s, ok = o["fcname"].(string)
@@ -330,7 +386,9 @@ func parse_json(l string, b *types.LogItem) (bool, uint16) {
 		b.GAlt = o["alt"].(float64)
 		b.Fix = uint8(o["fix"].(float64))
 		b.Numsat = uint8(o["numsat"].(float64))
-		b.Hdop = uint16(o["hdop"].(float64))
+		if _, ok := o["hdop"]; ok {
+			b.Hdop = uint16(o["hdop"].(float64))
+		}
 		b.Cog = uint32(o["cse"].(float64))
 		b.Spd = o["spd"].(float64)
 		cap |= types.CAP_SPEED
@@ -353,16 +411,196 @@ func parse_json(l string, b *types.LogItem) (bool, uint16) {
 		b.Pitch = int16(o["angy"].(float64))
 
 	case "ltm_raw_sframe":
-		// FIXME more fields (mwp update)
 		b.Status = uint8(o["flags"].(float64))
 		b.Volts = o["vbat"].(float64) / 1000.0
 		b.Amps = o["vcurr"].(float64) / 1000.0
 		b.Rssi = uint8(o["rssi"].(float64) * 100 / 255)
 		cap |= (types.CAP_RSSI_VALID | types.CAP_VOLTS | types.CAP_AMPS)
+		ltmmode := b.Status >> 2
+		b.Fmode = fm_ltm(ltmmode)
+
+	case "mavlink_attitude":
+		b.Cse = uint32(o["yaw"].(float64) * 57.29578)
+		b.Roll = int16(o["roll"].(float64) * 57.29578)
+		b.Pitch = int16(-o["pitch"].(float64) * 57.29578)
+
+	case "mavlink_vfr_hud":
+		b.Alt = o["alt"].(float64)
+
+	case "mavlink_gps_raw_int":
+		b.Stamp = uint64((lt - st) * 1000 * 1000)
+		b.Lat = o["lat"].(float64) / 1e7
+		b.Lon = o["lon"].(float64) / 1e7
+		b.GAlt = o["alt"].(float64) / 1e7
+
+		fix := o["fix_type"].(float64)
+		b.Fix = uint8(math.Min(fix, 3))
+		eph := o["eph"].(float64)
+		if eph != 65535 {
+			b.Hdop = uint16(eph / 100)
+		}
+		b.Numsat = uint8(o["satellites_visible"].(float64))
+		b.Cog = uint32(o["cog"].(float64)) / 100
+		b.Spd = o["vel"].(float64) / 100
+		if (homes.Flags & (types.HOME_ARM | types.HOME_ALT)) != 0 {
+			cs, dx := geo.Csedist(b.Hlat, b.Hlon, b.Lat, b.Lon)
+			b.Bearing = int32(cs)
+			b.Vrange = dx * 1852
+		}
+
+	case "mavlink_gps_global_origin":
+		b.Hlat = o["latitude"].(float64) / 1e7
+		b.Hlon = o["longitude"].(float64) / 1e7
+		homes.Flags |= types.HOME_ARM | types.HOME_ALT
+		homes.HomeLat = b.Hlat
+		homes.HomeLon = b.Hlon
+		homes.HomeAlt = o["altitude"].(float64) / 1000.0
+
+	case "mavlink_heartbeat":
+		mavtype := int(o["mavtype"].(float64))
+		mavmode := int(o["custom_mode"].(float64))
+		var ltmflags uint8
+		if o["utime"].(float64) > 1607040000 {
+			ltmflags = mav2ltm(mavmode, (mavtype == 1))
+		} else {
+			ltmflags = xmav2ltm(mavmode, (mavtype == 1))
+		}
+		b.Fmode = fm_ltm(ltmflags)
+		b.Status |= (ltmflags << 2)
 
 	default:
 	}
 	return done, cap
+}
+
+func xmav2ltm(mavmode int, is_fw bool) uint8 {
+	ltmmode := uint8(0)
+	if is_fw {
+		// I don't believe the old iNav mapping for FW ...
+		switch mavmode {
+		case 0:
+			ltmmode = types.Ltm_MANUAL // manual
+			break
+		case 4:
+			ltmmode = types.Ltm_ACRO // acro
+			break
+		case 2:
+			ltmmode = types.Ltm_HORIZON // angle / horiz
+			break
+		case 5:
+			ltmmode = types.Ltm_ALTHOLD // alth
+			break
+		case 1:
+			ltmmode = types.Ltm_POSHOLD // posh
+			break
+		case 11:
+			ltmmode = types.Ltm_RTH // rth
+			break
+		case 10:
+			ltmmode = types.Ltm_WAYPOINTS // wp
+			break
+		case 15:
+			ltmmode = types.Ltm_LAUNCH // launch
+			break
+		default:
+			ltmmode = types.Ltm_ACRO
+			break
+		}
+	} else {
+		switch mavmode {
+		case 1:
+			ltmmode = types.Ltm_ACRO // acro / manual
+			break
+		case 0:
+			ltmmode = types.Ltm_HORIZON // angle / horz
+			break
+		case 2:
+			ltmmode = types.Ltm_ALTHOLD // alth
+			break
+		case 16:
+			ltmmode = types.Ltm_POSHOLD // posh
+			break
+		case 6:
+			ltmmode = types.Ltm_RTH // rth
+			break
+		case 3:
+			ltmmode = types.Ltm_WAYPOINTS // wp
+			break
+		case 18:
+			ltmmode = types.Ltm_LAUNCH // launch
+			break
+		default:
+			ltmmode = types.Ltm_ACRO
+			break
+		}
+	}
+	return ltmmode
+}
+
+func mav2ltm(mavmode int, is_fw bool) uint8 {
+	ltmmode := uint8(0)
+	if is_fw {
+		switch mavmode {
+		case PLANE_MODE_MANUAL:
+			ltmmode = types.Ltm_MANUAL
+			break
+		case PLANE_MODE_ACRO:
+			ltmmode = types.Ltm_ACRO
+			break
+		case PLANE_MODE_FLY_BY_WIRE_A:
+			ltmmode = types.Ltm_ANGLE
+			break
+		case PLANE_MODE_STABILIZE:
+			ltmmode = types.Ltm_HORIZON
+			break
+		case PLANE_MODE_FLY_BY_WIRE_B:
+			ltmmode = types.Ltm_ALTHOLD
+			break
+		case PLANE_MODE_LOITER:
+			ltmmode = types.Ltm_POSHOLD
+			break
+		case PLANE_MODE_RTL:
+			ltmmode = types.Ltm_RTH
+			break
+		case PLANE_MODE_AUTO:
+			ltmmode = types.Ltm_WAYPOINTS
+			break
+		case PLANE_MODE_CRUISE:
+			ltmmode = types.Ltm_CRUISE
+			break
+		case PLANE_MODE_TAKEOFF:
+			ltmmode = types.Ltm_LAUNCH
+			break
+		default:
+			ltmmode = types.Ltm_ACRO
+			break
+		}
+	} else {
+		switch mavmode {
+		case COPTER_MODE_ACRO:
+			ltmmode = types.Ltm_ACRO
+			break
+		case COPTER_MODE_STABILIZE:
+			ltmmode = types.Ltm_HORIZON
+			break
+		case COPTER_MODE_ALT_HOLD:
+			ltmmode = types.Ltm_ALTHOLD
+			break
+		case COPTER_MODE_POSHOLD:
+			ltmmode = types.Ltm_POSHOLD
+			break
+		case COPTER_MODE_RTL:
+			ltmmode = types.Ltm_RTH
+			break
+		case COPTER_MODE_AUTO:
+			ltmmode = types.Ltm_WAYPOINTS
+			break
+		default:
+			ltmmode = types.Ltm_ACRO
+			break
+		}
+	}
+	return ltmmode
 }
 
 func (lg *MWPJSON) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSegment, bool) {
@@ -392,7 +630,7 @@ func (lg *MWPJSON) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSeg
 		done, cap := parse_json(l, &b)
 		rec.Cap |= cap
 
-		if done {
+		if done && b.Fix != 0 {
 			if b.Vrange > stats.Max_range {
 				stats.Max_range = b.Vrange
 				stats.Max_range_time = uint64(lt-st) * 1000000

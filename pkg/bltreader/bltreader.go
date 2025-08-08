@@ -46,7 +46,7 @@ func (o *BLTLOG) LogType() byte {
 }
 func (o *BLTLOG) GetMetas() ([]types.FlightMeta, error) {
 	m, err := types.ReadMetaCache(o.name)
-	if err != nil {
+	if err != nil || options.Config.Nocache {
 		m, err = metas(o.name)
 		types.WriteMetaCache(o.name, m)
 	}

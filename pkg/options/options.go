@@ -63,6 +63,7 @@ type Configuration struct {
 	SkipTime        int     `json:"-"`
 	Speed           int     `json:"-"`
 	Sql             string  `json:"-"`
+	Nocache         bool    `json:"-"`
 }
 
 var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120, Epsilon: 0.015, StartOff: 30, EndOff: -30, Engunit: "mah", MaxWP: 120}
@@ -197,6 +198,7 @@ func ParseCLI(gv func() string) ([]string, string) {
 		flag.BoolVar(&Config.Summary, "summary", Config.Summary, "Just show summary")
 		flag.StringVar(&Config.Attribs, "attributes", Config.Attribs, "Attributes to plot (effic,speed,altitude)")
 	}
+	flag.BoolVar(&Config.Nocache, "no-cache", Config.Nocache, "Ignore meta cache")
 	flag.StringVar(&Config.Rebase, "rebase", "", "rebase all positions on lat,lon[,alt]")
 	flag.IntVar(&Config.Intvl, "interval", Config.Intvl, "Sampling Interval (ms)")
 	flag.BoolVar(&showversion, "version", false, "Just show version")

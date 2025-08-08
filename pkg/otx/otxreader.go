@@ -42,7 +42,7 @@ func (o *OTXLOG) LogType() byte {
 
 func (o *OTXLOG) GetMetas() ([]types.FlightMeta, error) {
 	m, err := types.ReadMetaCache(o.name)
-	if err != nil {
+	if err != nil || options.Config.Nocache {
 		m, err = metas(o.name)
 		types.WriteMetaCache(o.name, m)
 	}

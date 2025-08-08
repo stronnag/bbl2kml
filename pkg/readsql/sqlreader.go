@@ -10,6 +10,7 @@ import (
 )
 
 import (
+	"options"
 	"types"
 )
 
@@ -39,7 +40,7 @@ func (o *SQLREAD) Dump() {
 
 func (o *SQLREAD) GetMetas() ([]types.FlightMeta, error) {
 	m, err := types.ReadMetaCache(o.name)
-	if err != nil {
+	if err != nil || options.Config.Nocache {
 		m, err = o.metas(o.name)
 		types.WriteMetaCache(o.name, m)
 	}

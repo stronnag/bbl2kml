@@ -16,6 +16,31 @@ const (
 )
 
 const (
+	Ltm_MANUAL      = 0
+	Ltm_ACRO        = 1
+	Ltm_ANGLE       = 2
+	Ltm_HORIZON     = 3
+	Ltm_ACRO4       = 4
+	Ltm_STABILIZED1 = 5
+	Ltm_STABILIZED2 = 6
+	Ltm_STABILIZED3 = 7
+	Ltm_ALTHOLD     = 8
+	Ltm_POSHOLD     = 9
+	Ltm_WAYPOINTS   = 10
+	Ltm_HEADFREE    = 11
+	Ltm_CIRCLE      = 12
+	Ltm_RTH         = 13
+	Ltm_FOLLOWME    = 14
+	Ltm_LAND        = 15
+	Ltm_FLYBYWIREA  = 16
+	Ltm_FLYBYWIREB  = 17
+	Ltm_CRUISE      = 18
+	Ltm_UNDEFINED   = 19
+	Ltm_LAUNCH      = 20
+	Ltm_AUTOTUNE    = 21
+)
+
+const (
 	FM_ACRO = iota
 	FM_MANUAL
 	FM_HORIZON
