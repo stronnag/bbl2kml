@@ -369,17 +369,17 @@ func parse_json(o map[string]interface{}, b *types.LogItem) (bool, uint16) {
 			b.ActiveWP = uint8(o["wp_number"].(float64))
 			switch b.Navmode {
 			case 1, 2: // RTH
-				b.Status |= (13 << 2)
+				b.Status = ((13 << 2) | (b.Status & 3))
 				b.Fmode = types.FM_RTH
 			case 3, 4: // PH
-				b.Status |= (9 << 2)
+				b.Status = ((9 << 2) | (b.Status & 3))
 				b.Fmode = types.FM_PH
 			case 5, 6, 7: // WP
-				b.Status |= (10 << 2)
+				b.Status = ((10 << 2) | (b.Status & 3))
 				b.Fmode = types.FM_WP
 				cap |= types.CAP_WPNO
 			case 8, 9, 10, 11, 12, 13, 14: // Land
-				b.Status |= (15 << 2)
+				b.Status = ((15 << 2) | (b.Status & 3))
 				b.Fmode = types.FM_LAND
 			default:
 			}
@@ -423,13 +423,15 @@ func parse_json(o map[string]interface{}, b *types.LogItem) (bool, uint16) {
 			b.Pitch = int16(o["angy"].(float64))
 
 		case "ltm_raw_sframe":
-			b.Status = uint8(o["flags"].(float64))
 			b.Volts = o["vbat"].(float64) / 1000.0
 			b.Energy = o["vcurr"].(float64)
 			b.Rssi = uint8(o["rssi"].(float64) * 100 / 255)
 			cap |= (types.CAP_RSSI_VALID | types.CAP_VOLTS | types.CAP_AMPS)
-			ltmmode := b.Status >> 2
-			b.Fmode = fm_ltm(ltmmode)
+			if b.Navmode == 0 {
+				ltmmode := b.Status >> 2
+				b.Fmode = fm_ltm(ltmmode)
+				b.Status = uint8(o["flags"].(float64))
+			}
 
 		case "mavlink_attitude":
 			cse := int(o["yaw"].(float64) * 57.29578)
