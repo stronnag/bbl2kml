@@ -11,7 +11,7 @@ import (
 	"types"
 )
 
-const SCHEMA = `CREATE TABLE IF NOT EXISTS meta (id integer PRIMARY KEY, dtg timestamp with timestamp, duration real, mname text, firmware text, fwdate text, disarm int, flags int, motors int, servos int, sensors  int, acc1g int, features int);
+const SCHEMA = `CREATE TABLE IF NOT EXISTS meta (id integer PRIMARY KEY, dtg timestamp with timestamp, duration real, mname text, firmware text, fwdate text, disarm int, flags int, motors int, servos int, sensors  int, acc1g int, features int, start int, end int);
 CREATE TABLE IF NOT EXISTS logerrs (id integer PRIMARY KEY, errstr text);
 CREATE TABLE IF NOT EXISTS logs(id integer, idx integer,
  stamp integer, lat double precision, lon double precision,
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS logs(id integer, idx integer,
  navmode integer, hwfail integer, windx integer, windy integer, windz integer);
 create unique index if not exists logidx on logs (id,idx);`
 
-const IMETA = `insert into meta (id, dtg, duration, mname,firmware,fwdate, disarm, flags, motors, servos, sensors, acc1g, features) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`
+const IMETA = `insert into meta (id, dtg, duration, mname,firmware,fwdate, disarm, flags, motors, servos, sensors, acc1g, features, start, end) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`
 const ISERR = `insert into logerrs (id, errstr) values ($1,$2)`
 const ILOG = `insert into logs (id,idx, stamp,lat,lon,alt,galt,spd,amps,volts,hlat,hlon,vrange,tdist,effic,energy,whkm,whAcc,qval,sval,aval,bval,fmtext,utc,throttle,cse,cog,bearing,roll,pitch,hdop,ail,ele,rud,thr,gyro_x,gyro_y,gyro_z,acc_x,acc_y,acc_z,fix,numsat,fmode,rssi,status,activewp,navmode,hwfail,windx,windy,windz) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52)`
 
@@ -67,7 +67,7 @@ func (d *DBL) Writemeta(m types.FlightMeta) {
 		m.Craft = "noname"
 	}
 	d.tx.MustExec(IMETA, m.Index, m.Date, m.Duration.Seconds(), m.Craft, m.Firmware,
-		m.Fwdate, m.Disarm, m.Flags, m.Motors, m.Servos, m.Sensors, m.Acc1G, m.Features)
+		m.Fwdate, m.Disarm, m.Flags, m.Motors, m.Servos, m.Sensors, m.Acc1G, m.Features, m.Start, m.End)
 }
 
 func (d *DBL) Writeerr(idx int, errs string) {
@@ -127,7 +127,6 @@ func (d *DBL) Writelog(idx int, b types.LogItem) {
 	stamp = b.Stamp - d.stamp
 
 	ltmmode := ltm_flight_mode(b.Fmode)
-	//log.Printf("%d %d %v %+v\n", idx, d.count, stamp, b)
 	d.tx.MustExec(ILOG, idx, d.count,
 		stamp,
 		b.Lat,

@@ -108,98 +108,107 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 	st = 0
 	id = 0
 
+	have_start := bool(false)
+
 	var metas []types.FlightMeta
+	var mt types.FlightMeta
+
 	r, err := os.Open(logfile)
 	if err == nil {
 		bp := filepath.Base(logfile)
-		mt := types.FlightMeta{Logname: bp, Index: 1, Start: 1}
+		nl := 0
 		scanner := bufio.NewScanner(r)
 		for scanner.Scan() {
 			l := scanner.Text()
 			var o map[string]interface{}
 			json.Unmarshal([]byte(l), &o)
-			lt = o["utime"].(float64)
-			switch o["type"] {
-			case "environment":
-				if baseutc.IsZero() {
-					sec := int64(lt)
-					nsec := int64((lt - float64(sec)) * 1e9)
-					baseutc = time.Unix(sec, nsec)
-					mt.Date = baseutc
-				}
+			if utx, ok := o["utime"]; ok {
+				nl += 1
+				lt = utx.(float64)
+				switch o["type"] {
+				case "init", "environment":
+					if have_start == false {
+						st = 0
+						sec := int64(lt)
+						nsec := int64((lt - float64(sec)) * 1e9)
+						baseutc = time.Unix(sec, nsec)
+						have_start = true
+						if id != 0 {
+							mt.End = nl - 1
+							mt.Duration = time.Duration(lt-st) * time.Second
+							metas = append(metas, mt)
+						}
+						mt = types.FlightMeta{Logname: bp, Index: id + 1, Start: nl, Date: baseutc}
+						id += 1
+					}
 
-			case "init":
-				if baseutc.IsZero() {
-					sec := int64(lt)
-					nsec := int64((lt - float64(sec)) * 1e9)
-					baseutc = time.Unix(sec, nsec)
-					mt.Date = baseutc
-				}
-				s, ok := o["vname"].(string)
-				if ok {
-					mt.Craft = s
-				} else {
-					mt.Craft = "NO-NAME"
-				}
-				s, ok = o["fc_var"].(string)
-				if ok {
-					var sb strings.Builder
-					sb.WriteString(s)
-					sb.WriteString(" ")
-					s, ok = o["fc_vers_str"].(string)
-					if !ok {
-						x, ok := o["fc_vers"].(float64)
+					if o["type"] == "init" {
+						s, ok := o["vname"].(string)
 						if ok {
-							xi := int(x)
-							a0 := xi & 0xff
-							a1 := (xi >> 8) & 0xff
-							a2 := (xi >> 16) & 0xff
-							s = fmt.Sprintf("%d.%d.%d", a2, a1, a0)
+							mt.Craft = s
+						} else {
+							mt.Craft = "NO-NAME"
+						}
+						s, ok = o["fc_var"].(string)
+						if ok {
+							var sb strings.Builder
+							sb.WriteString(s)
+							sb.WriteString(" ")
+							s, ok = o["fc_vers_str"].(string)
+							if !ok {
+								x, ok := o["fc_vers"].(float64)
+								if ok {
+									xi := int(x)
+									a0 := xi & 0xff
+									a1 := (xi >> 8) & 0xff
+									a2 := (xi >> 16) & 0xff
+									s = fmt.Sprintf("%d.%d.%d", a2, a1, a0)
+								}
+							}
+							sb.WriteString(s)
+							sb.WriteString(" (")
+							s, ok = o["git_info"].(string)
+							sb.WriteString(s)
+							sb.WriteString(") ")
+							s, ok = o["fcname"].(string)
+							sb.WriteString(s)
+							mt.Firmware = sb.String()
+						} else {
+							mt.Firmware = "INAV"
+						}
+						s, ok = o["fcdate"].(string)
+						if ok {
+							mt.Fwdate = s
+						} else {
+							mt.Fwdate = "unknown"
+						}
+						val, ok := o["sensors"].(float64)
+						if ok {
+							mt.Sensors = uint16(val)
+						} else {
+							mt.Sensors = types.Has_GPS | types.Has_Baro | types.Has_Acc
+						}
+						val, ok = o["features"].(float64)
+						if ok {
+							mt.Features = uint32(val)
+						}
+						val, ok = o["capability"].(float64)
+						if ok {
+							mt.Features = uint32(val)
 						}
 					}
-					sb.WriteString(s)
-					sb.WriteString(" (")
-					s, ok = o["git_info"].(string)
-					sb.WriteString(s)
-					sb.WriteString(") ")
-					s, ok = o["fcname"].(string)
-					sb.WriteString(s)
-					mt.Firmware = sb.String()
-				} else {
-					mt.Firmware = "INAV"
-				}
-				s, ok = o["fcdate"].(string)
-				if ok {
-					mt.Fwdate = s
-				} else {
-					mt.Fwdate = "unknown"
-				}
-				val, ok := o["sensors"].(float64)
-				if ok {
-					mt.Sensors = uint16(val)
-				} else {
-					mt.Sensors = types.Has_GPS | types.Has_Baro | types.Has_Acc
-				}
-				val, ok = o["features"].(float64)
-				if ok {
-					mt.Features = uint32(val)
-				}
-				val, ok = o["capability"].(float64)
-				if ok {
-					mt.Features = uint32(val)
-				}
-
-			case "v0:armed", "armed":
-				if (o["armed"]).(bool) {
-					if st == 0 {
-						st = (o["utime"].(float64))
+				case "v0:armed", "armed":
+					if (o["armed"]).(bool) {
+						if st == 0 {
+							st = (o["utime"].(float64))
+						}
+						have_start = false
 					}
-					id += 1
+				default:
 				}
-			default:
 			}
 		}
-		mt.End = id
+		mt.End = nl
 		mt.Duration = time.Duration(lt-st) * time.Second
 		metas = append(metas, mt)
 	}
@@ -208,12 +217,11 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 		if mx.End-mx.Start > 64 {
 			metas[j].Flags |= types.Has_Start | types.Is_Valid | types.Has_Craft
 		}
+		//fmt.Fprintf(os.Stderr, ":DBGm: %+v\n", metas[j])
 	}
 	if len(metas) == 0 {
 		err = errors.New("No records in MWP JSON log")
-	} else {
 	}
-
 	return metas, err
 }
 
@@ -258,217 +266,216 @@ func fm_ltm(ltm uint8) uint8 {
 	return fm
 }
 
-func parse_json(l string, b *types.LogItem) (bool, uint16) {
+func parse_json(o map[string]interface{}, b *types.LogItem) (bool, uint16) {
 	cap := uint16(0)
 	done := false
 
-	var o map[string]interface{}
-	json.Unmarshal([]byte(l), &o)
+	if utm, ok := o["utime"]; ok {
+		lt = utm.(float64)
+		switch o["type"] {
+		case "environment", "init":
+			st = 0
+			hlat = -999
+			hlon = -999
+			b.Status = 0
+			b.Tdist = 0
 
-	lt = o["utime"].(float64)
-	switch o["type"] {
-	case "environment", "init":
-		st = 0
-		hlat = -999
-		hlon = -999
-		b.Status = 0
-		b.Tdist = 0
-
-	case "armed", "v0:armed":
-		if (o["armed"]).(bool) {
-			if st == 0 {
-				st = (o["utime"].(float64))
-				b.Stamp = uint64((lt - st) * 1000 * 1000)
+		case "armed", "v0:armed":
+			if (o["armed"]).(bool) {
+				if st == 0 {
+					st = (o["utime"].(float64))
+					b.Stamp = uint64((lt - st) * 1000 * 1000)
+				}
+				b.Status |= 1
+				if b.Cse == 0xffff {
+					b.Cse = b.Cog
+				}
+				done = true
 			}
-			b.Status |= 1
-			if b.Cse == 0xffff {
-				b.Cse = b.Cog
-			}
-			done = true
-		}
 
-	case "v0:nav-status":
-		b.Navmode = byte(o["nav_mode"].(float64))
-		b.ActiveWP = uint8(o["wp_number"].(float64))
+		case "v0:nav-status":
+			b.Navmode = byte(o["nav_mode"].(float64))
+			b.ActiveWP = uint8(o["wp_number"].(float64))
 
-	case "v0:origin":
-		b.Hlat = o["lat"].(float64)
-		b.Hlon = o["lon"].(float64)
-		homes.Flags |= types.HOME_ARM | types.HOME_ALT
-		homes.HomeLat = b.Hlat
-		homes.HomeLon = b.Hlon
-		homes.HomeAlt = o["alt"].(float64)
+		case "v0:origin":
+			b.Hlat = o["lat"].(float64)
+			b.Hlon = o["lon"].(float64)
+			homes.Flags |= types.HOME_ARM | types.HOME_ALT
+			homes.HomeLat = b.Hlat
+			homes.HomeLon = b.Hlon
+			homes.HomeAlt = o["alt"].(float64)
 
-	case "v0:mode-flags":
-		b.Status = uint8(o["flags"].(float64))
-		ltmmode := uint8(o["ltmmode"].(float64))
-		b.Fmode = fm_ltm(ltmmode)
+		case "v0:mode-flags":
+			b.Status = uint8(o["flags"].(float64))
+			ltmmode := uint8(o["ltmmode"].(float64))
+			b.Fmode = fm_ltm(ltmmode)
 
-	case "v0:attitude":
-		b.Cse = uint32(o["yaw"].(float64))
-		b.Roll = int16(o["roll"].(float64))
-		b.Pitch = int16(o["pitch"].(float64))
+		case "v0:attitude":
+			b.Cse = uint32(o["yaw"].(float64))
+			b.Roll = int16(o["roll"].(float64))
+			b.Pitch = int16(o["pitch"].(float64))
 
-	case "v0:altitude", "altitude":
-		cap |= types.CAP_ALTITUDE
-		b.Alt = o["estalt"].(float64)
-		// b.Vario = o["vario"].(float64)
+		case "v0:altitude", "altitude":
+			cap |= types.CAP_ALTITUDE
+			b.Alt = o["estalt"].(float64)
+			// b.Vario = o["vario"].(float64)
 
-	case "v0:power":
-		b.Volts = o["voltage"].(float64)
-		b.Amps = o["amps"].(float64)
-		b.Energy = o["power"].(float64)
-		b.Rssi = uint8(o["rssi"].(float64) * 100 / 255)
-		cap |= (types.CAP_RSSI_VALID | types.CAP_VOLTS | types.CAP_AMPS)
+		case "v0:power":
+			b.Volts = o["voltage"].(float64)
+			b.Amps = o["amps"].(float64)
+			b.Energy = o["power"].(float64)
+			b.Rssi = uint8(o["rssi"].(float64) * 100 / 255)
+			cap |= (types.CAP_RSSI_VALID | types.CAP_VOLTS | types.CAP_AMPS)
 
-	case "v0:gps":
-		b.Stamp = uint64((lt - st) * 1000 * 1000)
-		sec := int64(lt)
-		nsec := int64((lt - float64(sec)) * 1e9)
-		b.Utc = time.Unix(sec, nsec)
-		b.Lat = o["lat"].(float64)
-		b.Lon = o["lon"].(float64)
-		b.Cog = uint32(o["cog"].(float64))
-		b.Spd = o["speed"].(float64)
-		b.GAlt = o["alt"].(float64)
-		b.Fix = uint8(o["fix"].(float64))
-		b.Numsat = uint8(o["numsat"].(float64))
-		b.Hdop = uint16(o["hdop"].(float64))
-		cap |= types.CAP_SPEED
-
-	case "v0:range-bearing", "comp_gps":
-		b.Vrange = o["range"].(float64)
-		b.Bearing = int32(o["bearing"].(float64))
-
-	case "v0:sensor-reason", "ltm_xframe":
-		if s, ok := o["sensorok"].(float64); ok {
-			b.HWfail = (s != 0)
-		} else {
-			b.HWfail = false
-		}
-
-		/*******************/
-
-	case "analog2":
-		b.Volts = o["voltage"].(float64)
-		b.Amps = o["amps"].(float64) / 100.0
-		b.Rssi = uint8(o["rssi"].(float64) * 100 / 1023)
-		cap |= (types.CAP_RSSI_VALID | types.CAP_VOLTS | types.CAP_AMPS)
-
-	case "status":
-		b.Navmode = byte(o["nav_mode"].(float64))
-		b.ActiveWP = uint8(o["wp_number"].(float64))
-		switch b.Navmode {
-		case 1, 2: // RTH
-			b.Status |= (13 << 2)
-			b.Fmode = types.FM_RTH
-		case 3, 4: // PH
-			b.Status |= (9 << 2)
-			b.Fmode = types.FM_PH
-		case 5, 6, 7: // WP
-			b.Status |= (10 << 2)
-			b.Fmode = types.FM_WP
-			cap |= types.CAP_WPNO
-		case 8, 10, 11, 12, 13, 14: // Land
-			b.Status |= (15 << 2)
-			b.Fmode = types.FM_LAND
-		default:
-			b.Fmode = types.FM_ACRO
-		}
-
-	case "raw_gps":
-		b.Stamp = uint64((lt - st) * 1000 * 1000)
-		sec := int64(lt)
-		nsec := int64((lt - float64(sec)) * 1e9)
-		b.Utc = time.Unix(sec, nsec)
-		b.Lat = o["lat"].(float64)
-		b.Lon = o["lon"].(float64)
-		b.GAlt = o["alt"].(float64)
-		b.Fix = uint8(o["fix"].(float64))
-		b.Numsat = uint8(o["numsat"].(float64))
-		if _, ok := o["hdop"]; ok {
+		case "v0:gps":
+			b.Stamp = uint64((lt - st) * 1000 * 1000)
+			sec := int64(lt)
+			nsec := int64((lt - float64(sec)) * 1e9)
+			b.Utc = time.Unix(sec, nsec)
+			b.Lat = o["lat"].(float64)
+			b.Lon = o["lon"].(float64)
+			b.Cog = uint32(o["cog"].(float64))
+			b.Spd = o["speed"].(float64)
+			b.GAlt = o["alt"].(float64)
+			b.Fix = uint8(o["fix"].(float64))
+			b.Numsat = uint8(o["numsat"].(float64))
 			b.Hdop = uint16(o["hdop"].(float64))
-		}
-		b.Cog = uint32(o["cse"].(float64))
-		b.Spd = o["spd"].(float64)
-		cap |= types.CAP_SPEED
-		if (b.Status & 1) != 0 {
-			if hlat == -999 && hlon == -999 {
-				hlat = b.Lat
-				hlon = b.Lon
-				homes.Flags |= types.HOME_ARM | types.HOME_ALT
-				homes.HomeLat = hlat
-				homes.HomeLon = hlon
-				homes.HomeAlt = b.GAlt
+			cap |= types.CAP_SPEED
+
+		case "v0:range-bearing", "comp_gps":
+			b.Vrange = o["range"].(float64)
+			b.Bearing = int32(o["bearing"].(float64))
+
+		case "v0:sensor-reason", "ltm_xframe":
+			if s, ok := o["sensorok"].(float64); ok {
+				b.HWfail = (s != 0)
+			} else {
+				b.HWfail = false
 			}
-			b.Hlat = hlat
-			b.Hlon = hlon
+
+			/*******************/
+
+		case "analog2":
+			b.Volts = o["voltage"].(float64)
+			b.Amps = o["amps"].(float64) / 100.0
+			b.Rssi = uint8(o["rssi"].(float64) * 100 / 1023)
+			cap |= (types.CAP_RSSI_VALID | types.CAP_VOLTS | types.CAP_AMPS)
+
+		case "status":
+			b.Navmode = byte(o["nav_mode"].(float64))
+			b.ActiveWP = uint8(o["wp_number"].(float64))
+			switch b.Navmode {
+			case 1, 2: // RTH
+				b.Status |= (13 << 2)
+				b.Fmode = types.FM_RTH
+			case 3, 4: // PH
+				b.Status |= (9 << 2)
+				b.Fmode = types.FM_PH
+			case 5, 6, 7: // WP
+				b.Status |= (10 << 2)
+				b.Fmode = types.FM_WP
+				cap |= types.CAP_WPNO
+			case 8, 10, 11, 12, 13, 14: // Land
+				b.Status |= (15 << 2)
+				b.Fmode = types.FM_LAND
+			default:
+				b.Fmode = types.FM_ACRO
+			}
+
+		case "raw_gps":
+			b.Stamp = uint64((lt - st) * 1000 * 1000)
+			sec := int64(lt)
+			nsec := int64((lt - float64(sec)) * 1e9)
+			b.Utc = time.Unix(sec, nsec)
+			b.Lat = o["lat"].(float64)
+			b.Lon = o["lon"].(float64)
+			b.GAlt = o["alt"].(float64)
+			b.Fix = uint8(o["fix"].(float64))
+			b.Numsat = uint8(o["numsat"].(float64))
+			if _, ok := o["hdop"]; ok {
+				b.Hdop = uint16(o["hdop"].(float64))
+			}
+			b.Cog = uint32(o["cse"].(float64))
+			b.Spd = o["spd"].(float64)
+			cap |= types.CAP_SPEED
+			if (b.Status & 1) != 0 {
+				if hlat == -999 && hlon == -999 {
+					hlat = b.Lat
+					hlon = b.Lon
+					homes.Flags |= types.HOME_ARM | types.HOME_ALT
+					homes.HomeLat = hlat
+					homes.HomeLon = hlon
+					homes.HomeAlt = b.GAlt
+				}
+				b.Hlat = hlat
+				b.Hlon = hlon
+			}
+
+		case "attitude":
+			b.Cse = uint32(o["heading"].(float64))
+			b.Roll = int16(o["angx"].(float64))
+			b.Pitch = int16(o["angy"].(float64))
+
+		case "ltm_raw_sframe":
+			b.Status = uint8(o["flags"].(float64))
+			b.Volts = o["vbat"].(float64) / 1000.0
+			b.Amps = o["vcurr"].(float64) / 1000.0
+			b.Rssi = uint8(o["rssi"].(float64) * 100 / 255)
+			cap |= (types.CAP_RSSI_VALID | types.CAP_VOLTS | types.CAP_AMPS)
+			ltmmode := b.Status >> 2
+			b.Fmode = fm_ltm(ltmmode)
+
+		case "mavlink_attitude":
+			b.Cse = uint32(o["yaw"].(float64) * 57.29578)
+			b.Roll = int16(o["roll"].(float64) * 57.29578)
+			b.Pitch = int16(-o["pitch"].(float64) * 57.29578)
+
+		case "mavlink_vfr_hud":
+			b.Alt = o["alt"].(float64)
+
+		case "mavlink_gps_raw_int":
+			b.Stamp = uint64((lt - st) * 1000 * 1000)
+			b.Lat = o["lat"].(float64) / 1e7
+			b.Lon = o["lon"].(float64) / 1e7
+			b.GAlt = o["alt"].(float64) / 1000
+
+			fix := o["fix_type"].(float64)
+			b.Fix = uint8(math.Min(fix, 3))
+			eph := o["eph"].(float64)
+			if eph != 65535 {
+				b.Hdop = uint16(eph / 100)
+			}
+			b.Numsat = uint8(o["satellites_visible"].(float64))
+			b.Cog = uint32(o["cog"].(float64)) / 100
+			b.Spd = o["vel"].(float64) / 100
+			if (homes.Flags & (types.HOME_ARM | types.HOME_ALT)) != 0 {
+				cs, dx := geo.Csedist(b.Hlat, b.Hlon, b.Lat, b.Lon)
+				b.Bearing = int32(cs)
+				b.Vrange = dx * 1852
+			}
+
+		case "mavlink_gps_global_origin":
+			b.Hlat = o["latitude"].(float64) / 1e7
+			b.Hlon = o["longitude"].(float64) / 1e7
+			homes.Flags |= types.HOME_ARM | types.HOME_ALT
+			homes.HomeLat = b.Hlat
+			homes.HomeLon = b.Hlon
+			homes.HomeAlt = o["altitude"].(float64) / 1000.0
+
+		case "mavlink_heartbeat":
+			mavtype := int(o["mavtype"].(float64))
+			mavmode := int(o["custom_mode"].(float64))
+			var ltmflags uint8
+			if o["utime"].(float64) > 1607040000 {
+				ltmflags = mav2ltm(mavmode, (mavtype == 1))
+			} else {
+				ltmflags = xmav2ltm(mavmode, (mavtype == 1))
+			}
+			b.Fmode = fm_ltm(ltmflags)
+			b.Status |= (ltmflags << 2)
+
+		default:
 		}
-
-	case "attitude":
-		b.Cse = uint32(o["heading"].(float64))
-		b.Roll = int16(o["angx"].(float64))
-		b.Pitch = int16(o["angy"].(float64))
-
-	case "ltm_raw_sframe":
-		b.Status = uint8(o["flags"].(float64))
-		b.Volts = o["vbat"].(float64) / 1000.0
-		b.Amps = o["vcurr"].(float64) / 1000.0
-		b.Rssi = uint8(o["rssi"].(float64) * 100 / 255)
-		cap |= (types.CAP_RSSI_VALID | types.CAP_VOLTS | types.CAP_AMPS)
-		ltmmode := b.Status >> 2
-		b.Fmode = fm_ltm(ltmmode)
-
-	case "mavlink_attitude":
-		b.Cse = uint32(o["yaw"].(float64) * 57.29578)
-		b.Roll = int16(o["roll"].(float64) * 57.29578)
-		b.Pitch = int16(-o["pitch"].(float64) * 57.29578)
-
-	case "mavlink_vfr_hud":
-		b.Alt = o["alt"].(float64)
-
-	case "mavlink_gps_raw_int":
-		b.Stamp = uint64((lt - st) * 1000 * 1000)
-		b.Lat = o["lat"].(float64) / 1e7
-		b.Lon = o["lon"].(float64) / 1e7
-		b.GAlt = o["alt"].(float64) / 1e7
-
-		fix := o["fix_type"].(float64)
-		b.Fix = uint8(math.Min(fix, 3))
-		eph := o["eph"].(float64)
-		if eph != 65535 {
-			b.Hdop = uint16(eph / 100)
-		}
-		b.Numsat = uint8(o["satellites_visible"].(float64))
-		b.Cog = uint32(o["cog"].(float64)) / 100
-		b.Spd = o["vel"].(float64) / 100
-		if (homes.Flags & (types.HOME_ARM | types.HOME_ALT)) != 0 {
-			cs, dx := geo.Csedist(b.Hlat, b.Hlon, b.Lat, b.Lon)
-			b.Bearing = int32(cs)
-			b.Vrange = dx * 1852
-		}
-
-	case "mavlink_gps_global_origin":
-		b.Hlat = o["latitude"].(float64) / 1e7
-		b.Hlon = o["longitude"].(float64) / 1e7
-		homes.Flags |= types.HOME_ARM | types.HOME_ALT
-		homes.HomeLat = b.Hlat
-		homes.HomeLon = b.Hlon
-		homes.HomeAlt = o["altitude"].(float64) / 1000.0
-
-	case "mavlink_heartbeat":
-		mavtype := int(o["mavtype"].(float64))
-		mavmode := int(o["custom_mode"].(float64))
-		var ltmflags uint8
-		if o["utime"].(float64) > 1607040000 {
-			ltmflags = mav2ltm(mavmode, (mavtype == 1))
-		} else {
-			ltmflags = xmav2ltm(mavmode, (mavtype == 1))
-		}
-		b.Fmode = fm_ltm(ltmflags)
-		b.Status |= (ltmflags << 2)
-
-	default:
 	}
 	return done, cap
 }
@@ -624,73 +631,86 @@ func (lg *MWPJSON) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSeg
 	llat := -999.0
 	llon := 0.0
 
+	var o map[string]interface{}
 	scanner := bufio.NewScanner(fh)
+	nl := int(0)
+
 	for scanner.Scan() {
 		l := scanner.Text()
-		done, cap := parse_json(l, &b)
-		rec.Cap |= cap
+		nl += 1
+		if nl > m.End {
+			break
+		}
+		if nl >= m.Start {
+			json.Unmarshal([]byte(l), &o)
+			done, cap := parse_json(o, &b)
+			rec.Cap |= cap
 
-		if done && b.Fix != 0 {
-			if b.Vrange > stats.Max_range {
-				stats.Max_range = b.Vrange
-				stats.Max_range_time = uint64(lt-st) * 1000000
-			}
-
-			if b.Alt > stats.Max_alt {
-				stats.Max_alt = b.Alt
-				stats.Max_alt_time = uint64(lt-st) * 1000000
-			}
-
-			if b.Spd > 0 && b.Spd < 400 {
-				if b.Spd > stats.Max_speed {
-					stats.Max_speed = b.Spd
-					stats.Max_speed_time = uint64(lt-st) * 1000000
+			if done && b.Fix != 0 {
+				if b.Vrange > stats.Max_range {
+					stats.Max_range = b.Vrange
+					stats.Max_range_time = uint64(lt-st) * 1000000
 				}
-			}
 
-			if blt > 0 {
-				deltat := lt - blt
-				if deltat > 0 {
-					if (rec.Cap & types.CAP_AMPS) == types.CAP_AMPS {
-						if b.Spd > 1 {
-							b.Whkm = b.Amps * b.Volts / (3.6 * b.Spd)
-							b.Effic = b.Amps * 1000 / (3.6 * b.Spd) // efficiency
-						}
-						leffic = b.Effic
-						whacc += b.Amps * b.Volts * deltat / 3600
-						b.WhAcc = whacc
-						lwhkm = b.Whkm
-					} else {
-						b.Effic = leffic
-						b.Whkm = lwhkm
+				if b.Alt > stats.Max_alt {
+					stats.Max_alt = b.Alt
+					stats.Max_alt_time = uint64(lt-st) * 1000000
+				}
+
+				if b.Spd > 0 && b.Spd < 400 {
+					if b.Spd > stats.Max_speed {
+						stats.Max_speed = b.Spd
+						stats.Max_speed_time = uint64(lt-st) * 1000000
 					}
 				}
-			}
-			blt = lt
 
-			if homes.Flags != 0 {
-				if llat == 999 {
-					llat = b.Hlat
-					llon = b.Hlon
+				if blt > 0 {
+					deltat := lt - blt
+					if deltat > 0 {
+						if (rec.Cap & types.CAP_AMPS) == types.CAP_AMPS {
+							if b.Spd > 1 {
+								b.Whkm = b.Amps * b.Volts / (3.6 * b.Spd)
+								b.Effic = b.Amps * 1000 / (3.6 * b.Spd) // efficiency
+							}
+							leffic = b.Effic
+							whacc += b.Amps * b.Volts * deltat / 3600
+							b.WhAcc = whacc
+							lwhkm = b.Whkm
+						} else {
+							b.Effic = leffic
+							b.Whkm = lwhkm
+						}
+					}
 				}
-				_, dx := geo.Csedist(b.Lat, b.Lon, llat, llon)
-				b.Tdist += (dx * 1852)
-			}
-			llat = b.Lat
-			llon = b.Lon
+				blt = lt
 
-			if b.Amps > stats.Max_current {
-				stats.Max_current = b.Amps
-				stats.Max_current_time = uint64(lt-st) * 1000000
-			}
+				if homes.Flags != 0 {
+					if llat == 999 {
+						llat = b.Hlat
+						llon = b.Hlon
+					}
+					if llat != 0 && llon != 0 {
+						_, dx := geo.Csedist(b.Lat, b.Lon, llat, llon)
+						dx *= 1852
+						b.Tdist += dx
+					}
+				}
+				llat = b.Lat
+				llon = b.Lon
 
-			if ch != nil {
-				ch <- b
-			} else {
-				rec.Items = append(rec.Items, b)
+				if b.Amps > stats.Max_current {
+					stats.Max_current = b.Amps
+					stats.Max_current_time = uint64(lt-st) * 1000000
+				}
+
+				if ch != nil {
+					ch <- b
+				} else {
+					rec.Items = append(rec.Items, b)
+				}
+				stats.Distance = b.Tdist / 1852.0
+				b.Cse = 0xffff
 			}
-			stats.Distance = b.Tdist / 1852.0
-			b.Cse = 0xffff
 		}
 	}
 	stats.Max_range /= 1852.0

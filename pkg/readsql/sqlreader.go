@@ -1,6 +1,7 @@
 package sqlreader
 
 import (
+	"fmt"
 	"github.com/jmoiron/sqlx"
 	"log"
 	_ "modernc.org/sqlite"
@@ -99,19 +100,43 @@ func (o *SQLREAD) metas(logfile string) ([]types.FlightMeta, error) {
 	var metas []types.FlightMeta
 	bp := filepath.Base(logfile)
 
-	rows, err := o.db.Query("SELECT * FROM meta order by id")
+	rows, err := o.db.Queryx("SELECT * FROM meta order by id")
 	if err == nil {
 		for rows.Next() {
 			m := types.FlightMeta{Logname: bp, Start: 1}
 			var dt string
 			var tm string
-			err := rows.Scan(&m.Index, &tm, &dt, &m.Craft, &m.Firmware, &m.Fwdate, &m.Disarm,
-				&m.Flags, &m.Motors, &m.Servos, &m.Sensors, &m.Acc1G, &m.Features)
+			res := make(map[string]interface{})
+			err = rows.MapScan(res)
+			id := res["id"].(int64)
+			m.Index = int(id)
+			tm = res["dtg"].(string)
+			dtf := res["duration"].(float64)
+			m.Craft = res["mname"].(string)
+			m.Firmware = res["firmware"].(string)
+			m.Fwdate = res["fwdate"].(string)
+			m.Disarm = types.Reason(res["disarm"].(int64))
+			m.Flags = uint8(res["flags"].(int64))
+			m.Motors = uint8(res["motors"].(int64))
+			m.Servos = uint8(res["servos"].(int64))
+			m.Sensors = uint16(res["sensors"].(int64))
+			m.Acc1G = uint16(res["acc1g"].(int64))
+			m.Features = uint32(res["features"].(int64))
+			if tmp, ok := res["start"]; ok {
+				m.Start = int(tmp.(int64))
+			} else {
+				m.Start = 1
+			}
+			if tmp, ok := res["end"]; ok {
+				m.End = int(tmp.(int64))
+			} else {
+				m.End = 999999
+			}
 			if err != nil {
 				log.Printf("META SQL: %+v\n", err)
 				return metas, err
 			}
-			dt = dt + "s"
+			dt = fmt.Sprintf("%fs", dtf)
 			m.Date, err = parse_time(tm)
 			m.Duration, err = time.ParseDuration(dt)
 			m.Flags |= types.Has_Start | types.Is_Valid | types.Has_Craft
