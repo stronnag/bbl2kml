@@ -139,7 +139,7 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 							metas = append(metas, mt)
 						}
 						mt = types.FlightMeta{Logname: bp, Index: id + 1, Start: nl, Date: baseutc}
-						fmt.Fprintf(os.Stderr, "start %d %d %s, %+v\n", id, nl, o["type"], baseutc)
+						//fmt.Fprintf(os.Stderr, ":DBG: start %d %d %s, %+v\n", id, nl, o["type"], baseutc)
 						id += 1
 					}
 
