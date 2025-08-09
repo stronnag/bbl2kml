@@ -69,6 +69,7 @@ type Configuration struct {
 var (
 	MissionFile string
 	GeoZone     string
+	Fwastr      string
 )
 
 var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120, Epsilon: 0.015, StartOff: 30, EndOff: -30, Engunit: "mah", MaxWP: 120}

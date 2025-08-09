@@ -308,10 +308,18 @@ func parse_json(o map[string]interface{}, b *types.LogItem) (bool, uint16) {
 
 		case "text", "v0:text":
 			if s, ok := o["id"]; ok {
-				if s.(string) == "geozone" {
+				sid := s.(string)
+				switch sid {
+				case "geozone":
 					options.GeoZone = o["content"].(string)
+				default:
 				}
 			}
+
+		case "fwa":
+			loiter_radius := int(o["loiter_radius"].(float64))
+			approach_length := int(o["approach_length"].(float64))
+			options.Fwastr = fmt.Sprintf("loiter_radius=%d approach_length=%d", loiter_radius, approach_length)
 
 		case "armed", "v0:armed":
 			if (o["armed"]).(bool) {

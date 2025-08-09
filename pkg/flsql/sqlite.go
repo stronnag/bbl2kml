@@ -139,6 +139,10 @@ func (d *DBL) Writelog(idx int, nx int, b types.LogItem) {
 			d.tx.MustExec(ISMISC, idx, "geozone", options.GeoZone)
 			options.GeoZone = ""
 		}
+		if options.Fwastr != "" {
+			d.tx.MustExec(ISMISC, idx, "fwa", options.Fwastr)
+			options.Fwastr = ""
+		}
 		d.stamp = b.Stamp
 	}
 
