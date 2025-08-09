@@ -8,11 +8,13 @@ import (
 )
 
 import (
+	"options"
 	"types"
 )
 
 const SCHEMA = `CREATE TABLE IF NOT EXISTS meta (id integer PRIMARY KEY, dtg timestamp with timestamp, duration real, mname text, firmware text, fwdate text, disarm int, flags int, motors int, servos int, sensors  int, acc1g int, features int, start int, end int);
 CREATE TABLE IF NOT EXISTS logerrs (id integer PRIMARY KEY, errstr text);
+CREATE TABLE IF NOT EXISTS misc (id integer, type text, content text);
 CREATE TABLE IF NOT EXISTS logs(id integer, idx integer,
  stamp integer, lat double precision, lon double precision,
  alt  double precision, galt  double precision, spd  double precision,
@@ -31,6 +33,7 @@ create unique index if not exists logidx on logs (id,idx);`
 
 const IMETA = `insert into meta (id, dtg, duration, mname,firmware,fwdate, disarm, flags, motors, servos, sensors, acc1g, features, start, end) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`
 const ISERR = `insert into logerrs (id, errstr) values ($1,$2)`
+const ISMISC = `insert into misc (id, type, content) values ($1,$2,$3)`
 const ILOG = `insert into logs (id,idx, stamp,lat,lon,alt,galt,spd,amps,volts,hlat,hlon,vrange,tdist,effic,energy,whkm,whAcc,qval,sval,aval,bval,fmtext,utc,throttle,cse,cog,bearing,roll,pitch,hdop,ail,ele,rud,thr,gyro_x,gyro_y,gyro_z,acc_x,acc_y,acc_z,fix,numsat,fmode,rssi,status,activewp,navmode,hwfail,windx,windy,windz) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52)`
 
 type DBL struct {
@@ -60,6 +63,12 @@ func NewSQLliteDB(fn string) DBL {
 func (d *DBL) Reset() {
 	d.count = 0
 	d.stamp = 0
+}
+
+func (d *DBL) WriteText(idx int, typ string, content string) {
+	if err := d.tx.MustExec(ISMISC, idx, typ, content); err != nil {
+		log.Fatalf("errors %+v\n", err)
+	}
 }
 
 func (d *DBL) Writemeta(m types.FlightMeta) {
@@ -123,10 +132,20 @@ func (d *DBL) Writelog(idx int, b types.LogItem) {
 	var stamp uint64
 	if d.count == 0 {
 		d.stamp = b.Stamp
+		if options.MissionFile != "" {
+			d.tx.MustExec(ISMISC, idx, "mission", options.MissionFile)
+			options.MissionFile = ""
+		}
+		if options.GeoZone != "" {
+			d.tx.MustExec(ISMISC, idx, "geozone", options.GeoZone)
+			options.GeoZone = ""
+		}
 	}
 	stamp = b.Stamp - d.stamp
 
 	ltmmode := ltm_flight_mode(b.Fmode)
+	gnavmode := (uint(b.Navmode) | (uint(b.Navextra) << 8))
+
 	d.tx.MustExec(ILOG, idx, d.count,
 		stamp,
 		b.Lat,
@@ -173,7 +192,7 @@ func (d *DBL) Writelog(idx int, b types.LogItem) {
 		b.Rssi,
 		b.Status,
 		b.ActiveWP,
-		b.Navmode,
+		gnavmode,
 		b.HWfail,
 		b.Wind[0],
 		b.Wind[1],

@@ -66,6 +66,11 @@ type Configuration struct {
 	Nocache         bool    `json:"-"`
 }
 
+var (
+	MissionFile string
+	GeoZone     string
+)
+
 var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120, Epsilon: 0.015, StartOff: 30, EndOff: -30, Engunit: "mah", MaxWP: 120}
 
 func isFlagSet(name string) bool {

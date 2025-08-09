@@ -139,6 +139,7 @@ type LogItem struct {
 	Status   uint8
 	ActiveWP uint8
 	Navmode  byte
+	Navextra byte
 	HWfail   bool
 	Wind     [3]int16
 }

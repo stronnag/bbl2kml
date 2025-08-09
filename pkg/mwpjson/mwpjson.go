@@ -139,7 +139,6 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 							metas = append(metas, mt)
 						}
 						mt = types.FlightMeta{Logname: bp, Index: id + 1, Start: nl, Date: baseutc}
-						//fmt.Fprintf(os.Stderr, ":DBG: start %d %d %s, %+v\n", id, nl, o["type"], baseutc)
 						id += 1
 					}
 
@@ -198,11 +197,17 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 							mt.Features = uint32(val)
 						}
 					}
+
 				case "v0:armed", "armed":
 					if (o["armed"]).(bool) {
 						if st == 0 {
 							st = (o["utime"].(float64))
 						}
+					}
+
+				case "v0:gps", "raw_gps", "mavlink_gps_raw_int":
+					et := (o["utime"].(float64))
+					if st > 0 && et-st > 30 {
 						have_start = false
 					}
 				default:
@@ -220,7 +225,6 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 		if mx.End-mx.Start > 64 {
 			metas[j].Flags |= types.Has_Start | types.Is_Valid | types.Has_Craft
 		}
-		//fmt.Fprintf(os.Stderr, ":DBGm: %+v\n", metas[j])
 	}
 	if len(metas) == 0 {
 		err = errors.New("No records in MWP JSON log")
@@ -282,6 +286,16 @@ func parse_json(o map[string]interface{}, b *types.LogItem) (bool, uint16) {
 			hlon = -999
 			b.Status = 0
 			b.Tdist = 0
+			if s, ok := o["mission"]; ok {
+				options.MissionFile = s.(string)
+			}
+
+		case "text", "v0:text":
+			if s, ok := o["id"]; ok {
+				if s.(string) == "geozone" {
+					options.GeoZone = o["content"].(string)
+				}
+			}
 
 		case "armed", "v0:armed":
 			if (o["armed"]).(bool) {
@@ -299,6 +313,18 @@ func parse_json(o map[string]interface{}, b *types.LogItem) (bool, uint16) {
 		case "v0:nav-status":
 			b.Navmode = byte(o["nav_mode"].(float64))
 			b.ActiveWP = uint8(o["wp_number"].(float64))
+			if s, ok := o["gps_mode"]; ok {
+				gmo := byte(0)
+				act := byte(0)
+				gmo = byte(s.(float64))
+				b.Navextra = gmo
+				if s, ok := o["action"]; ok {
+					act = byte(s.(float64))
+					b.Navextra |= (act << 4)
+				}
+			} else {
+				b.Navextra = 0
+			}
 
 		case "v0:origin":
 			b.Hlat = o["lat"].(float64)
@@ -344,6 +370,18 @@ func parse_json(o map[string]interface{}, b *types.LogItem) (bool, uint16) {
 			b.Numsat = uint8(o["numsat"].(float64))
 			b.Hdop = uint16(o["hdop"].(float64))
 			cap |= types.CAP_SPEED
+			if (b.Status & 1) != 0 {
+				if hlat == -999 && hlon == -999 {
+					hlat = b.Lat
+					hlon = b.Lon
+					homes.Flags |= types.HOME_ARM | types.HOME_ALT
+					homes.HomeLat = hlat
+					homes.HomeLon = hlon
+					homes.HomeAlt = b.GAlt
+				}
+				b.Hlat = hlat
+				b.Hlon = hlon
+			}
 
 		case "v0:range-bearing", "comp_gps":
 			b.Vrange = o["range"].(float64)
