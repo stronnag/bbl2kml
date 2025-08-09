@@ -72,6 +72,10 @@ type MWPJSON struct {
 	meta []types.FlightMeta
 }
 
+var (
+	verbose bool
+)
+
 func NewMWPJSONReader(fn string) MWPJSON {
 	var l MWPJSON
 	l.name = fn
@@ -90,6 +94,7 @@ func (o *MWPJSON) Dump() {
 }
 
 func (o *MWPJSON) GetMetas() ([]types.FlightMeta, error) {
+	verbose = (os.Getenv("VERBOSE") != "")
 	m, err := types.ReadMetaCache(o.name)
 	if err != nil || options.Config.Nocache {
 		m, err = metas(o.name)
@@ -128,7 +133,6 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 				switch o["type"] {
 				case "init", "environment":
 					if have_start == false {
-						st = 0
 						sec := int64(lt)
 						nsec := int64((lt - float64(sec)) * 1e9)
 						baseutc = time.Unix(sec, nsec)
@@ -136,10 +140,14 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 						if id != 0 {
 							mt.End = nl - 1
 							mt.Duration = time.Duration(lt-st) * time.Second
+							if verbose {
+								fmt.Fprintf(os.Stderr, ":DBG: %+v %+v %+v\n", id, lt, st)
+							}
 							metas = append(metas, mt)
 						}
 						mt = types.FlightMeta{Logname: bp, Index: id + 1, Start: nl, Date: baseutc}
 						id += 1
+						st = 0
 					}
 
 					if o["type"] == "init" {
@@ -215,19 +223,27 @@ func metas(logfile string) ([]types.FlightMeta, error) {
 			}
 		}
 
-		mt.Sensors |= types.Has_GPS | types.Has_Baro | types.Has_Acc
-		mt.End = nl
-		mt.Duration = time.Duration(lt-st) * time.Second
-		metas = append(metas, mt)
+		if st > 0 {
+			mt.Sensors |= types.Has_GPS | types.Has_Baro | types.Has_Acc
+			mt.End = nl
+			mt.Duration = time.Duration(lt-st) * time.Second
+			if verbose {
+				fmt.Fprintf(os.Stderr, ":DBG: %+v %+v %+v\n", id, lt, st)
+			}
+			metas = append(metas, mt)
+		}
 	}
 
 	for j, mx := range metas {
 		if mx.End-mx.Start > 64 {
 			metas[j].Flags |= types.Has_Start | types.Is_Valid | types.Has_Craft
 		}
+		if verbose {
+			fmt.Fprintf(os.Stderr, ":DBG: %+v\n", metas[j])
+		}
 	}
 	if len(metas) == 0 {
-		err = errors.New("No records in MWP JSON log")
+		err = errors.New("No usable records in MWP JSON log")
 	}
 	return metas, err
 }
@@ -301,13 +317,14 @@ func parse_json(o map[string]interface{}, b *types.LogItem) (bool, uint16) {
 			if (o["armed"]).(bool) {
 				if st == 0 {
 					st = (o["utime"].(float64))
+				} else {
 					b.Stamp = uint64((lt - st) * 1000 * 1000)
+					b.Status |= 1
+					if b.Cse == 0xffff {
+						b.Cse = b.Cog
+					}
+					done = true
 				}
-				b.Status |= 1
-				if b.Cse == 0xffff {
-					b.Cse = b.Cog
-				}
-				done = true
 			}
 
 		case "v0:nav-status":
@@ -780,6 +797,9 @@ func (lg *MWPJSON) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSeg
 				}
 				stats.Distance = b.Tdist / 1852.0
 				b.Cse = 0xffff
+			}
+			if verbose {
+				fmt.Fprintf(os.Stderr, ":DBG: nl=%d. %+v\n", nl, b)
 			}
 		}
 	}

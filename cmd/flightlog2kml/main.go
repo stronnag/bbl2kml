@@ -131,13 +131,13 @@ func main() {
 							for _, bi := range ls.L.Items {
 								ut := bi.Stamp
 								if (ut - dt) >= ndelay {
-									db.Writelog(b.Index, bi)
+									db.Writelog(b.Index, nx, bi)
 									nx += 1
 									dt = ut
 								}
 							}
 							if dt != ls.L.Items[n-1].Stamp {
-								db.Writelog(b.Index, ls.L.Items[n-1])
+								db.Writelog(b.Index, nx, ls.L.Items[n-1])
 								nx += 1
 							}
 							db.Commit()
