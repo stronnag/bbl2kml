@@ -128,7 +128,7 @@ func ltm_flight_mode(fm uint8) uint8 {
 
 func check_args() {
 	if options.Config.Mission != "" {
-		options.MwpMisc["mission"] = options.Config.Mission
+		options.MwpMisc["mission-file"] = options.Config.Mission
 	}
 	if options.Config.Cli != "" {
 		var sbgz strings.Builder
