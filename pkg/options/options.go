@@ -67,9 +67,7 @@ type Configuration struct {
 }
 
 var (
-	MissionFile string
-	GeoZone     string
-	Fwastr      string
+	MwpMisc map[string]string
 )
 
 var Config Configuration = Configuration{Intvl: 1000, Blackbox_decode: "blackbox_decode", Bulletvers: 2, SplitTime: 120, Epsilon: 0.015, StartOff: 30, EndOff: -30, Engunit: "mah", MaxWP: 120}
@@ -111,6 +109,7 @@ func parse_config_file(cfgfile string) error {
 
 func ParseCLI(gv func() string) ([]string, string) {
 	types.Init()
+	MwpMisc = make(map[string]string)
 	app := filepath.Base(os.Args[0])
 	var err error
 

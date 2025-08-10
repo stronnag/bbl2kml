@@ -1,10 +1,12 @@
 package flsql
 
 import (
+	"bufio"
 	"github.com/jmoiron/sqlx"
 	"log"
 	_ "modernc.org/sqlite"
 	"os"
+	"strings"
 )
 
 import (
@@ -124,20 +126,44 @@ func ltm_flight_mode(fm uint8) uint8 {
 	return fms
 }
 
+func check_args() {
+	if options.Config.Mission != "" {
+		options.MwpMisc["mission"] = options.Config.Mission
+	}
+	if options.Config.Cli != "" {
+		var sbgz strings.Builder
+		var sbmisc strings.Builder
+
+		r, err := os.Open(options.Config.Cli)
+		if err == nil {
+			defer r.Close()
+			scanner := bufio.NewScanner(r)
+			for scanner.Scan() {
+				l := scanner.Text()
+				if strings.Contains(l, "geozone") {
+					sbgz.WriteString(l)
+					sbgz.WriteByte('\n')
+				} else {
+					sbmisc.WriteString(l)
+					sbmisc.WriteByte('\n')
+				}
+			}
+			if sbgz.Len() > 0 {
+				options.MwpMisc["geozone"] = sbgz.String()
+			}
+			if sbmisc.Len() > 0 {
+				options.MwpMisc["climisc"] = sbmisc.String()
+			}
+		}
+	}
+}
+
 func (d *DBL) Writelog(idx int, nx int, b types.LogItem) {
+	check_args()
 	stamp := int64(0)
 	if nx == 0 {
-		if options.MissionFile != "" {
-			d.tx.MustExec(ISMISC, idx, "mission", options.MissionFile)
-			options.MissionFile = ""
-		}
-		if options.GeoZone != "" {
-			d.tx.MustExec(ISMISC, idx, "geozone", options.GeoZone)
-			options.GeoZone = ""
-		}
-		if options.Fwastr != "" {
-			d.tx.MustExec(ISMISC, idx, "fwa", options.Fwastr)
-			options.Fwastr = ""
+		for k, v := range options.MwpMisc {
+			d.tx.MustExec(ISMISC, idx, k, v)
 		}
 		d.stamp = b.Stamp
 	}
