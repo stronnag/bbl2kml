@@ -100,9 +100,7 @@ func main() {
 			for _, b := range metas {
 				outfn := ""
 				if (options.Config.Idx == 0 || options.Config.Idx == b.Index) && b.Flags&types.Is_Valid != 0 {
-					if use_db {
-						db.Reset()
-					} else {
+					if !use_db {
 						for k, v := range b.Summary() {
 							fmt.Printf("%-8.8s : %s\n", k, v)
 						}
@@ -114,6 +112,7 @@ func main() {
 								fmt.Fprintf(os.Stderr, "%+v\n", bi)
 							}
 						} else if use_db {
+							db.Reset()
 							n := len(ls.L.Items)
 							ns := uint64(0)
 							if n > 0 {
@@ -124,7 +123,6 @@ func main() {
 							if ns > 10*60*1000*1000 {    // > 10 mins
 								ndelay = ns / uint64(6000)
 							}
-
 							db.Begin()
 							dt := uint64(0)
 							nx := 0
@@ -140,26 +138,20 @@ func main() {
 								db.Writelog(b.Index, nx, ls.L.Items[n-1])
 								nx += 1
 							}
-							db.Commit()
+
+							db.Writemeta(b)
+
 							fmt.Printf("%d\t%s\t%.1f\t%d", b.Index, b.Date, b.Duration.Seconds(), nx)
 							if ls.S != "" {
 								fmt.Printf("\t*")
+								db.WriteErrStr(b.Index, ls.S)
 							}
+							db.Commit()
 							fmt.Println()
 
-							if ls.S != "" {
-								db.Begin()
-								db.Writeerr(b.Index, ls.S)
-								db.Commit()
-							}
 						} else if options.Config.Summary == false {
 							outfn = kmlgen.GenKmlName(b.Logname, b.Index)
 							kmlgen.GenerateKML(ls.H, ls.L, outfn, b, ls.M, GetVersion)
-						}
-						if use_db {
-							db.Begin()
-							db.Writemeta(b)
-							db.Commit()
 						}
 					}
 					if !use_db {

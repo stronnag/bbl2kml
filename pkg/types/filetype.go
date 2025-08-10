@@ -29,7 +29,7 @@ func EvinceFileType(fn string) int {
 	sig, err := fh.Peek(128) //read a few bytes without consuming
 	if err == nil {
 		switch {
-		case strings.HasPrefix(string(sig), "H Product:Blackbox"):
+		case strings.Contains(string(sig), "H Product:Blackbox"):
 			res = IS_BBL
 		case strings.HasPrefix(string(sig), "Date,Time,"):
 			res = IS_OTX

@@ -13,7 +13,7 @@ import (
 )
 
 const SCHEMA = `CREATE TABLE IF NOT EXISTS meta (id integer PRIMARY KEY, dtg timestamp with timestamp, duration real, mname text, firmware text, fwdate text, disarm int, flags int, motors int, servos int, sensors  int, acc1g int, features int, start int, end int);
-CREATE TABLE IF NOT EXISTS logerrs (id integer PRIMARY KEY, errstr text);
+CREATE TABLE IF NOT EXISTS logerrs (id integer, errstr text);
 CREATE TABLE IF NOT EXISTS misc (id integer, type text, content text);
 CREATE TABLE IF NOT EXISTS logs(id integer, idx integer,
  stamp integer, lat double precision, lon double precision,
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS logs(id integer, idx integer,
 create unique index if not exists logidx on logs (id,idx);`
 
 const IMETA = `insert into meta (id, dtg, duration, mname,firmware,fwdate, disarm, flags, motors, servos, sensors, acc1g, features, start, end) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`
-const ISERR = `insert into logerrs (id, errstr) values ($1,$2)`
+const ISERR = `insert into logerrs (id, errstr) values (?, ?)`
 const ISMISC = `insert into misc (id, type, content) values ($1,$2,$3)`
 const ILOG = `insert into logs (id, idx, stamp,lat,lon,alt,galt,spd,amps,volts,hlat,hlon,vrange,tdist,effic,energy,whkm,whAcc,qval,sval,aval,bval,fmtext,utc,throttle,cse,cog,bearing,roll,pitch,hdop,ail,ele,rud,thr,gyro_x,gyro_y,gyro_z,acc_x,acc_y,acc_z,fix,numsat,fmode,rssi,status,activewp,navmode,hwfail,windx,windy,windz) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52)`
 
@@ -51,11 +51,11 @@ func NewSQLliteDB(fn string) DBL {
 
 	d.db, err = sqlx.Open("sqlite", fn)
 	if err != nil {
-		log.Fatalf("db %+v\n", err)
+		log.Fatalf("SQL Open: %+v\n", err)
 	}
 
 	if _, err = d.db.Exec(SCHEMA); err != nil {
-		log.Fatalf("tables %+v\n", err)
+		log.Fatalf("SQL Schema: %+v\n", err)
 	}
 	return d
 }
@@ -66,23 +66,19 @@ func (d *DBL) Reset() {
 }
 
 func (d *DBL) WriteText(idx int, typ string, content string) {
-	if err := d.tx.MustExec(ISMISC, idx, typ, content); err != nil {
-		log.Fatalf("errors %+v\n", err)
-	}
+	d.tx.MustExec(ISMISC, idx, typ, content)
 }
 
 func (d *DBL) Writemeta(m types.FlightMeta) {
 	if m.Craft == "" {
 		m.Craft = "noname"
 	}
-	d.tx.MustExec(IMETA, m.Index, m.Date, m.Duration.Seconds(), m.Craft, m.Firmware,
-		m.Fwdate, m.Disarm, m.Flags, m.Motors, m.Servos, m.Sensors, m.Acc1G, m.Features, m.Start, m.End)
+	d.tx.MustExec(IMETA, m.Index, m.Date, m.Duration.Seconds(), m.Craft, m.Firmware, m.Fwdate, m.Disarm, m.Flags, m.Motors, m.Servos, m.Sensors, m.Acc1G, m.Features, m.Start, m.End)
 }
 
-func (d *DBL) Writeerr(idx int, errs string) {
-	if err := d.tx.MustExec(ISERR, idx, errs); err != nil {
-		log.Fatalf("errors %+v\n", err)
-	}
+func (d *DBL) WriteErrStr(idx int, errstr string) {
+	//log.Printf("Errors: %d <%s>\n", idx, errstr)
+	d.tx.MustExec(ISERR, idx, errstr)
 }
 
 func (d *DBL) Begin() {
@@ -91,7 +87,7 @@ func (d *DBL) Begin() {
 
 func (d *DBL) Commit() {
 	if err := d.tx.Commit(); err != nil {
-		log.Fatalf("commit %+v\n", err)
+		log.Printf("SQL Commit: %+v\n", err)
 	}
 }
 
@@ -146,9 +142,6 @@ func (d *DBL) Writelog(idx int, nx int, b types.LogItem) {
 		d.stamp = b.Stamp
 	}
 
-	//if stamp < 0 {
-	//log.Printf(":DBG: %+v %+v %+v %+v %+v \n", idx, nx, b.Stamp, d.stamp, stamp)
-	//}
 	stamp = int64(b.Stamp - d.stamp)
 	if stamp < 0 {
 		stamp = d.lstamp
