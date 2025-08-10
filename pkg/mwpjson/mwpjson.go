@@ -302,7 +302,7 @@ func parse_json(o map[string]interface{}, b *types.LogItem) (bool, uint16) {
 			hlon = -999
 			b.Status = 0
 			b.Tdist = 0
-			if s, ok := o["mission-file"]; ok {
+			if s, ok := o["mission"]; ok {
 				options.MwpMisc["mission-file"] = s.(string)
 			}
 
