@@ -506,6 +506,20 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 		}
 		b.Navmode = inav.Navmode(inav_vers, int(i64))
 	}
+
+	// Ancient INAV (pre 1.very-early)
+	if s, ok = get_rec_value(r, "navMode"); ok {
+		i64, _ := strconv.ParseInt(s, 10, 64)
+		switch i64 {
+		case 3:
+			md = types.FM_PH
+			b.Navmode = 1
+		case 5:
+			md = types.FM_RTH
+			b.Navmode = 2
+		}
+	}
+
 	// fallback for old inav bug
 	if sok && strings.Contains(s0, "NAVRTH") {
 		md = types.FM_RTH

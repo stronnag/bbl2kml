@@ -62,7 +62,7 @@ func IsLaunch(vers, val int) bool {
 		return contains([]int{25, 26, 27, 28}, val)
 	case vers > 0x105ff: // For 1.6.0, hex = 0x105ff
 		return contains([]int{30, 31, 32, 33}, val)
-	case vers > 0x103ff:
+	case vers > 0x103ff: // 1.4
 		return contains([]int{32, 33, 34, 35}, val)
 	}
 	return false
@@ -71,7 +71,8 @@ func IsLaunch(vers, val int) bool {
 func IsLand(vers, val int) bool {
 	switch {
 	case vers > 0x6ffff:
-		return contains([]int{42, 43, 44, 45, 46, 47, 48}, val)
+		return contains([]int{21, 42, 43, 44, 45, 46, 47, 48}, val)
+
 	}
 	return false
 }
