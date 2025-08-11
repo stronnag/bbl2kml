@@ -604,6 +604,9 @@ func get_bbl_line(r []string, have_origin bool) types.LogItem {
 	if s, ok = get_rec_value(r, "attitude[2]"); ok {
 		i64, _ := strconv.Atoi(s)
 		b.Cse = uint32(i64 / 10)
+	} else if s, ok = get_rec_value(r, "navHeading"); ok {
+		i64, _ := strconv.Atoi(s)
+		b.Cse = uint32(i64 / 100)
 	}
 
 	if s, ok = get_rec_value(r, "GPS_ground_course"); ok {
