@@ -370,7 +370,7 @@ func parse_json(o map[string]interface{}, b *types.LogItem) (bool, uint16) {
 			b.Volts = o["voltage"].(float64)
 			b.Amps = o["amps"].(float64)
 			b.Energy = o["power"].(float64)
-			b.Rssi = uint8(o["rssi"].(float64) * 100 / 255)
+			b.Rssi = uint8(o["rssi"].(float64) * 100 / 1023)
 			cap |= (types.CAP_RSSI_VALID | types.CAP_VOLTS | types.CAP_AMPS)
 
 		case "v0:gps":
