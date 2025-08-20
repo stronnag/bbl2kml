@@ -163,15 +163,19 @@ func (lg *SQLREAD) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSeg
 	fname := filepath.Join(dname, ".tmpmission.mission")
 	f, err := os.Create(fname)
 	if err == nil {
+		nc := 0
 		rows, err := lg.db.Query("SELECT content FROM misc WHERE id = $1 and type = $2;", m.Index, "mission")
 		if err == nil {
 			for rows.Next() {
 				err := rows.Scan(&mstr)
 				if err == nil {
 					f.WriteString(mstr)
+					nc += len(mstr)
 				}
 			}
-			options.Config.Mission = fname
+			if nc > 64 {
+				options.Config.Mission = fname
+			}
 		}
 		f.Close()
 	}
@@ -179,16 +183,20 @@ func (lg *SQLREAD) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSeg
 	fname = filepath.Join(dname, ".tmpcli.txt")
 	f, err = os.Create(fname)
 	if err == nil {
+		nc := 0
 		rows, err := lg.db.Query("SELECT content FROM misc WHERE id = $1 and type = $2;", m.Index, "climisc")
 		if err == nil {
 			for rows.Next() {
 				err := rows.Scan(&mstr)
 				if err == nil {
 					f.WriteString(mstr)
+					nc += len(mstr)
 				}
 			}
 		}
-		options.Config.Cli = fname
+		if nc > 32 {
+			options.Config.Cli = fname
+		}
 		f.Close()
 	}
 
