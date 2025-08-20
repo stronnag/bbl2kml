@@ -29,6 +29,8 @@ func getVersion() string {
 }
 
 func main() {
+	defer types.RemoveTmpDir()
+
 	files, app := options.ParseCLI(getVersion)
 	if len(files) == 0 || (len(options.Config.Mqttopts) == 0 && len(options.Config.Outdir) == 0 &&
 		options.Config.Dump == false && len(options.Config.LTMdev) == 0 && options.Config.Metas == false) {

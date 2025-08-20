@@ -32,6 +32,8 @@ func GetVersion() string {
 }
 
 func main() {
+	defer types.RemoveTmpDir()
+
 	dump_log := os.Getenv("DUMP_LOG") != ""
 	files, _ := options.ParseCLI(GetVersion)
 	geo.Frobnicate_init()

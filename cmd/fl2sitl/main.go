@@ -24,6 +24,8 @@ func getVersion() string {
 }
 
 func main() {
+	defer types.RemoveTmpDir()
+
 	files, app := options.ParseCLI(getVersion)
 	if len(files) == 0 {
 		if options.Config.SitlMinimal == false {

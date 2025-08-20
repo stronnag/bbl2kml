@@ -5,6 +5,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"log"
 	_ "modernc.org/sqlite"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -155,13 +156,51 @@ func (lg *SQLREAD) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSeg
 		mid     int
 		midx    int
 		ltmmode int
+		mstr    string
 	)
+
+	dname, err := os.MkdirTemp("", ".fl2kml.")
+	fname := filepath.Join(dname, ".tmpmission.mission")
+	f, err := os.Create(fname)
+	if err == nil {
+		rows, err := lg.db.Query("SELECT content FROM misc WHERE id = $1 and type = $2;", m.Index, "mission")
+		if err == nil {
+			for rows.Next() {
+				err := rows.Scan(&mstr)
+				if err == nil {
+					f.WriteString(mstr)
+				}
+			}
+			options.Config.Mission = fname
+		}
+		f.Close()
+	}
+
+	fname = filepath.Join(dname, ".tmpcli.txt")
+	f, err = os.Create(fname)
+	if err == nil {
+		rows, err := lg.db.Query("SELECT content FROM misc WHERE id = $1 and type = $2;", m.Index, "climisc")
+		if err == nil {
+			for rows.Next() {
+				err := rows.Scan(&mstr)
+				if err == nil {
+					f.WriteString(mstr)
+				}
+			}
+		}
+		options.Config.Cli = fname
+		f.Close()
+	}
+
+	types.TDir = dname
 
 	rows, err := lg.db.Query("SELECT * FROM logs where id=$1 order by idx", m.Index)
 	if err != nil {
 		log.Fatalf("METASQL for %d +%v\n", m.Index, err)
 	}
 	for rows.Next() {
+		var navmode uint
+
 		b := types.LogItem{}
 		err := rows.Scan(&mid, &midx,
 			&b.Stamp,
@@ -209,7 +248,7 @@ func (lg *SQLREAD) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSeg
 			&b.Rssi,
 			&b.Status,
 			&b.ActiveWP,
-			&b.Navmode,
+			&navmode,
 			&b.HWfail,
 			&b.Wind[0],
 			&b.Wind[1],
@@ -220,6 +259,7 @@ func (lg *SQLREAD) Reader(m types.FlightMeta, ch chan interface{}) (types.LogSeg
 			break
 		}
 
+		b.Navmode = byte(navmode & 0xff)
 		b.Fmode = fm_ltm(uint8(ltmmode))
 
 		if b.Vrange > stats.Max_range {

@@ -49,6 +49,8 @@ func split(s string, separators []rune) []string {
 }
 
 func main() {
+	defer types.RemoveTmpDir()
+
 	flag.Usage = func() {
 		extra := `The home location is given as decimal degrees latitude and
 longitude and optional altitude. The values should be separated by a single

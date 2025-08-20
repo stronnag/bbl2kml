@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 )
@@ -151,6 +152,8 @@ type LogRec struct {
 
 var Mnames = []string{"Acro", "Manual", "Horizon", "Angle", "Launch", "RTH", "WP",
 	"3CRS", "CRS", "PH", "AH", "EMERGENCY", "F/S", "LAND", "Unk", "Unk", "Unk", "Unk"}
+
+var TDir string
 
 const (
 	HOME_ARM  = 1
@@ -343,4 +346,10 @@ func (b *FlightMeta) Summary() MapRec {
 		m["Size"] = s
 	}
 	return m
+}
+
+func RemoveTmpDir() {
+	if TDir != "" {
+		os.RemoveAll(TDir)
+	}
 }
