@@ -1,4 +1,6 @@
-# flightlog2x
+## Migrated to [codeberg.org](https://codeberg.org/stronnag/flightlog2kml)
+
+## flightlog2x
 
 ## Overview
 
